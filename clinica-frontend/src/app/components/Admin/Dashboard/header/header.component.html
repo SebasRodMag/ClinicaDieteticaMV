@@ -1,0 +1,19 @@
+<div class="header">
+    <div id="logo" >
+        <img src="/images/logo_centro_medico.jpg" alt="Logo" class="logo" />
+    </div>
+    <div class="nav">
+        <button id="Home" type="button" routerLink="/home" routerLinkActive="active-link"><i class="bi bi-speedometer"></i>Home</button>
+        <button id="citas" type="button" routerLink="/citas" routerLinkActive="active-link"><i class="bi bi-calendar-date"></i> Citas</button>
+        <button id="clientes" type="button" routerLink="/clientes" routerLinkActive="active-link"><i class="bi bi-clipboard-plus"></i> Clientes</button>
+        <button id="medicos" type="button" routerLink="/medicos" routerLinkActive="active-link"><i class="bi bi-hospital" ></i> Médicos</button>
+        <button id="usuarios" type="button" routerLink="/usuarios" routerLinkActive="active-link"><i class="bi bi-person-badge-fill"></i>Usuarios</button>
+    </div>
+    <div class="title">
+        <p>Bienvenido,
+            {{ userName}}
+        </p>
+        <p>Almería, {{ fechaActual | date: 'dd/MM/yyyy' }} {{horaActual}}</p>
+        <button id="logout" (click)="logout()">Cerrar Sesión</button>
+    </div>
+</div>

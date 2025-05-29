@@ -1,0 +1,48 @@
+/*Se agrega un css general*/
+body {
+    font-family: 'Roboto', sans-serif;
+}
+*{
+    margin: 0;
+}
+p, label{
+    font-size: 14px;
+}
+
+button, i{
+    cursor: pointer;
+}
+
+button:hover{
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
+    scale: 1.05;
+    transition: all 0.2s ease-in-out;
+}
+
+#boton-registrar button{
+    width: 100%;
+    padding: 10px 35px 10px 35px;
+    background-color: #009975;
+    border: 0;
+    border-radius: 5px;
+    color: white;
+
+}
+
+#edit-button{
+    background-color: #e0b227;
+    border: 1px solid black;
+    border-radius: 3px;
+    padding: 5px 10px 5px 10px;
+    margin-left: 10px;
+}
+
+#delete-button{
+    background-color: #ff3737;
+    color: rgba(0, 0, 0, 0.7);
+    border: 1px solid black;
+    border-radius: 3px;
+    padding: 5px 10px 5px 10px;
+    margin-left: 10px;
+}
+

@@ -1,0 +1,42 @@
+<div class="modal-backdrop" *ngIf="isVisible">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>CREAR CITA</h2>
+            <i class="bi bi-x-circle close-button" (click)="close()"></i>
+        </div>
+        <div>
+            
+            <form action="">
+                <div id="contenedor-principal">
+                    <div id="columnas">
+                        <div id="primer-contenedor">
+                            <div>
+                                <label for="nombre">Nombre:</label>
+                                <input
+                                    type="text"
+                                    name="nombre"
+                                    id="nombre"
+                                />
+                            </div>
+                            <div>
+                                <label for="dni">DNI:</label>
+                                <input name="dni" id="dni"/>
+                            </div>
+                            <div>
+                                <label for="fecha-inicio">Fecha inicio:</label>
+                                <input type="date" name="fecha-inicio" id="fecha-inicio"/>
+                            </div>
+                            <div>
+                                <label for="fecha-fin">Fecha fin:</label>
+                                <input type="date" name="fecha-fin" id="fecha-fin"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="boton-registrar">
+                        <button type="submit" id="registrar">Registrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

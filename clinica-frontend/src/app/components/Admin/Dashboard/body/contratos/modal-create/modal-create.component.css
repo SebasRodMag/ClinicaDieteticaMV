@@ -1,0 +1,141 @@
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 600px;
+    position: relative;
+}
+
+.modal-header {
+    width: 65%;
+    display: flex;
+    justify-content: space-between;
+}
+
+
+#contenedor-principal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+#columnas {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+#segundo-contenedor {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#primer-contenedor,
+#segundo-contenedor {
+    flex: 1;
+}
+
+#primer-contenedor div,
+#segundo-contenedor div {
+    display: flex;
+    flex-direction: column;
+    margin: 5px 0;
+}
+
+
+
+#boton-registrar {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+input,
+select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid black;
+}
+
+i {
+    font-size: 25px;
+}
+
+/* Estilo básico para que ng-select se integre con tu diseño */
+ng-select {
+    width: 100%;
+    font-size: 16px;
+}
+
+.ng-select {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    background-color: #fff;
+    box-shadow: none;
+}
+
+.ng-select .ng-select-container {
+    border-radius: 5px;
+    min-height: 38px;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    align-items: center;
+}
+
+.ng-select.ng-select-multiple .ng-select-container {
+    min-height: 38px;
+}
+
+.ng-select.ng-select-multiple .ng-value {
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-right: 4px;
+}
+
+.ng-select .ng-value-icon {
+    margin-left: 4px;
+}
+
+.ng-dropdown-panel {
+    border: 1px solid #ced4da;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1050 !important;
+    /* Para que se superponga en modales */
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items .ng-option {
+    padding: 8px 12px;
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items .ng-option.ng-option-marked {
+    background-color: #e9ecef;
+}
+
+/* Asegura que en el modal no se corte */
+.modal-content {
+    overflow: visible;
+}
