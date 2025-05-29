@@ -10,10 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * Esta clase es una fábrica para crear instancias del modelo Especialista.
  * Utiliza la librería Faker para generar datos aleatorios.
  * La fábrica define los atributos por defecto para un especialista, incluyendo la relación con un usuario.
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Especialista>
- * @property int $id_usuario clave foránea a la tabla users
- * @property string $especialidad especialidad del especialista
- * @property string $numero_colegiado número de colegiado del especialista
+ * @property int $user_id clave foránea a la tabla users
  */
 class EspecialistaFactory extends Factory
 {

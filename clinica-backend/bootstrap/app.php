@@ -4,7 +4,16 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+/**
+ * Aplicación bootstrap 
+ *
+ * los archivos de configuración y las rutas de la aplicación. enrutamiento, middleware, etc.
+ *
+ * @return \Illuminate\Foundation\Application
+ */
+
 return Application::configure(basePath: dirname(__DIR__))
+
     ->withRouting(
         api: __DIR__.'/../routes/api.php',
         web: __DIR__.'/../routes/web.php',
