@@ -1,0 +1,43 @@
+<div class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5)">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar paciente</h5>
+                <button type="button" class="btn-close" (click)="cerrar()"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label>Nombre</label>
+                        <input type="text" class="form-control" [(ngModel)]="paciente.usuario.nombre" name="nombre" />
+                    </div>
+                    <div class="mb-3">
+                        <label>DNI</label>
+                        <input type="text" class="form-control" [(ngModel)]="paciente.usuario.dni_usuario"
+                            name="dni_usuario" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" class="form-control" [(ngModel)]="paciente.usuario.email" name="email" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Teléfono</label>
+                        <input type="tel" class="form-control" [(ngModel)]="paciente.usuario.telefono"
+                            name="telefono" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Estado</label>
+                        <select class="form-select" [(ngModel)]="paciente.estado" name="estado">
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
+                <button class="btn btn-primary" (click)="guardarCambios()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
