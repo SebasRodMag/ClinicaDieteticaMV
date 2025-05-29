@@ -1,0 +1,66 @@
+<div class="container-medicos">
+    <div class="header-medicos">
+        <div>
+            <button (click)="modal.open()">Agregar contrato</button>
+        </div>
+        <app-modal-create #modal>
+        </app-modal-create>
+        <div id="contenedor-busqueda">
+            <input type="text" placeholder="Búsqueda...">
+            <i class="bi bi-search" id="icono-search"></i>
+        </div>
+    </div>
+    <table id="tabla-medicos">
+        <thead>
+            <th><strong>Id</strong></th>
+            <th>Nº Contrato</th>
+            <th>Empresa</th>
+            <th>Reconocimientos <br>contratados</th>
+            <th>Reconocimientos <br>restantes</th>
+            <th>Fecha inicio</th>
+            <th>Fecha fin</th>
+            <th>Acciones</th>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                    <button id="edit-button">Editar</button>
+                    <button id="delete-button">Eliminar</button>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                    <button id="edit-button">Editar</button>
+                    <button id="delete-button">Eliminar</button>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                    <button id="edit-button">Editar</button>
+                    <button id="delete-button">Eliminar</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

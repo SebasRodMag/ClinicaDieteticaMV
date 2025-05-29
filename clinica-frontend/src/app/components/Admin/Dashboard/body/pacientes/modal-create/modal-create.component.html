@@ -1,0 +1,47 @@
+<div class="modal-backdrop" *ngIf="isVisible">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>REGISTRAR EMPLEADO</h2>
+            <i class="bi bi-x-circle close-button" (click)="close()"></i>
+        </div>
+        <div> 
+            <form action="">
+                <div id="contenedor-principal">
+                    <div id="columnas">
+                        <div id="primer-contenedor">
+                            <div>
+                                <label for="nombre">Nombre:</label>
+                                <input type="text" name="nombre" id="nombre" />
+                            </div>
+                            <div>
+                                <label for="apellidos">Apellidos:</label>
+                                <input type="text" name="apellidos" id="apellidos" />
+                            </div>
+                            <div>
+                                <label for="dni">DNI:</label>
+                                <input type="text" name="dni" id="dni" />
+                            </div>
+                            <div>
+                                <label for="f_nacimiento">Fecha de nacimiento:</label>
+                                <input type="date" name="f_nacimiento" id="f_nacimiento"/>
+                            </div>
+                        </div>
+                        <div id="segundo-contenedor">
+                            <div>
+                                <label for="email">Email:</label>
+                                <input type="text" name="email" id="email" />
+                            </div>
+                            <div>
+                                <label for="password">Contraseña:</label>
+                                <input type="password" name="password" id="password"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="boton-registrar">
+                        <button type="submit" id="registrar">Registrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

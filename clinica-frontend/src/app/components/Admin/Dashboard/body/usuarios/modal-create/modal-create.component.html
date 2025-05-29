@@ -1,0 +1,62 @@
+<div class="modal-backdrop" *ngIf="isVisible">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>REGISTRAR CLIENTE</h2>
+            <i class="bi bi-x-circle close-button" (click)="close()"></i>
+        </div>
+        <div>
+            <form action="">
+                <div id="contenedor-principal">
+                    <div id="columnas">
+                        <div id="primer-contenedor">
+                            <div>
+                                <label for="email">Email:</label>
+                                <input type="text" name="email" id="email" />
+                            </div>
+                            <div class="input-container">
+                                <label for="password">Contraseña:</label>
+                                <div class="password-wrapper">
+                                    <input
+                                        [type]="
+                                            mostrarPassword
+                                                ? 'text'
+                                                : 'password'
+                                        "
+                                        name="password"
+                                        id="password"
+                                    />
+                                    <i
+                                        class="bi"
+                                        [ngClass]="
+                                            mostrarPassword
+                                                ? 'bi-eye-fill'
+                                                : 'bi-eye-slash-fill'
+                                        "
+                                        (click)="
+                                            mostrarPassword = !mostrarPassword
+                                        "
+                                    ></i>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="rol">Rol:</label>
+                                <select name="rol" id="rol">
+                                    <option value="admin">Administrador</option>
+                                    <option value="medico">Médico</option>
+                                    <option value="cliente" selected>
+                                        Cliente
+                                    </option>
+                                    <option value="paciente">Paciente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="boton-registrar">
+                        <button type="submit" id="registrar">Registrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

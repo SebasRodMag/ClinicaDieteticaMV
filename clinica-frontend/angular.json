@@ -3,7 +3,11 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
+<<<<<<< HEAD
     "clinica-frontend": {
+=======
+    "Frontend": {
+>>>>>>> 421cfda064b38e409ce148c920dde9c6b4da21f5
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +17,11 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
+<<<<<<< HEAD
             "outputPath": "dist/clinica-frontend",
+=======
+            "outputPath": "dist/frontend",
+>>>>>>> 421cfda064b38e409ce148c920dde9c6b4da21f5
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -21,6 +29,7 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
+<<<<<<< HEAD
               "src/favicon.ico",
               "src/assets",
               {
@@ -34,6 +43,23 @@
               "src/styles.css"
             ],
             "scripts": []
+=======
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "node_modules/@ng-select/ng-select/themes/default.theme.css",
+              "src/styles.css"
+            ],
+            "scripts": [
+              "node_modules/jquery/dist/jquery.min.js",
+              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
+              "node_modules/bootstrap-select/dist/js/bootstrap-select.min.js"
+              
+            ]
+>>>>>>> 421cfda064b38e409ce148c920dde9c6b4da21f5
           },
           "configurations": {
             "production": {
@@ -63,10 +89,17 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
+<<<<<<< HEAD
               "buildTarget": "clinica-frontend:build:production"
             },
             "development": {
               "buildTarget": "clinica-frontend:build:development"
+=======
+              "buildTarget": "Frontend:build:production"
+            },
+            "development": {
+              "buildTarget": "Frontend:build:development"
+>>>>>>> 421cfda064b38e409ce148c920dde9c6b4da21f5
             }
           },
           "defaultConfiguration": "development"
@@ -96,5 +129,11 @@
         }
       }
     }
+<<<<<<< HEAD
+=======
+  },
+  "cli": {
+    "analytics": false
+>>>>>>> 421cfda064b38e409ce148c920dde9c6b4da21f5
   }
 }

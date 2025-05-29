@@ -1,0 +1,84 @@
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 600px;
+    position: relative;
+}
+
+.modal-header {
+    width: 65%;
+    display: flex;
+    justify-content: space-between;
+}
+
+
+#contenedor-principal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+#columnas {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+#segundo-contenedor {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#primer-contenedor,
+#segundo-contenedor {
+    flex: 1;
+}
+
+#primer-contenedor div,
+#segundo-contenedor div {
+    display: flex;
+    flex-direction: column;
+    margin: 5px 0;
+}
+
+
+
+#boton-registrar {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+input, select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid black;
+}
+
+i{
+    font-size: 25px;
+}
+

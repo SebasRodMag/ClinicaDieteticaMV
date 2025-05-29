@@ -1,0 +1,62 @@
+<div class="container-citas">
+    <div class="header-citas">
+        <div>
+            <button (click)="modal.open()">Crear cita</button>
+        </div>
+        <app-modal-create #modal></app-modal-create>
+        <div id="contenedor-busqueda">
+            <input type="text" placeholder="Búsqueda..." />
+            <i class="bi bi-search" id="icono-search"></i>
+        </div>
+    </div>
+    <div id="contenedor-filtros">
+        <label for="fecha-desde">Fecha desde:</label>
+        <input type="text" id="fecha-desde" placeholder="" />
+        <label for="fecha-hasta">Fecha hasta:</label>
+        <input type="text" id="fecha-hasta" placeholder="" />
+    </div>
+    <table id="tabla-citas">
+        <thead>
+            <th>Id</th>
+            <th>Nº Contrato</th>
+            <th>Nombre empresa</th>
+            <th>Paciente</th>
+            <th>DNI</th>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Acciones</th>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

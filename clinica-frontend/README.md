@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 # ClinicaFrontend
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.1.6.
+=======
+# Frontend
+
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.5.
+>>>>>>> 421cfda064b38e409ce148c920dde9c6b4da21f5
 
 ## Development server
 

@@ -1,0 +1,74 @@
+.container-medicos{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px;
+    height: auto;
+    width: auto;
+    background-color: #D9D9D9;
+    border-radius: 15px;
+    margin: 20px;
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.2);
+}
+.header-medicos{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+#contenedor-busqueda{
+    position: relative;
+}
+.header-medicos button{
+    background-color: #009975;
+    color: white;
+    border-radius: 10px;
+    border: 0;
+    width: 200px;
+    height: 40px;
+}
+
+#contenedor-busqueda input{
+    padding: 15px;
+    border: 0;
+    border-radius: 28px;
+    padding-left: 30px;
+}
+
+#icono-search{
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+}
+
+#tabla-medicos{
+    margin-top: 10px;
+    width: 100%;
+}
+
+#tabla-medicos th{
+    background-color: #376AA8;
+    color: white;
+}
+
+#tabla-medicos th,td{
+    font-size: 12px;
+    text-align: center;
+    padding: 10px;
+}
+
+#tabla-medicos tr:nth-child(odd){
+    background-color: #fff;
+}
+#tabla-medicos tr:nth-child(even){
+    background-color: #376AA8;
+    opacity: 0.25;
+}
+
+#tabla-medicos th:last-child,td:last-child{
+    border-right: 0;
+}
