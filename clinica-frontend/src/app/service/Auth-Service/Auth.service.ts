@@ -6,7 +6,7 @@
  * @author 
  * Sebastián Rodríguez
  * @version 
- * 1.0
+ * 1.1
  * @date 
  * 2025-05-30
  */
@@ -22,7 +22,6 @@ export interface User {
     apellidos: string;
     email: string;
     rol: string;
-    // Puedes agregar más campos si el backend los devuelve (dni, dirección, etc.)
 }
 
 export interface LoginResponse {
@@ -38,7 +37,7 @@ export class AuthService {
     private tokenKey = 'auth_token';
     private userKey = 'user';
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient) { }
 
     // ========================
     // Login
@@ -50,15 +49,18 @@ export class AuthService {
             .pipe(
                 tap((response: LoginResponse) => {
                     if (response?.access_token && response?.user) {
-                        localStorage.setItem(this.tokenKey, response.access_token);
-                        localStorage.setItem(this.userKey, JSON.stringify(response.user));
+                        this.setItem(this.tokenKey, response.access_token);
+                        this.setItem(this.userKey, response.user);
+                        console.log('Login exitoso:', response.user);
+                    } else {
+                        console.error('Error en la respuesta del login:', response);
                     }
                 })
             );
     }
 
     // ========================
-    // Registro de nuevos usuarios
+    // Registro
     // ========================
     register(credentials: { nombre: string; apellidos: string; email: string; password: string; password_confirmation: string }): Observable<LoginResponse> {
         const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
@@ -67,8 +69,8 @@ export class AuthService {
             .pipe(
                 tap((response: LoginResponse) => {
                     if (response?.access_token && response?.user) {
-                        localStorage.setItem(this.tokenKey, response.access_token);
-                        localStorage.setItem(this.userKey, JSON.stringify(response.user));
+                        this.setItem(this.tokenKey, response.access_token);
+                        this.setItem(this.userKey, response.user);
                     }
                 })
             );
@@ -78,30 +80,29 @@ export class AuthService {
     // Logout
     // ========================
     logout(): void {
-        localStorage.removeItem(this.tokenKey);
-        localStorage.removeItem(this.userKey);
+        sessionStorage.removeItem(this.tokenKey);
+        sessionStorage.removeItem(this.userKey);
     }
 
     // ========================
     // Estado de autenticación
     // ========================
     isLoggedIn(): boolean {
-        return !!localStorage.getItem(this.tokenKey);
+        return !!this.getToken();
     }
 
     // ========================
     // Obtener token JWT
     // ========================
     getToken(): string | null {
-        return localStorage.getItem(this.tokenKey);
+        return this.getItem<string>(this.tokenKey);
     }
 
     // ========================
     // Obtener objeto usuario
     // ========================
     getUser(): User | null {
-        const user = localStorage.getItem(this.userKey);
-        return user ? JSON.parse(user) : null;
+        return this.getItem<User>(this.userKey);
     }
 
     // ========================
@@ -109,5 +110,28 @@ export class AuthService {
     // ========================
     getUserRole(): string | null {
         return this.getUser()?.rol || null;
+    }
+
+    // ========================
+    // Headers autorizados para llamadas protegidas
+    // ========================
+    getAuthHeaders(): HttpHeaders {
+        const token = this.getToken();
+        return new HttpHeaders({
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        });
+    }
+
+    // ========================
+    // Helpers: Storage
+    // ========================
+    private setItem(key: string, value: any): void {
+        sessionStorage.setItem(key, JSON.stringify(value));
+    }
+
+    private getItem<T>(key: string): T | null {
+        const raw = sessionStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
     }
 }

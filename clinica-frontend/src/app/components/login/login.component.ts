@@ -34,6 +34,10 @@ export class LoginComponent {
 
     const { email, password } = this.loginForm.value;
 
+    // ========================
+    // Re direccionamiento después del login
+    // ========================
+
     this.authService.login({ email, password }).subscribe({
       next: (response) => {
         // Guarda el usuario y token ya lo hace el AuthService con tap()
