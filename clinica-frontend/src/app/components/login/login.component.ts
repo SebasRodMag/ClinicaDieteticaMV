@@ -30,32 +30,31 @@ export class LoginComponent {
     if (this.loginForm.invalid) return;
 
     this.loading = true;
+    this.errorMessage = '';
 
     const { email, password } = this.loginForm.value;
 
     this.authService.login({ email, password }).subscribe({
-      next: () => {
-        const role = this.authService.getUserRole();
+      next: (response) => {
+        // Guarda el usuario y token ya lo hace el AuthService con tap()
 
         this.loading = false;
-        switch (role?.toLowerCase()) {
+        const role = response.user?.rol?.toLowerCase() || null;
+
+        switch (role) {
           case 'administrador':
-            console.log('Usuario autenticado como administrador');
-            this.router.navigate(['/admin']);
+            this.router.navigate(['/administrador']);
             break;
           case 'especialista':
-            console.log('Usuario autenticado como especialista');
             this.router.navigate(['/especialista']);
             break;
           case 'paciente':
-            console.log('Usuario autenticado como paciente');
             this.router.navigate(['/paciente']);
             break;
           default:
-            console.log('Usuario no autenticado. recibido:'+role);
-            console.log('User stored in localStorage:', localStorage.getItem('user'));
             this.errorMessage = 'Rol no reconocido o no asignado';
             this.router.navigate(['/login']);
+            break;
         }
       },
       error: (err) => {

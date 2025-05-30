@@ -1,0 +1,28 @@
+<div *ngIf="cargando">Cargando usuarios...</div>
+<div *ngIf="error" class="error">{{ error }}</div>
+
+<table *ngIf="!cargando && !error" class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>DNI</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let usuario of usuarios">
+            <td>{{ usuario.nombre }}</td>
+            <td>{{ usuario.dni }}</td>
+            <td>{{ usuario.telefono }}</td>
+            <td>{{ usuario.email }}</td>
+            <td>{{ usuario.rol }}</td>
+            <td>
+                <button (click)="editarUsuario(usuario.id)" class="btn btn-sm btn-primary">Editar</button>
+                <button (click)="eliminarUsuario(usuario.id)" class="btn btn-sm btn-danger">Eliminar</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
