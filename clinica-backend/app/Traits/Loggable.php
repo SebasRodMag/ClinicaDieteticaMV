@@ -30,4 +30,18 @@ trait Loggable
             'registro_id' => $registroId,
         ]);
     }
+
+
+    /**
+     * Registrar un error en el log de Laravel con información del usuario.
+     *
+     * @param int|null $userId
+     * @param string $mensaje
+     * @param mixed|null $contexto
+     * @return void
+     */
+    public function logError(?int $userId, string $mensaje, $contexto = null): void
+    {
+        \Log::error("[$userId] $mensaje", ['contexto' => $contexto]);
+    }
 }

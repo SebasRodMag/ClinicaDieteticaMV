@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { Paciente } from '../../models/paciente.model';
 
 export interface Usuario {
     id: number;
@@ -39,7 +40,11 @@ export class UserService {
         return this.http.delete(`${this.apiUrl}/usuarios/${id}`);
     }
 
-    getFullPacientes(): Observable<Usuario[]> {
-        return this.http.get<Usuario[]>(`${this.apiUrl}/pacientes`);
+    pacientesConEspecialista(): Observable<Paciente[]> {
+        return this.http.get<Paciente[]>(`${this.apiUrl}/pacienteslistado`);
+    }
+
+    actualizarPaciente(paciente: Paciente) {
+        return this.http.put<Paciente>(`/api/pacientes/${paciente.id}`, paciente);
     }
 }

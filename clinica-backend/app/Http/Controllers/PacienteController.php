@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Log;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 
 class PacienteController extends Controller
@@ -232,10 +233,10 @@ class PacienteController extends Controller
      * @throws \Throwable si ocurre un error al obtener los pacientes.
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con la información de los pacientes.
      */
-        //Para devolver una lista completa de pacientes con sus datos asociados, incluyendo la última cita.
-        // originalmente se empleaba una consulta compleja, por medio de un left join, pero aquí se simplifica utilizando Eloquent,
-        // utilizando la relación definida en el modelo Paciente para obtener la última cita.
-        public function getFullPacientes(): JsonResponse
+    //Para devolver una lista completa de pacientes con sus datos asociados, incluyendo la última cita.
+    // originalmente se empleaba una consulta compleja, por medio de un left join, pero aquí se simplifica utilizando Eloquent,
+    // utilizando la relación definida en el modelo Paciente para obtener la última cita.
+    public function getFullPacientes(): JsonResponse
         {
             $respuesta = [];
             $codigo = 200;
@@ -244,19 +245,32 @@ class PacienteController extends Controller
                 $pacientes = Paciente::with(['usuario', 'ultimaCita'])->get();
 
                 $resultado = $pacientes->map(function ($paciente) {
-                    return [
-                        'id' => $paciente->usuario->id,
-                        'nombre' => $paciente->usuario->nombre,
-                        'apellidos' => $paciente->usuario->apellidos,
-                        'telefono' => $paciente->usuario->telefono,
-                        'email' => $paciente->usuario->email,
-                        'numero_historial' => $paciente->numero_historial,
-                        'fecha_alta' => $paciente->fecha_alta,
-                        'fecha_baja' => $paciente->fecha_baja,
-                        'estado' => optional($paciente->ultimaCita)->estado,
-                        'especialista_asociado' => optional($paciente->ultimaCita)->id_especialista,
-                    ];
-                });
+                $especialista = optional($paciente->ultimaCita->especialista);
+                $usuarioEspecialista = optional($especialista->usuario);
+
+                return [
+                    'id' => $paciente->usuario->id,
+                    'nombre' => $paciente->usuario->nombre,
+                    'apellidos' => $paciente->usuario->apellidos,
+                    'telefono' => $paciente->usuario->telefono,
+                    'email' => $paciente->usuario->email,
+                    'numero_historial' => $paciente->numero_historial,
+                    'fecha_alta' => $paciente->fecha_alta,
+                    'fecha_baja' => $paciente->fecha_baja,
+                    'estado' => optional($paciente->ultimaCita)->estado,
+                    'especialista_asociado' => $especialista ? $especialista->id : null,
+                    'especialista' => $especialista ? [
+                        'id_especialista' => $especialista->id,
+                        'usuario' => [
+                            'id_usuario' => $usuarioEspecialista->id,
+                            'nombre' => $usuarioEspecialista->nombre,
+                            'apellidos' => $usuarioEspecialista->apellidos,
+                            'email' => $usuarioEspecialista->email,
+                            'telefono' => $usuarioEspecialista->telefono,
+                        ],
+                    ] : null,
+                ];
+            });
 
                 if ($resultado->isEmpty()) {
                     $this->registrarLog(auth()->id(), 'Pacientes_no_encontrados', 'paciente', null);
@@ -275,6 +289,104 @@ class PacienteController extends Controller
 
             return response()->json($respuesta, $codigo);
         }
+
+        public function pacientesConEspecialista()
+    {
+        // Cargar pacientes con su usuario y preparar el resultado
+        $pacientes = Paciente::with('user')->get()->map(function ($paciente) {
+            // Obtener la última cita con el especialista y su usuario
+            $ultimaCita = $paciente->citas()
+                ->with('especialista.user')
+                ->orderBy('fecha_hora_cita', 'desc')
+                ->first();
+
+            // Crear un objeto de paciente con estructura anidada
+            return [
+                'id' => $paciente->id,
+                'user_id' => $paciente->user_id,
+                'numero_historial' => $paciente->numero_historial,
+                'fecha_alta' => $paciente->fecha_alta,
+                'fecha_baja' => $paciente->fecha_baja,
+                'created_at' => $paciente->created_at,
+                'updated_at' => $paciente->updated_at,
+                'deleted_at' => $paciente->deleted_at,
+                'ultima_cita' => $ultimaCita ? [
+                    'id_cita' => $ultimaCita->id_cita,
+                    'id_paciente' => $ultimaCita->id_paciente,
+                    'id_especialista' => $ultimaCita->id_especialista,
+                    'fecha_hora_cita' => $ultimaCita->fecha_hora_cita,
+                    'tipo_cita' => $ultimaCita->tipo_cita,
+                    'estado' => $ultimaCita->estado,
+                    'es_primera' => $ultimaCita->es_primera,
+                    'comentario' => $ultimaCita->comentario,
+                    'created_at' => $ultimaCita->created_at,
+                    'updated_at' => $ultimaCita->updated_at,
+                    'deleted_at' => $ultimaCita->deleted_at,
+                    'especialista' => $ultimaCita->especialista ? [
+                        'id' => $ultimaCita->especialista->id,
+                        'user_id' => $ultimaCita->especialista->user_id,
+                        'especialidad' => $ultimaCita->especialista->especialidad,
+                        'created_at' => $ultimaCita->especialista->created_at,
+                        'updated_at' => $ultimaCita->especialista->updated_at,
+                        'deleted_at' => $ultimaCita->especialista->deleted_at,
+                        'usuario' => $ultimaCita->especialista->user ? [
+                            'id' => $ultimaCita->especialista->user->id,
+                            'nombre' => $ultimaCita->especialista->user->nombre,
+                            'apellidos' => $ultimaCita->especialista->user->apellidos,
+                            'dni_usuario' => $ultimaCita->especialista->user->dni_usuario,
+                            'email' => $ultimaCita->especialista->user->email,
+                            'email_verified_at' => $ultimaCita->especialista->user->email_verified_at,
+                            'direccion' => $ultimaCita->especialista->user->direccion,
+                            'fecha_nacimiento' => $ultimaCita->especialista->user->fecha_nacimiento,
+                            'telefono' => $ultimaCita->especialista->user->telefono,
+                            'created_at' => $ultimaCita->especialista->user->created_at,
+                            'updated_at' => $ultimaCita->especialista->user->updated_at,
+                            'deleted_at' => $ultimaCita->especialista->user->deleted_at,
+                        ] : null,
+                    ] : null,
+                ] : null,
+                'especialista' => $ultimaCita && $ultimaCita->especialista ? [
+                    'id' => $ultimaCita->especialista->id,
+                    'user_id' => $ultimaCita->especialista->user_id,
+                    'especialidad' => $ultimaCita->especialista->especialidad,
+                    'created_at' => $ultimaCita->especialista->created_at,
+                    'updated_at' => $ultimaCita->especialista->updated_at,
+                    'deleted_at' => $ultimaCita->especialista->deleted_at,
+                    'usuario' => $ultimaCita->especialista->user ? [
+                        'id' => $ultimaCita->especialista->user->id,
+                        'nombre' => $ultimaCita->especialista->user->nombre,
+                        'apellidos' => $ultimaCita->especialista->user->apellidos,
+                        'dni_usuario' => $ultimaCita->especialista->user->dni_usuario,
+                        'email' => $ultimaCita->especialista->user->email,
+                        'email_verified_at' => $ultimaCita->especialista->user->email_verified_at,
+                        'direccion' => $ultimaCita->especialista->user->direccion,
+                        'fecha_nacimiento' => $ultimaCita->especialista->user->fecha_nacimiento,
+                        'telefono' => $ultimaCita->especialista->user->telefono,
+                        'created_at' => $ultimaCita->especialista->user->created_at,
+                        'updated_at' => $ultimaCita->especialista->user->updated_at,
+                        'deleted_at' => $ultimaCita->especialista->user->deleted_at,
+                    ] : null,
+                ] : null,
+                'usuario' => $paciente->user ? [
+                    'id' => $paciente->user->id,
+                    'nombre' => $paciente->user->nombre,
+                    'apellidos' => $paciente->user->apellidos,
+                    'dni_usuario' => $paciente->user->dni_usuario,
+                    'email' => $paciente->user->email,
+                    'email_verified_at' => $paciente->user->email_verified_at,
+                    'direccion' => $paciente->user->direccion,
+                    'fecha_nacimiento' => $paciente->user->fecha_nacimiento,
+                    'telefono' => $paciente->user->telefono,
+                    'created_at' => $paciente->user->created_at,
+                    'updated_at' => $paciente->user->updated_at,
+                    'deleted_at' => $paciente->user->deleted_at,
+                ] : null,
+            ];
+        });
+
+        return response()->json($pacientes);
+    }
+
 
 
 }

@@ -1,31 +1,15 @@
-import { Usuario } from './usuario.model';
 import { Especialista } from './especialista.model';
+import { Cita } from './cita.model';
 
 export interface Paciente {
-    id_paciente: number;
+    id: number;
+    user_id: number;
+    numero_historial: string;
     fecha_alta: string;
     fecha_baja: string | null;
-    estado: 'activo' | 'inactivo';
-    id_especialista: number;
-    usuario: {
-        id_usuario: number;
-        nombre: string;
-        apellidos: string;
-        telefono: string;
-        email: string;
-        rol?: string;
-        dni_usuario?: string;
-        fecha_nacimiento?: string;
-        fecha_creacion?: string;
-        fecha_modificacion?: string;
-        fecha_actualizacion?: string;
-    };
-    especialista?: {
-        id_especialista: number;
-        usuario: {
-            id_usuario: number;
-            nombre: string;
-            apellidos: string;
-        }
-    };
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+    ultima_cita: Cita | null;
+    especialista: Especialista | null;
 }

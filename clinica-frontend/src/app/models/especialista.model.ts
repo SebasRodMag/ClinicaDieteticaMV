@@ -1,9 +1,11 @@
 import { Usuario } from './usuario.model';
 
 export interface Especialista {
-    id_especialista: number;
-    id_usuario: number;
+    id: number;
+    user_id: number;
     especialidad: string;
-    usuario?: Usuario;
-    
-}
+    updated_at: string;
+    created_at: string;
+    deleted_at: string | null;
+    usuario: Usuario;
+} 

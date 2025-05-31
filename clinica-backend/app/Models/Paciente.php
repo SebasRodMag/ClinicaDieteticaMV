@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Cita;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +20,8 @@ class Paciente extends Model
 
     protected $hidden = ['user'];
 
+    protected $table = 'pacientes';
+
     protected $fillable = [
         'user_id',
         'numero_historial',
@@ -34,6 +37,11 @@ class Paciente extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
+    /* public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    } */
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -47,6 +55,30 @@ class Paciente extends Model
      */
     public function citas()
     {
-        return $this->hasMany(Cita::class, 'user_id');
+        return $this->hasMany(Cita::class, 'id_paciente');
+    }
+
+    public function ultimaCita()
+    {
+        return $this->hasOne(Cita::class, 'id_paciente', 'id')
+                    ->latestOfMany('fecha_hora_cita');
+    }
+
+    public function especialistas() {
+        // Relación indirecta a especialistas a través de citas
+        return $this->hasManyThrough(
+            Especialista::class,
+            Cita::class,
+            'id_paciente',
+            'user_id',
+            'user_id',
+            'id_especialista'
+        );
+    }
+
+    public function listarPacientes()
+    {
+        $pacientes = Paciente::with(['usuario', 'especialista.usuario'])->get();
+        return response()->json($pacientes);
     }
 }

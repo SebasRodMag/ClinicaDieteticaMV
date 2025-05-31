@@ -1,35 +1,99 @@
-<div class="register-container">
-    <h2>Registro</h2>
-    <form (ngSubmit)="onSubmit()">
-        <label>
-            Nombre:
-            <input type="text" [(ngModel)]="form.nombre" name="nombre" required />
-        </label>
+<div class="container mt-5" style="max-width: 400px;">
+    <h2 class="mb-4 text-center">Registro</h2>
 
-        <label>
-            Apellidos:
-            <input type="text" [(ngModel)]="form.apellidos" name="apellidos" required />
-        </label>
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+        <div class="mb-3">
+            <!--Introducir el nombre-->
+            <label for="nombre" class="form-label">Nombre</label>
+            <input id="nombre" type="text" formControlName="nombre" class="form-control"
+                [class.is-invalid]="formulario['nombre'].invalid && formulario['nombre'].touched"
+                placeholder="Tu nombre" />
+            <div *ngIf="formulario['nombre'].invalid && formulario['nombre'].touched" class="invalid-feedback">
+                <div *ngIf="formulario['nombre'].errors?.['required']">El nombre es obligatorio.</div>
+                <div *ngIf="formulario['nombre'].errors?.['minlength']">Mínimo 2 caracteres.</div>
+            </div>
+        </div>
 
-        <label>
-            Email:
-            <input type="email" [(ngModel)]="form.email" name="email" required />
-        </label>
+        <div class="mb-3">
+            <!--Introducir el apellido-->
+            <label for="apellidos" class="form-label">Apellidos</label>
+            <input id="apellidos" type="text" formControlName="apellidos" class="form-control"
+                [class.is-invalid]="formulario['apellidos'].invalid && formulario['apellidos'].touched"
+                placeholder="Tus apellidos" />
+            <div *ngIf="formulario['apellidos'].invalid && formulario['apellidos'].touched" class="invalid-feedback">
+                <div *ngIf="formulario['apellidos'].errors?.['required']">Los apellidos son obligatorios.</div>
+                <div *ngIf="formulario['apellidos'].errors?.['minlength']">Mínimo 2 caracteres.</div>
+            </div>
+        </div>
 
-        <label>
-            Contraseña:
-            <input type="password" [(ngModel)]="form.password" name="password" required />
-        </label>
+        <div class="mb-3">
+            <!--Introducir el email-->
+            <label for="email" class="form-label">Correo electrónico</label>
+            <input id="email" type="email" formControlName="email" class="form-control"
+                [class.is-invalid]="formulario['email'].invalid && formulario['email'].touched"
+                placeholder="usuario@ejemplo.com" />
+            <div *ngIf="formulario['email'].invalid && formulario['email'].touched" class="invalid-feedback">
+                <div *ngIf="formulario['email'].errors?.['required']">El correo es obligatorio.</div>
+                <div *ngIf="formulario['email'].errors?.['email']">Debe ser un correo válido.</div>
+            </div>
+        </div>
 
-        <label>
-            Confirmar contraseña:
-            <input type="password" [(ngModel)]="form.password_confirmation" name="password_confirmation" required />
-        </label>
+        <div class="mb-3">
+            <!--Introducir el dni-->
+            <label for="dni_usuario" class="form-label">DNI</label>
+            <input id="dni_usuario" type="text" formControlName="dni_usuario" class="form-control"
+                [class.is-invalid]="formulario['dni_usuario'].invalid && formulario['dni_usuario'].touched"
+                placeholder="Tu DNI" />
+            <div *ngIf="formulario['dni_usuario'].invalid && formulario['dni_usuario'].touched"
+                class="invalid-feedback">
+                <div *ngIf="formulario['dni_usuario'].errors?.['required']">El dni es obligatorio.</div>
+                <div *ngIf="formulario['dni_usuario'].errors?.['minlength']">Mínimo 8 caracteres.</div>
+            </div>
+        </div>
 
-        <button type="submit">Registrarse</button>
+        <div class="mb-3">
+            <!--Introducir el password-->
+            <label for="password" class="form-label">Contraseña</label>
+            <input id="password" type="password" formControlName="password" class="form-control"
+                [class.is-invalid]="formulario['password'].invalid && formulario['password'].touched"
+                placeholder="******" />
+            <div *ngIf="formulario['password'].invalid && formulario['password'].touched" class="invalid-feedback">
+                <div *ngIf="formulario['password'].errors?.['required']">La contraseña es obligatoria.</div>
+                <div *ngIf="formulario['password'].errors?.['minlength']">Mínimo 6 caracteres.</div>
+            </div>
+        </div>
 
-        <div *ngIf="errorMessage" class="error">
-            {{ errorMessage }}
+        <div class="mb-3">
+            <!--Confirmar password-->
+            <label for="password_confirmation" class="form-label">Confirmar contraseña</label>
+            <input id="password_confirmation" type="password" formControlName="password_confirmation"
+                class="form-control"
+                [class.is-invalid]="formulario['password_confirmation'].touched && (formulario['password_confirmation'].invalid || registerForm.errors?.['notMatching'])"
+                placeholder="******" />
+            <div *ngIf="formulario['password_confirmation'].touched && (formulario['password_confirmation'].invalid || registerForm.errors?.['notMatching'])"
+                class="invalid-feedback">
+                <div *ngIf="formulario['password_confirmation'].errors?.['required']">La confirmación es obligatoria.
+                </div>
+                <div *ngIf="registerForm.errors?.['notMatching']">Las contraseñas no coinciden.</div>
+            </div>
+        </div>
+
+        <div *ngIf="errorMessages">
+            <div *ngFor="let msg of errorMessages | keyvalue">
+                <div *ngFor="let m of msg.value">
+                    {{ msg.key }}: {{ m }}
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" [disabled]="registerForm.invalid || loading">
+            Registrarse
+        </button>
+
+        <div *ngIf="loading" class="d-flex justify-content-center mt-3">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
         </div>
     </form>
 </div>

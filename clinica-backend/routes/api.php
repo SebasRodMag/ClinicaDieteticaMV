@@ -11,7 +11,7 @@ use App\Http\Controllers\HistorialController;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
 // Rutas públicas (sin autenticación)
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'registrar']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Rutas protegidas - usuarios autenticados
@@ -26,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('usuarios', [UserController::class, 'listarTodos']);
         Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistas']);
         Route::get('pacientes', [PacienteController::class, 'listarPacientes']);
+        Route::get('pacienteslistado', [PacienteController::class, 'pacientesConEspecialista']);
         Route::get('usuarios/{id}', [UserController::class, 'verUsuario']);
         Route::post('usuarios', [UserController::class, 'crearUsuario']);
         Route::put('usuarios/{id}', [UserController::class, 'actualizarUsuario']);
@@ -38,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('pacientes', [PacienteController::class, 'crearPaciente']);
         Route::put('pacientes/{id}', [PacienteController::class, 'actualizarPaciente']);
         Route::delete('pacientes/{id}', [PacienteController::class, 'eliminarPaciente']);
+        Route::get('pacientestodos', [PacienteController::class, 'getFullPacientes']);
         Route::get('citas', [CitaController::class, 'listarCitas']);
         Route::get('citas/{id}', [CitaController::class, 'verCita']);
         Route::post('citas', [CitaController::class, 'crearCita']);

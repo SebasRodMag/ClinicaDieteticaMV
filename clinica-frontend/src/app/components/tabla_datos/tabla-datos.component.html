@@ -1,0 +1,38 @@
+<div class="overflow-x-auto w-full">
+    <table class="min-w-full table-auto border-collapse border border-gray-300">
+        <thead>
+            <tr class="bg-gray-100">
+                <th *ngFor="let col of columnas" (click)="cambiarOrden(col)"
+                    class="cursor-pointer px-4 py-2 border border-gray-300 text-left">
+                    {{ col | titlecase }}
+                    <span class="ml-1 text-sm">{{ getIconoOrden(col) }}</span>
+                </th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr *ngFor="let item of datosPaginados" class="hover:bg-gray-50">
+                <td *ngFor="let col of columnas" class="px-4 py-2 border border-gray-300">
+                    <ng-container *ngIf="templatesMap[col]; else textoPlano">
+                        <ng-container
+                            *ngTemplateOutlet="templatesMap[col]; context: { $implicit: item }"></ng-container>
+                    </ng-container>
+
+                    <ng-template #textoPlano>
+                        {{ item[col] }}
+                    </ng-template>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div class="mt-4 flex justify-center gap-2">
+        <button *ngFor="let num of paginas" class="px-3 py-1 rounded border text-sm" [ngClass]="{
+        'bg-blue-500 text-white border-blue-500': num === paginaActual,
+        'bg-white text-gray-800 border-gray-300': num !== paginaActual
+        }">
+            {{ num }}
+        </button>
+    </div>
+</div>
