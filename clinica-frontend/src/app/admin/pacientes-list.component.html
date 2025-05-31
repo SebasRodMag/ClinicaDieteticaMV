@@ -1,19 +1,64 @@
-<div class="lista-datos">
-    <h2>Lista de pacientes</h2>
+<div class="mb-3">
+    <input type="text" [(ngModel)]="filtro" placeholder="Buscar pacientes o especialistas" class="form-control" />
+</div>
 
-    <div class="lista-datos__controles">
-        <input type="text" [(ngModel)]="filtro" placeholder="Buscar por nombre, apellidos o historial"
-            class="lista-datos__busqueda" />
-    </div>
 
-    <app-tabla-datos [datos]="pacientesFiltradosPaginados" [columnas]="columnas" [paginaActual]="paginaActual"
-        [filasPorPagina]="itemsPorPagina" [orden]="columnaOrden" [ascendente]="direccionOrdenAsc"
-        (ordenar)="ordenarPor($event)">
-    </app-tabla-datos>
+<app-tabla-datos [datosTotales]="pacientesFiltrados" [columnas]="columnas" [templatesMap]="templatesMap"
+    [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"
+    [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
+    (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
 
-    <div class="lista-datos__paginacion" *ngIf="totalPaginas > 1">
-        <button *ngFor="let pagina of paginas" (click)="paginaActual = pagina" [disabled]="pagina === paginaActual">
-            {{ pagina }}
-        </button>
+<div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
     </div>
 </div>
+<!-- <div class="mt-3 d-flex justify-content-center">
+    <button class="btn btn-outline-primary mx-1" [disabled]="paginaActual === 1"
+        (click)="cambiarPagina(paginaActual - 1)">
+        Anterior
+    </button>
+
+    <button *ngFor="let pagina of [].constructor(totalPaginas); let i = index" class="btn"
+        [class.btn-primary]="paginaActual === i + 1" [class.btn-outline-primary]="paginaActual !== i + 1"
+        (click)="cambiarPagina(i + 1)">
+        {{ i + 1 }}
+    </button>
+
+    <button class="btn btn-outline-primary mx-1" [disabled]="paginaActual === totalPaginas"
+        (click)="cambiarPagina(paginaActual + 1)">
+        Siguiente
+    </button>
+</div> -->
+
+<!-- Templates para columnas especiales -->
+
+<ng-template #nombrePacienteTemplate let-paciente>
+    {{ paciente.usuario?.nombre }} {{ paciente.usuario?.apellidos }}
+</ng-template>
+
+<ng-template #estadoCitaTemplate let-paciente>
+    {{ paciente.ultima_cita?.estado ?? 'Sin cita' }}
+</ng-template>
+
+<ng-template #comentarioTemplate let-paciente>
+    {{ paciente.ultima_cita?.comentario ?? 'Sin comentario' }}
+</ng-template>
+
+<ng-template #nombreEspecialistaTemplate let-paciente>
+    {{ paciente.ultima_cita?.especialista?.usuario?.nombre }} {{ paciente.ultima_cita?.especialista?.usuario?.apellidos
+    }}
+</ng-template>
+
+<ng-template #especialidadTemplate let-paciente>
+    {{ paciente.ultima_cita?.especialista?.especialidad ?? 'Sin especialidad' }}
+</ng-template>
+<ng-template #especialistaTemplate let-paciente>
+    {{ paciente.especialista?.usuario?.nombre }} {{ paciente.especialista?.usuario?.apellidos }}
+</ng-template>
+
+<ng-template #accionesTemplate let-paciente>
+    <button class="btn btn-outline-danger btn-sm" (click)="cambiarRol(paciente)">
+        Dar de baja
+    </button>
+</ng-template>

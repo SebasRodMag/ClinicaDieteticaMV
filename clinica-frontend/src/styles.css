@@ -1,4 +1,44 @@
 .spinner {
     margin-top: 20px;
     font-weight: bold;
+    text-align: center;
 }
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+    font-weight: 600;
+}
+
+.pagination .page-link {
+    color: #0d6efd;
+    cursor: pointer;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+/*mensajes de notificación*/
+.snackbar-success {
+    background-color: #4caf50;
+    color: #fff;
+}
+
+.snackbar-error {
+    background-color: #f44336;
+    color: #fff;
+}
+

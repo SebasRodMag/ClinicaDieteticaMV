@@ -33,6 +33,9 @@
             Entrar
         </button>
     </form>
+    <button class="btn btn-link mt-3 w-100" (click)="volverLanding()" [disabled]="loading">
+        Volver a la página principal
+    </button>
     <div *ngIf="loading" class="d-flex justify-content-center mt-3">
         <div class="spinner-border" role="status">
             <span class="visually-hidden">Cargando...</span>

@@ -2,16 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Paciente } from '../../models/paciente.model';
+import { Usuario } from '../../models/usuario.model';
 
-export interface Usuario {
-    id: number;
-    nombre: string;
-    apellidos: string;
-    dni: string;
-    telefono: string;
-    email: string;
-    rol: string;
-}
 
 @Injectable({
     providedIn: 'root'
@@ -45,6 +37,14 @@ export class UserService {
     }
 
     actualizarPaciente(paciente: Paciente) {
-        return this.http.put<Paciente>(`/api/pacientes/${paciente.id}`, paciente);
+        return this.http.put<Paciente>(`${this.apiUrl}/pacientes/${paciente.id}`, paciente);
+    }
+
+    crearUsuario(usuario: Usuario): Observable<Usuario> {
+        return this.http.post<Usuario>(`${this.apiUrl}/usuarios`, usuario);
+    }
+
+    actualizarUsuario(usuario: Usuario): Observable<Usuario> {
+        return this.http.put<Usuario>(`${this.apiUrl}/usuarios/${usuario.id}`, usuario);
     }
 }

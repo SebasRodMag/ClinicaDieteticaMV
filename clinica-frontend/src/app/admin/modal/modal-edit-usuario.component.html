@@ -1,0 +1,94 @@
+<!-- Modal Bootstrap -->
+<div class="modal fade" tabindex="-1" [ngClass]="{ 'show d-block': visible }" [attr.aria-hidden]="!visible">
+    <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+            <form (ngSubmit)="onSubmit()">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ esNuevo ? 'Nuevo Usuario' : 'Editar Usuario' }}</h5>
+                    <button type="button" class="btn-close" aria-label="Close" (click)="cerrarModal()"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Columna 1 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">Nombre:</label>
+                                <input id="nombre" type="text" [(ngModel)]="usuarioForm.nombre" name="nombre"
+                                    class="form-control" />
+                                <div *ngIf="errores['nombre']" class="text-danger small">{{ errores['nombre'] }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="dni_usuario" class="form-label">DNI:</label>
+                                <input id="dni_usuario" type="text" [(ngModel)]="usuarioForm.dni_usuario" name="dni_usuario"
+                                    class="form-control" />
+                                <div *ngIf="errores['dni_usuario']" class="text-danger small">{{ errores['dni_usuario'] }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="direccion" class="form-label">Dirección:</label>
+                                <input id="direccion" type="text" [(ngModel)]="usuarioForm.direccion" name="direccion"
+                                    class="form-control" />
+                                <div *ngIf="errores['direccion']" class="text-danger small">{{ errores['direccion'] }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="telefono" class="form-label">Teléfono:</label>
+                                <input id="telefono" type="text" [(ngModel)]="usuarioForm.telefono" name="telefono"
+                                    class="form-control" />
+                                <div *ngIf="errores['telefono']" class="text-danger small">{{ errores['telefono'] }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Contraseña:</label>
+                                <input id="password" type="password" [(ngModel)]="usuarioForm.password" name="password"
+                                    class="form-control" placeholder="Dejar vacío para no cambiar" />
+                                <div *ngIf="errores['password']" class="text-danger small">{{ errores['password'] }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Columna 2 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="apellidos" class="form-label">Apellidos:</label>
+                                <input id="apellidos" type="text" [(ngModel)]="usuarioForm.apellidos" name="apellidos"
+                                    class="form-control" />
+                                <div *ngIf="errores['apellidos']" class="text-danger small">{{ errores['apellidos'] }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email:</label>
+                                <input id="email" type="email" [(ngModel)]="usuarioForm.email" name="email"
+                                    class="form-control" />
+                                <div *ngIf="errores['email']" class="text-danger small">{{ errores['email'] }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="fecha_nacimiento" class="form-label">Fecha de nacimiento:</label>
+                                <input id="fecha_nacimiento" type="date" [(ngModel)]="usuarioForm.fecha_nacimiento"
+                                    name="fecha_nacimiento" class="form-control" />
+                                <div *ngIf="errores['fecha_nacimiento']" class="text-danger small">{{ errores['fecha_nacimiento'] }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password_confirmation" class="form-label">Confirmar contraseña:</label>
+                                <input id="password_confirmation" type="password"
+                                    [(ngModel)]="usuarioForm.password_confirmation" name="password_confirmation"
+                                    class="form-control" placeholder="Dejar vacío para no cambiar" />
+                                <div *ngIf="errores['password_confirmation']" class="text-danger small">
+                                    {{ errores['password_confirmation'] }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

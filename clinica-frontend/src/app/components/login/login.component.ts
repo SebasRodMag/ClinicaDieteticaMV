@@ -67,4 +67,7 @@ export class LoginComponent {
       },
     });
   }
+  volverLanding() {
+    this.router.navigate(['/']);
+  }
 }

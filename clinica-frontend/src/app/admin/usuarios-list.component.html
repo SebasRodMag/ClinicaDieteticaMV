@@ -1,28 +1,30 @@
-<div *ngIf="cargando">Cargando usuarios...</div>
-<div *ngIf="error" class="error">{{ error }}</div>
+<div class="mb-3">
+    <input type="text" [(ngModel)]="filtro" (ngModelChange)="filtrarUsuarios()" placeholder="Buscar usuarios"
+        class="form-control" />
+</div>
 
-<table *ngIf="!cargando && !error" class="table table-striped">
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>DNI</th>
-            <th>Teléfono</th>
-            <th>Email</th>
-            <th>Rol</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let usuario of usuarios">
-            <td>{{ usuario.nombre }}</td>
-            <td>{{ usuario.dni }}</td>
-            <td>{{ usuario.telefono }}</td>
-            <td>{{ usuario.email }}</td>
-            <td>{{ usuario.rol }}</td>
-            <td>
-                <button (click)="editarUsuario(usuario.id)" class="btn btn-sm btn-primary">Editar</button>
-                <button (click)="eliminarUsuario(usuario.id)" class="btn btn-sm btn-danger">Eliminar</button>
-            </td>
-        </tr>
-    </tbody>
-</table>
+
+<app-tabla-datos [datosTotales]="usuariosFiltrados" [columnas]="columnas" [templatesMap]="templatesMap"
+    [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"
+    [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
+    (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
+
+<div *ngIf="loading" class="spinner">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<!-- Templates para columnas especiales -->
+<ng-template #nombreTemplate let-usuario>
+    {{ usuario.nombre }} {{ usuario.apellidos }}
+</ng-template>
+
+<ng-template #accionesTemplate let-usuario>
+    <button class="btn btn-outline-primary btn-sm me-1" (click)="editarUsuario(usuario)">Editar</button>
+    <button class="btn btn-outline-danger btn-sm" (click)="confirmarEliminarUsuario(usuario)">Eliminar</button>
+</ng-template>
+<button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo Usuario</button>
+<app-modal-edit-usuario [visible]="modalVisible" [usuario]="usuarioSeleccionado" [esNuevo]="esNuevoUsuario"
+    (cerrar)="cerrarModal()" (guardar)="guardarUsuario($event)">
+</app-modal-edit-usuario>

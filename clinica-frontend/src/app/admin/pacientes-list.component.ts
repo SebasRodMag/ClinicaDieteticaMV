@@ -7,7 +7,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Paciente } from '../models/paciente.model';
-import { Cita } from '../models/cita.model';
 import { UserService } from '../service/User-Service/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { FormsModule } from '@angular/forms';
@@ -29,13 +28,19 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
     direccionOrdenAsc = true;
     itemsPorPagina = 10;
     paginaActual = 1;
+    maxPaginasVisibles = 5;
 
-    columnas: string[] = ['id', 'numero_historial', 'fecha_alta', 'fecha_baja', 'especialista', 'acciones'];
+    columnas: string[] = ['id', 'nombre_paciente', 'fecha_alta', 'estado_cita', 'comentario', 'nombre_especialista', 'especialidad', 'acciones'];
 
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
     @ViewChild('especialistaTemplate') especialistaTemplate!: TemplateRef<any>;
     @ViewChild('accionesTemplate') accionesTemplate!: TemplateRef<any>;
+    @ViewChild('nombrePacienteTemplate') nombrePacienteTemplate!: TemplateRef<any>;
+    @ViewChild('estadoCitaTemplate') estadoCitaTemplate!: TemplateRef<any>;
+    @ViewChild('comentarioTemplate') comentarioTemplate!: TemplateRef<any>;
+    @ViewChild('nombreEspecialistaTemplate') nombreEspecialistaTemplate!: TemplateRef<any>;
+    @ViewChild('especialidadTemplate') especialidadTemplate!: TemplateRef<any>;
 
     constructor(private userService: UserService, private toastr: ToastrService) { }
 
@@ -45,7 +50,11 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit(): void {
         this.templatesMap = {
-            especialista: this.especialistaTemplate,
+            nombre_paciente: this.nombrePacienteTemplate,
+            estado_cita: this.estadoCitaTemplate,
+            comentario: this.comentarioTemplate,
+            nombre_especialista: this.nombreEspecialistaTemplate,
+            especialidad: this.especialidadTemplate,
             acciones: this.accionesTemplate,
         };
     }
@@ -148,7 +157,7 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
         }
     }
 
-    get paginas(): number[] {
-        return Array.from({ length: this.totalPaginas }, (_, i) => i + 1);
+    cambiarPagina(pagina: number): void {
+        this.paginaActual = pagina;
     }
 }

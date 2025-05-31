@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\Loggable;
+use Illuminate\Validation\Rule;
 
 
 class UserController extends Controller
@@ -90,6 +91,7 @@ class UserController extends Controller
             'apellidos'  => 'required|string|max:255',
             'email'      => 'required|email|unique:users,email',
             'password'   => 'required|string|min:6|confirmed',
+            'dni_usuario' => 'required|string|max:9|unique:users,dni_usuario',
         ]);
 
         if ($validador->fails()) {
@@ -101,10 +103,10 @@ class UserController extends Controller
                 'apellidos'  => $solicitud->input('apellidos'),
                 'email'      => $solicitud->input('email'),
                 'password'   => Hash::make($solicitud->input('password')),
-                'rol'        => 'paciente',
+                'dni_usuario' => $solicitud->input('dni_usuario'),
             ]);
-
-            $respuesta = $usuario;
+            $usuario->assignRole('paciente');
+            $respuesta = $usuario->load('roles');
 
             $this->registrarLog(auth()->id(), 'crear', 'users', $usuario->id);
         }
@@ -123,7 +125,7 @@ class UserController extends Controller
      * @param int $id ID del usuario que se va a actualizar
      * @return \Illuminate\Http\JsonResponse
      */
-    public function actualizar(Request $solicitud, $id): JsonResponse
+    public function actualizarUsuario(Request $solicitud, $id): JsonResponse
     {
         $respuesta = [];
         $codigo = 200;
@@ -138,15 +140,51 @@ class UserController extends Controller
                 $respuesta = ['mensaje' => 'Usuario no encontrado'];
                 $codigo = 404;
             } else {
-                $usuario->update($solicitud->only(['nombre', 'apellidos', 'email']));
-                $respuesta = $usuario;
+                // Validar datos, incluyendo validación condicional de password
+                $reglas = [
+                    'nombre'     => 'required|string|max:255',
+                    'apellidos'  => 'required|string|max:255',
+                    'email'      => 'required|email|unique:users,email,' . $usuario->id,
+                    'dni_usuario'=> 'required|string|max:9|unique:users,dni_usuario,' . $usuario->id,
+                    'fecha_nacimiento' => 'nullable|date',
+                    'telefono'   => 'nullable|string|max:20',
+                    'direccion'  => 'nullable|string|max:255',
+                ];
 
-                $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $id);
+                // Si viene password, validar su confirmación
+                if ($solicitud->filled('password')) {
+                    $reglas['password'] = 'string|min:6|confirmed';
+                }
+
+                $validador = Validator::make($solicitud->all(), $reglas);
+
+                if ($validador->fails()) {
+                    return response()->json(['errores' => $validador->errors()], 422);
+                }
+
+                $usuario->nombre = $solicitud->input('nombre');
+                $usuario->apellidos = $solicitud->input('apellidos');
+                $usuario->email = $solicitud->input('email');
+                $usuario->dni_usuario = $solicitud->input('dni_usuario');
+                $usuario->fecha_nacimiento = $solicitud->input('fecha_nacimiento');
+                $usuario->telefono = $solicitud->input('telefono');
+                $usuario->direccion = $solicitud->input('direccion');
+
+                if ($solicitud->filled('password')) {
+                    $usuario->password = Hash::make($solicitud->input('password'));
+                }
+
+                $usuario->save();
+
+                $respuesta = User::find($usuario->id);
+
+                $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $usuario->id);
             }
         }
 
         return response()->json($respuesta, $codigo);
     }
+
 
 
     /**
