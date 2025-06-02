@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Cita;
+use App\Models\Paciente;
+use App\Models\Especialista;
 use App\Models\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\Loggable;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 
 class UserController extends Controller
@@ -218,6 +222,83 @@ class UserController extends Controller
         }
 
         return response()->json($respuesta, $codigo);
+    }
+
+    //método para cambiar el rol 'especialista' o 'paciente' por el rol 'usuario' recibiendo como parámetro el id de usuario.
+    /**
+     * Función para cambiar el rol de un usuario.
+     * Cambiamos el rol a 'usuario' y actualizamos el usuario para que no se liste en la vista de especialistas o pacientes.
+     * Ademas se eliminan las citas pendiente que les correspondan.
+     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o error.
+     * @param int $id ID del usuario que se va a cambiar el rol
+     */
+    public function cambiarRol($id): JsonResponse
+    {
+        $usuario = User::find($id);
+
+        if (!$usuario) {
+            return response()->json(['mensaje' => 'El usuario no existe'], 404);
+        }
+
+        if ($usuario->hasRole('especialista')) {
+            //Se elimina de la tabla especialistas
+            Especialista::where('user_id', $usuario->id)->delete();
+
+            //Se eliminan citas pendientes como especialista
+            Cita::where('especialista_id', $usuario->id)
+                ->where('estado', 'pendiente')
+                ->delete();
+
+            \Log::info("Usuario con ID {$usuario->id} cambió rol de 'especialista' a 'usuario'. Citas pendientes eliminadas.");
+        }
+
+        if ($usuario->hasRole('paciente')) {
+            //Se elimina de la tabla pacientes
+            Paciente::where('user_id', $usuario->id)->delete();
+
+            //Se eliminan citas pendientes como paciente
+            Cita::where('paciente_id', $usuario->id)
+                ->where('estado', 'pendiente')
+                ->delete();
+
+            \Log::info("Usuario con ID {$usuario->id} cambió rol de 'paciente' a 'usuario'. Citas pendientes eliminadas.");
+        }
+
+
+        $usuario->syncRoles(['usuario']);
+
+        return response()->json(['mensaje' => 'El rol del usuario ha sido cambiado a usuario y sus citas pendientes han sido eliminadas.'], 200);
+    }
+
+
+    /**
+     * Funcion para obtener todos los usuario de la tabla user cuyo rol sea 'usuario'
+     * Este metodo sirve para listar los usuarios que pueden ser seleccionado para convertirse en 'pacientes' o 'especialistas'
+     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los usuarios que tienen el rol de 'usuario' o mensaje de error.
+     */
+    public function getUsuariosSinRolEspecialistaNiPaciente(): JsonResponse
+    {
+        if (!auth()->check() || !auth()->user()->hasRole('administrador')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $usuarios = DB::table('users')
+            ->leftJoin('pacientes', 'users.id', '=', 'pacientes.user_id')
+            ->leftJoin('especialistas', 'users.id', '=', 'especialistas.user_id')
+            ->whereNull('pacientes.user_id')
+            ->whereNull('especialistas.user_id')
+            ->select('users.id', 'users.nombre', 'users.apellidos')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id'               => $user->id,
+                    'nombre_apellidos' => $user->nombre . ' ' . $user->apellidos,
+                ];
+            });
+
+        $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'usuarios', null);
+
+        return response()->json($usuarios);
     }
 
 

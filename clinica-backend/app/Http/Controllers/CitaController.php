@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Paciente;
+use App\Models\Especialista;
 use App\Models\Cita;
-use App\Models\Log;
+use Illuminate\Support\Facades\Log;
 use App\Traits\Loggable;
-    
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 
 class CitaController extends Controller
@@ -211,60 +213,322 @@ class CitaController extends Controller
     }
 
 
+    
     /**
      * Función para cancelar una cita.
-     * Esta función permite a un paciente o especialista cancelar una cita existente a la que estén asociados
-     * y actualizar su estado a 'cancelada'.
-     * Se valida que el usuario que intenta cancelar la cita sea el paciente o el especialista relacionado con la cita.
-     * Registra un log de la acción realizada.
-     * 
-     * @param int $usuarioId ID del usuario que realiza la acción.
-     * @param string $accion Acción realizada.
-     * @param string $descripcion Descripción de la acción.
-     * @param string $tabla Tabla afectada (opcional).
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el estado de la operación y un mensaje de confirmación o error.
-     * @throws \Exception lanza una excepción si ocurre un error al cancelar la cita.
+     * Permite a un paciente o especialista cancelar una cita a la que estén asociados.
+     * Valida la autorización y el estado de la cita antes de cambiar su estado a 'cancelada'.
+     *
+     * @param int $id ID de la cita a cancelar.
+     * @return \Illuminate\Http\JsonResponse devuelve un JSON con el resultado de la operación.
+     * @throws \Exception si la cita no existe o si el usuario no tiene permisos para cancelarla.
      */
     public function cancelarCita(int $id): JsonResponse
     {
-        $respuesta = [];
-        $codigo = 200;
+        $userId = auth()->id();
+        $rol = auth()->user()->getRoleNames()->first();
+        $autorizado = false;
 
-        $cita = Cita::with(['paciente', 'especialista'])->find($id);
+        // Validar que el ID sea numérico válido
+        if (!is_numeric($id) || intval($id) <= 0) {
+            $this->registrarLog($userId, 'cancelar_cita_error_id_cita_invalido', $userId);
+            return response()->json(['message' => 'ID de cita inválido'], 400);
+        }
+
+        $cita = Cita::find($id);
 
         if (!$cita) {
-            $this->registrarLog(auth()->id(), 'cancelar_cita_fallido', "Cita ID $id no encontrada");
-            $respuesta = ['message' => 'Cita no encontrada'];
-            $codigo = 404;
-        } else {
-            $userId = auth()->id();
+            $this->registrarLog($userId, 'cancelar_cita_error_cita_no_encontrada', $userId);
+            return response()->json(['message' => 'Cita no encontrada'], 404);
+        }
 
-            //Se comprueba que el usuario es paciente o especialista relacionado con la cita
-            if ($cita->paciente->user_id!== $userId && $cita->especialista->user_id !== $userId) {
-                $this->registrarLog($userId, 'cancelar_cita_no_autorizado', "Intento no autorizado de cancelar cita ID $id");
-                $respuesta = ['message' => 'No autorizado para cancelar esta cita'];
-                $codigo = 403;
-            } else {
-                if ($cita->estado === 'cancelada') {
-                    $respuesta = ['message' => 'La cita ya está cancelada'];
-                    $codigo = 400;
+        $paciente = Paciente::where('user_id', $userId)->first();
+
+        if ($rol === 'paciente') {
+            $paciente = Paciente::where('user_id', $userId)->first();
+            if (!$paciente || $paciente->id !== $cita->id_paciente) {
+                $this->registrarLog($userId, 'cancelar_cita_no_autorizado_paciente', $userId);
+                return response()->json(['message' => 'No autorizado: esta cita no pertenece al paciente. id_paciente: '.$paciente->id_paciente.' y el paciente de la cita: '.$cita->id_paciente], 403);
+            }
+
+            $autorizado = true;
+        } elseif ($rol === 'especialista') {
+            $especialista = Especialista::where('id_usuario', $userId)->first();
+
+            if (!$especialista || $especialista->id_especialista !== $cita->id_especialista) {
+                $this->registrarLog($userId, 'cancelar_cita_no_autorizado_especialista', $userId);
+                return response()->json(['message' => 'No autorizado: esta cita no pertenece al especialista'], 403);
+            }
+
+            $autorizado = true;
+        }
+
+        if (!$autorizado) {
+            return response()->json(['message' => 'No autorizado para cancelar esta cita'], 403);
+        }
+
+        if (in_array($cita->estado, ['cancelada', 'realizada'])) {
+            $this->registrarLog($userId, 'cancelar_cita_estado_no_cancelable', $cita->id_cita);
+            return response()->json(['message' => 'La cita ya no se puede cancelar'], 400);
+        }
+
+        try {
+            $cita->estado = 'cancelada';
+            $cita->save();
+
+            $this->registrarLog($userId, 'cancelar_cita', $cita->id_cita);
+            return response()->json(['message' => 'Cita cancelada correctamente', 'id_cita' => $cita->id_cita], 200);
+        } catch (\Exception $e) {
+            $this->registrarLog($userId, 'cancelar_cita_error: ' . $e->getMessage(), $cita->id_cita);
+            return response()->json(['message' => 'Error interno al cancelar la cita'], 500);
+        }
+    }
+
+
+    /**
+     * Lista las citas del usuario autenticado, ya sea paciente o especialista.
+     *
+     * Esta función recupera las citas de un usuario basándose en su rol (paciente o especialista).
+     * Carga las relaciones necesarias (especialista.user o paciente.user) para evitar el problema N+1.
+     *
+     * @return \Illuminate\Http\JsonResponse Una respuesta JSON que contiene una colección de citas
+     * formateadas o un mensaje de error si el usuario no tiene
+     * el rol adecuado o si el perfil (paciente/especialista) no se encuentra.
+     */
+    public function listarMisCitas()
+    {
+        try {
+            // Obtener el ID del usuario autenticado
+            $userId = Auth::id();
+
+            // Obtener el primer rol del usuario autenticado
+            // Asegúrate de que el usuario tenga un rol asignado, de lo contrario getRoleNames() podría devolver una colección vacía.
+            $rol = Auth::user()->getRoleNames()->first();
+
+            $citas = []; // Inicializar $citas como un array vacío
+
+            if ($rol === 'paciente') {
+                // Buscar el paciente asociado al user_id
+                // Asegúrate de que el paciente exista antes de intentar acceder a su 'id'
+                $paciente = Paciente::where('user_id', $userId)->first();
+
+                if ($paciente) {
+                    // Obtener las citas del paciente, cargando eager load las relaciones 'especialista' y 'especialista.user'
+                    // Esto evita el problema de N+1 consultas y mejora el rendimiento.
+                    $citas = Cita::with(['especialista.user'])
+                                ->where('id_paciente', $paciente->id)
+                                ->get() // Ejecutar la consulta y obtener la colección de citas
+                                ->map(function ($cita) {
+                                    // $cita->fecha_hora_cita ya es un objeto Carbon gracias a los casts en el modelo Cita
+                                    return [
+                                        'id' => $cita->id_cita,
+                                        'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
+                                        'hora' => $cita->fecha_hora_cita->format('H:i'),
+                                        'especialidad' => $cita->especialista->especialidad,
+                                        'nombre_especialista' => $cita->especialista->user->nombre . ' ' . $cita->especialista->user->apellidos,
+                                        'estado' => $cita->estado,
+                                        'tipo_cita' => $cita->tipo_cita, // Añadido para más detalle
+                                    ];
+                                });
                 } else {
-                    try {
-                        $cita->estado = 'cancelada';
+                    // Manejar el caso en que no se encuentre el paciente
+                    return response()->json(['message' => 'No se encontró el perfil de paciente para este usuario.'], 404);
+                }
+            } elseif ($rol === 'especialista') {
+                // Buscar el especialista asociado al user_id
+                // Asegúrate de que el especialista exista antes de intentar acceder a su 'id'
+                $especialista = Especialista::where('user_id', $userId)->first();
+
+                if ($especialista) {
+                    // Obtener las citas del especialista, cargando eager load las relaciones 'paciente' y 'paciente.user'
+                    // Esto evita el problema de N+1 consultas y mejora el rendimiento.
+                    $citas = Cita::with(['paciente.user'])
+                                ->where('id_especialista', $especialista->id)
+                                ->get() // Ejecutar la consulta y obtener la colección de citas
+                                ->map(function ($cita) {
+                                    // Para el especialista, mostramos los datos del paciente y la cita
+                                    return [
+                                        'id' => $cita->id_cita,
+                                        'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
+                                        'hora' => $cita->fecha_hora_cita->format('H:i'),
+                                        'nombre_paciente' => $cita->paciente->user->nombre . ' ' . $cita->paciente->user->apellidos,
+                                        'dni_paciente' => $cita->paciente->user->dni_usuario, // Útil para el especialista
+                                        'estado' => $cita->estado,
+                                        'tipo_cita' => $cita->tipo_cita,
+                                        'es_primera' => $cita->es_primera, // También puede ser útil
+                                    ];
+                                });
+                } else {
+                    // Manejar el caso en que no se encuentre el especialista
+                    return response()->json(['message' => 'No se encontró el perfil de especialista para este usuario.'], 404);
+                }
+            } else {
+                // Si el usuario no tiene el rol de 'paciente' o 'especialista'
+                return response()->json(['message' => 'El usuario no tiene el rol necesario para listar citas.'], 403);
+            }
+
+            // Devolver las citas como una respuesta JSON
+            return response()->json($citas);
+
+        } catch (\Exception $e) {
+            // Capturar cualquier excepción que ocurra durante el proceso
+            // Registrar el error para depuración (se guardará en storage/logs/laravel.log)
+            Log::error("Error al listar citas: " . $e->getMessage(), ['exception' => $e, 'user_id' => Auth::id()]);
+
+            // Devolver una respuesta de error genérica al cliente
+            return response()->json(['message' => 'Ocurrió un error interno al obtener las citas.'], 500);
+        }
+    }
+
+    /**
+     * Crea una nueva cita para un paciente, validando horarios y disponibilidad.
+     *
+     * @param Request $request
+     * @param int $idPaciente
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function crearNuevaCita(Request $request, int $idPaciente)
+    {
+        $respuesta = null;
+
+        try {
+            $paciente = Paciente::findOrFail($idPaciente);
+
+            if (auth()->user()->id !== $paciente->user_id) {
+                $respuesta = response()->json(['error' => 'No autorizado'], 403);
+            } else {
+                $validator = Validator::make($request->all(), [
+                    'id_especialista' => 'required|exists:especialistas,id',
+                    'fecha_hora_cita' => 'required|date_format:Y-m-d H:i:s',
+                    'tipo_cita' => 'required|in:presencial,telemática',
+                    'comentario' => 'nullable|string|max:255',
+                    'es_primera' => 'required|boolean',
+                ]);
+
+                if ($validator->fails()) {
+                    $respuesta = response()->json(['errors' => $validator->errors()], 422);
+                } else {
+                    $fechaHora = Carbon::parse($request->fecha_hora_cita);
+
+                    if ($this->esFinDeSemana($fechaHora) || $this->esFestivo($fechaHora)) {
+                        $respuesta = response()->json(['error' => 'La fecha es fin de semana o festivo'], 422);
+                    } elseif (!$this->esHoraValida($fechaHora)) {
+                        $respuesta = response()->json(['error' => 'La hora no está dentro de los bloques permitidos'], 422);
+                    } elseif ($this->existeCitaEnHorario($request->id_especialista, $fechaHora)) {
+                        $respuesta = response()->json(['error' => 'Ya existe una cita en ese horario para este especialista'], 422);
+                    } else {
+                        $cita = new Cita();
+                        $cita->id_paciente = $idPaciente;
+                        $cita->id_especialista = $request->id_especialista;
+                        $cita->fecha_hora_cita = $fechaHora;
+                        $cita->tipo_cita = $request->tipo_cita;
+                        $cita->comentario = $request->comentario;
+                        $cita->es_primera = $request->es_primera;
+                        $cita->estado = 'pendiente';
                         $cita->save();
 
-                        $this->registrarLog($userId, 'cancelar_cita', "Cita ID $id cancelada por usuario $userId");
-                        $respuesta = ['message' => 'Cita cancelada correctamente', 'cita' => $cita];
-                    } catch (\Exception $e) {
-                        $this->registrarLog($userId, 'cancelar_cita_error', "Error al cancelar cita ID $id: ".$e->getMessage());
-                        $respuesta = ['message' => 'Error interno al cancelar la cita'];
-                        $codigo = 500;
+                        $respuesta = response()->json(['mensaje' => 'Cita creada correctamente', 'cita' => $cita], 201);
                     }
                 }
             }
+        } catch (\Exception $e) {
+            $respuesta = response()->json(['error' => 'Error creando la cita'], 500);
         }
 
-        return response()->json($respuesta, $codigo);
+        return $respuesta;
+    }
+
+    /**
+     * Cambia el estado de una cita a 'cancelado' si estaba 'pendiente'.
+     *
+     * @param int $idCita
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cancelarCitaPaciente(int $idCita)
+    {
+        $respuesta = null;
+
+        try {
+            $cita = Cita::findOrFail($idCita);
+
+            $paciente = $cita->paciente;
+            if (auth()->user()->id !== $paciente->user_id) {
+                $respuesta = response()->json(['error' => 'No autorizado'], 403);
+            } elseif ($cita->estado !== 'pendiente') {
+                $respuesta = response()->json(['error' => 'Sólo se pueden cancelar citas pendientes'], 422);
+            } else {
+                $cita->estado = 'cancelado';
+                $cita->save();
+
+                $respuesta = response()->json(['mensaje' => 'Cita cancelada correctamente']);
+            }
+        } catch (\Exception $e) {
+            $respuesta = response()->json(['error' => 'Cita no encontrada'], 404);
+        }
+
+        return $respuesta;
+    }
+
+    // --- Funciones auxiliares privadas ---
+
+    /**
+     * Verifica si la fecha es un fin de semana.
+     *
+     * @param Carbon $fecha
+     * @return bool
+     */
+    private function esFinDeSemana(Carbon $fecha): bool
+    {
+        return $fecha->isWeekend();
+    }
+
+    /**
+     * Verifica si la fecha es festivo.
+     *
+     * @param Carbon $fecha
+     * @return bool
+     */
+    private function esFestivo(Carbon $fecha): bool
+    {
+        $festivos = [
+            '2025-01-01',
+            '2025-05-01',
+            '2025-12-25',
+        ];
+        return in_array($fecha->toDateString(), $festivos);
+    }
+
+    /**
+     * Verifica si la hora está en bloques de 30 minutos entre 08:00 y 14:30.
+     *
+     * @param Carbon $fechaHora
+     * @return bool
+     */
+    private function esHoraValida(Carbon $fechaHora): bool
+    {
+        $horaInicio = Carbon::createFromTime(8, 0);
+        $horaFin = Carbon::createFromTime(14, 30);
+        $minutos = $fechaHora->minute;
+
+        $esMinutoValido = ($minutos === 0 || $minutos === 30);
+        $esHoraValida = $fechaHora->between($horaInicio, $horaFin);
+
+        return $esMinutoValido && $esHoraValida;
+    }
+
+    /**
+     * Verifica si ya existe una cita para ese especialista en la fecha y hora dada.
+     *
+     * @param int $idEspecialista
+     * @param Carbon $fechaHora
+     * @return bool
+     */
+    private function existeCitaEnHorario(int $idEspecialista, Carbon $fechaHora): bool
+    {
+        return Cita::where('id_especialista', $idEspecialista)
+            ->where('fecha_hora_cita', $fechaHora)
+            ->where('estado', 'pendiente')
+            ->exists();
     }
 
 

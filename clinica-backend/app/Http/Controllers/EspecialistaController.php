@@ -174,51 +174,112 @@ class EspecialistaController extends Controller
         $codigo = 201;
 
         $validar = Validator::make($solicitud->all(), [
-            'nombre'     => 'required|string|max:100',
-            'apellidos'  => 'required|string|max:150',
-            'email'      => 'required|email|unique:users,email',
-            'password'   => 'required|string|min:6|confirmed',
-            'especialidad' => 'required|string|max:100',
+            'user_id'      => 'required|integer|exists:users,id',
+            'especialidad' => 'required|string|max:150',
         ]);
 
         if ($validar->fails()) {
-            $respuesta = ['errors' => $validar->errors()];
-            $codigo = 422;
-        } else {
-            DB::beginTransaction();
+            return response()->json(['errors' => $validar->errors()], 422);
+        }
 
-            try {
-                $user = User::create([
-                    'nombre'     => $solicitud->nombre,
-                    'apellidos'  => $solicitud->apellidos,
-                    'email'      => $solicitud->email,
-                    'password'   => Hash::make($solicitud->password),
-                ]);
+        DB::beginTransaction();
 
-                $user->assignRole('especialista');
+        try {
+            // Buscar el usuario por ID
+            $user = User::findOrFail($solicitud->user_id);
 
-                $especialista = Especialista::create([
-                    'user_id'       => $user->id,
-                    'especialidad'  => $solicitud->especialidad,
-                ]);
+            // Crear el especialista
+            $especialista = Especialista::create([
+                'user_id'      => $user->id,
+                'especialidad' => $solicitud->especialidad,
+            ]);
 
-                $this->registrarLog(auth()->id(), 'create', "Especialista creado, user_id: $user->id", 'especialistas');
+            // Asignar el rol al usuario
+            $user->assignRole('especialista');
 
-                DB::commit();
+            // Registrar log (si tienes sistema de logging personalizado)
+            $this->registrarLog(auth()->id(), 'create', "Especialista creado, user_id: {$user->id}", $especialista->id);
 
-                $respuesta = [
-                    'message' => 'Especialista creado correctamente',
-                    'user' => $user,
-                ];
-            } catch (\Exception $e) {
-                DB::rollBack();
 
-                $respuesta = ['message' => 'Error interno al crear especialista', 'error' => $e->getMessage()];
-                $codigo = 500;
-            }
+            DB::commit();
+
+            $respuesta = [
+                'message' => 'Especialista creado correctamente',
+                'user'    => $user,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $respuesta = ['message' => 'Error interno al crear especialista', 'error' => $e->getMessage()];
+            $codigo = 500;
         }
 
         return response()->json($respuesta, $codigo);
     }
+
+
+    /**
+     * Lista los especialista para la vista de administrador agregando los datos personales desde la tabla users.
+     * @return \Illuminate\Http\JsonResponse devuelve un json con la lista de especialistas o un mensaje de error.
+     */
+
+    public function listarEspecialistasFull():JsonResponse
+    {
+        if (!auth()->check() || !auth()->user()->hasRole('administrador')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $especialistas = Especialista::with('user')
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(function ($especialista) {
+                return [
+                    'id_especialista'=> $especialista->id,
+                    'user_id'=> $especialista->user_id,
+                    'nombre_apellidos'=> $especialista->user->nombre . ' ' . $especialista->user->apellidos,
+                    'email'=> $especialista->user->email,
+                    'telefono'=> $especialista->user->telefono,
+                    'especialidad'=> $especialista->especialidad,
+                    'fecha_alta'=> $especialista->created_at->format('Y-m-d'),
+                ];
+            });
+
+        $this->registrarLog(auth()->id(), 'listar_todos_los_especialistas_', 'especialistas', null);
+
+        return response()->json($especialistas);
+    }
+
+    /**
+     * Lista todas las especialidades distintas.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function listarEspecialidades()
+    {
+        $especialidades = Especialista::select('especialidad')->distinct()->pluck('especialidad');
+        return response()->json($especialidades);
+    }
+
+    /**
+     * Lista especialistas filtrados por especialidad.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function listarEspecialistasPorEspecialidad(Request $request)
+    {
+        $especialidad = $request->query('especialidad');
+
+        if (!$especialidad) {
+            return response()->json(['error' => 'Se requiere el parámetro especialidad'], 422);
+        }
+
+        $especialistas = Especialista::with('user')
+            ->where('especialidad', $especialidad)
+            ->get();
+
+        return response()->json($especialistas);
+    }
+    
+
 
 }

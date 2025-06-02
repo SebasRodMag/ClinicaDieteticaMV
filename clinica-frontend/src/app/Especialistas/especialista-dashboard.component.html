@@ -1,0 +1,18 @@
+<nav class="navbar navbar-expand navbar-light bg-light px-3">
+    <span class="navbar-brand mb-0 h1">Pacientes Dashboard</span>
+
+    <div class="navbar-nav me-auto">
+        <!-- Aquí pon botones o enlaces a otras vistas si quieres -->
+    </div>
+
+    <div class="d-flex">
+        <button class="btn btn-outline-danger" (click)="logout()">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+    </div>
+</nav>
+
+<div class="p-3">
+    <!-- Aquí muestras el contenido principal -->
+    <app-especialista-citas></app-especialista-citas>
+</div>

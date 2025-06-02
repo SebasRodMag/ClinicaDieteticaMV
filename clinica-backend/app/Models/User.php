@@ -39,13 +39,6 @@ class User extends Authenticatable
         'rol',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-        'paciente',
-        'especialista',
-    ];
-
     /**
      * Los atributos que deberían ser mutados a tipos de datos nativos.
      * Relación con Paciente (1:1)

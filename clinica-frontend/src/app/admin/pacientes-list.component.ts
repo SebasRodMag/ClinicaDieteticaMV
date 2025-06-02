@@ -1,21 +1,16 @@
-import {
-    Component,
-    OnInit,
-    ViewChild,
-    TemplateRef,
-    AfterViewInit,
-} from '@angular/core';
+import {Component, OnInit,ViewChild,TemplateRef,AfterViewInit,} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Paciente } from '../models/paciente.model';
 import { UserService } from '../service/User-Service/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { FormsModule } from '@angular/forms';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
     selector: 'app-pacientes-list',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule],
+    imports: [MatSnackBarModule, CommonModule, FormsModule, TablaDatosComponent],
     templateUrl: './pacientes-list.component.html',
 })
 export class PacientesListComponent implements OnInit, AfterViewInit {
@@ -42,7 +37,7 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
     @ViewChild('nombreEspecialistaTemplate') nombreEspecialistaTemplate!: TemplateRef<any>;
     @ViewChild('especialidadTemplate') especialidadTemplate!: TemplateRef<any>;
 
-    constructor(private userService: UserService, private toastr: ToastrService) { }
+    constructor(private userService: UserService, private toastr: ToastrService, private snackBar: MatSnackBar) { }
 
     ngOnInit(): void {
         this.cargarPacientes();
@@ -57,6 +52,13 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
             especialidad: this.especialidadTemplate,
             acciones: this.accionesTemplate,
         };
+    }
+
+    mostrarMensaje(mensaje: string, tipo: 'success' | 'error') {
+        this.snackBar.open(mensaje, 'Cerrar', {
+            duration: 3000,
+            panelClass: tipo === 'success' ? ['snackbar-' + tipo] : undefined,
+        });
     }
 
     cargarPacientes(): void {
@@ -76,24 +78,32 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
     }
 
     cambiarRol(paciente: Paciente): void {
-        if (
-            paciente.especialista &&
-            paciente.especialista.usuario &&
-            confirm(`¿Dar de baja a ${paciente.especialista.usuario.nombre} ${paciente.especialista.usuario.apellidos}?`)
-        ) {
+
+        const nombre = paciente.especialista?.usuario?.nombre ?? 'Usuario';
+        const apellidos = paciente.especialista?.usuario?.apellidos ?? '';
+
+        const snackBarRef = this.snackBar.open(
+            `¿Estás seguro de que deseas dar de baja a ${nombre} ${apellidos}?`,
+            'Confirmar',
+            { duration: 5000 }
+        );
+
+        snackBarRef.onAction().subscribe(() => {
             this.toastr.info('Actualizando rol...', '', { disableTimeOut: true });
-            this.userService.updateRolUsuario(paciente.id, 'usuario').subscribe({
+
+            this.userService.updateRolUsuario(paciente.user_id).subscribe({
                 next: () => {
                     this.toastr.clear();
-                    this.toastr.success(`${paciente.especialista!.usuario!.nombre} fue dado de baja correctamente`);
+                    this.toastr.success(`${nombre} fue dado de baja correctamente`);
                     this.cargarPacientes();
                 },
                 error: () => {
                     this.toastr.clear();
-                    this.toastr.error(`Error al dar de baja a ${paciente.especialista!.usuario!.nombre}`);
+                    this.toastr.error(`Error al dar de baja a ${nombre}`);
                 },
             });
-        }
+        });
+
     }
 
     obtenerValorOrden(obj: any, columna: string): any {

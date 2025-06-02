@@ -64,21 +64,4 @@ class Paciente extends Model
                     ->latestOfMany('fecha_hora_cita');
     }
 
-    public function especialistas() {
-        // Relación indirecta a especialistas a través de citas
-        return $this->hasManyThrough(
-            Especialista::class,
-            Cita::class,
-            'id_paciente',
-            'user_id',
-            'user_id',
-            'id_especialista'
-        );
-    }
-
-    public function listarPacientes()
-    {
-        $pacientes = Paciente::with(['usuario', 'especialista.usuario'])->get();
-        return response()->json($pacientes);
-    }
 }

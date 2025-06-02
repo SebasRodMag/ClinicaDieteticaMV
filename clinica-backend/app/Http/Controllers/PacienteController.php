@@ -130,55 +130,8 @@ class PacienteController extends Controller
                 $respuesta = ['message' => 'Paciente no encontrado'];
                 $codigo = 404;
             } else {
-                $this->registrarLog(auth()->id(), 'ver_usuario_error', 'user', $id);
+                $this->registrarLog(auth()->id(), 'ver_paciente', 'user', $id);
                 $respuesta = $paciente;
-            }
-        }
-
-        return response()->json($respuesta, $codigo);
-    }
-
-
-    /**
-     * Actualiza los datos de un paciente.
-     * Actualiza la información de un paciente existente en la base de datos.
-     * Se valida que el ID sea numérico y que el paciente exista.
-     * @param \Illuminate\Http\Request $solicitud lleva los datos del paciente a actualizar
-     * @param int $id ID del paciente a actualizar
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los datos del paciente actualizado o un mensaje de error.
-     * @throws \Illuminate\Validation\ValidationException lanza excepción si los datos no cumplen con las reglas de validación.
-     * 
-     */
-    public function actualizarPaciente(Request $solicitud, $id)
-    {
-        $respuesta = [];
-        $codigo = 200;
-
-        if (!is_numeric($id)) {
-            $this->registrarLog(auth()->id(), 'actualizar_paciente_id_invalido', 'paciente', $id);
-            $respuesta = ['message' => 'ID inválido'];
-            $codigo = 400;
-        } else {
-            $paciente = Paciente::find($id);
-
-            if (!$paciente) {
-                $this->registrarLog(auth()->id(), 'actualizar_paciente_invalido', 'paciente', $id);
-                $respuesta = ['message' => 'Paciente no encontrado'];
-                $codigo = 404;
-            } else {
-                $solicitud->validate([
-                    'nss' => 'nullable|string|max:20',
-                    'fecha_nacimiento' => 'nullable|date',
-                ]);
-
-                $paciente->update($solicitud->only(['nss', 'fecha_nacimiento']));
-
-                $this->registrarLog(auth()->id(), 'actualizar_paciente', 'paciente', $id);
-
-                $respuesta = [
-                    'message' => 'Paciente actualizado correctamente',
-                    'paciente' => $paciente,
-                ];
             }
         }
 
@@ -385,6 +338,115 @@ class PacienteController extends Controller
         });
 
         return response()->json($pacientes);
+    }
+
+
+    /**
+     * Actualiza datos del paciente, requiere confirmar password.
+     *
+     * @param Request $request
+     * @param int $idPaciente
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function actualizarPaciente(Request $request, int $idPaciente)
+    {
+        $respuesta = null;
+
+        try {
+            $paciente = Paciente::with('user')->findOrFail($idPaciente);
+
+            if (auth()->user()->id !== $paciente->user_id) {
+                $respuesta = response()->json(['error' => 'No autorizado'], 403);
+            } else {
+                $validator = Validator::make($request->all(), [
+                    'nombre' => 'required|string|max:255',
+                    'apellidos' => 'required|string|max:255',
+                    'dni_usuario' => 'required|string|max:20|unique:users,dni_usuario,' . $paciente->user_id,
+                    'email' => 'required|email|max:255|unique:users,email,' . $paciente->user_id,
+                    'direccion' => 'nullable|string|max:255',
+                    'fecha_nacimiento' => 'nullable|date',
+                    'telefono' => 'nullable|string|max:20',
+                    'password_actual' => 'required|string',
+                ]);
+
+                if ($validator->fails()) {
+                    $respuesta = response()->json(['errors' => $validator->errors()], 422);
+                } elseif (!\Hash::check($request->password_actual, $paciente->user->password)) {
+                    $respuesta = response()->json(['error' => 'Contraseña actual incorrecta'], 422);
+                } else {
+                    $user = $paciente->user;
+                    $user->nombre = $request->nombre;
+                    $user->apellidos = $request->apellidos;
+                    $user->dni_usuario = $request->dni_usuario;
+                    $user->email = $request->email;
+                    $user->direccion = $request->direccion;
+                    $user->fecha_nacimiento = $request->fecha_nacimiento;
+                    $user->telefono = $request->telefono;
+                    $user->save();
+
+                    $respuesta = response()->json(['mensaje' => 'Datos actualizados correctamente', 'paciente' => $paciente->load('user')]);
+                }
+            }
+        } catch (\Exception $e) {
+            $respuesta = response()->json(['error' => 'Paciente no encontrado'], 404);
+        }
+
+        return $respuesta;
+    }
+
+    /**
+     * Cambia la contraseña del paciente.
+     *
+     * @param Request $request
+     * @param int $idPaciente
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cambiarPassword(Request $request, int $idPaciente)
+    {
+        $respuesta = null;
+
+        try {
+            $paciente = Paciente::with('user')->findOrFail($idPaciente);
+
+            if (auth()->user()->id !== $paciente->user_id) {
+                $respuesta = response()->json(['error' => 'No autorizado'], 403);
+            } else {
+                $validator = Validator::make($request->all(), [
+                    'password_actual' => 'required|string',
+                    'password_nuevo' => 'required|string|min:8|confirmed',
+                ]);
+
+                if ($validator->fails()) {
+                    $respuesta = response()->json(['errors' => $validator->errors()], 422);
+                } elseif (!\Hash::check($request->password_actual, $paciente->user->password)) {
+                    $respuesta = response()->json(['error' => 'Contraseña actual incorrecta'], 422);
+                } else {
+                    $user = $paciente->user;
+                    $user->password = Hash::make($request->password_nuevo);
+                    $user->save();
+
+                    $respuesta = response()->json(['mensaje' => 'Contraseña actualizada correctamente']);
+                }
+            }
+        } catch (\Exception $e) {
+            $respuesta = response()->json(['error' => 'Paciente no encontrado'], 404);
+        }
+
+        return $respuesta;
+    }
+
+    /**
+     * obtener datos de paciente a partir del id de usuario.
+     */
+
+    public function obtenerPacientePorUsuario($userId)
+    {
+        $paciente = Paciente::where('user_id', $userId)->first();
+
+        if (!$paciente) {
+            return response()->json(['message' => 'Paciente no encontrado'], 404);
+        }
+        return response()->json($paciente);
     }
 
 

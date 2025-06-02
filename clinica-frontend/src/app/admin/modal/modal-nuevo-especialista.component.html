@@ -1,0 +1,46 @@
+<!-- Modal Bootstrap mejorado -->
+<div class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Especialista</h5>
+                <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrar()"></button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Autocompletado de usuario -->
+                <div class="mb-3 position-relative">
+                    <label for="usuario" class="form-label">Usuario</label>
+                    <input id="usuario" type="text" class="form-control" [(ngModel)]="usuarioBusqueda"
+                        (input)="filtrarUsuarios()" (focus)="mostrarLista = true" (blur)="ocultarListaConDelay()"
+                        placeholder="Buscar por nombre..." autocomplete="off" />
+
+                    <ul *ngIf="mostrarLista && usuariosFiltrados.length"
+                        class="list-group position-absolute w-100 z-10 shadow-sm"
+                        style="max-height: 200px; overflow-y: auto">
+                        <li class="list-group-item list-group-item-action" *ngFor="let usuario of usuariosFiltrados"
+                            (mousedown)="seleccionarUsuario(usuario)">
+                            {{ usuario.nombre }}
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Especialidad -->
+                <div class="mb-3">
+                    <label for="especialidad" class="form-label">Especialidad</label>
+                    <select id="especialidad" class="form-select" [(ngModel)]="especialidadSeleccionada">
+                        <option [ngValue]="null">Seleccione una especialidad</option>
+                        <option *ngFor="let esp of especialidades" [ngValue]="esp">{{ esp }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
+                <button type="button" class="btn btn-primary" [disabled]="cargando" (click)="confirmar()">
+                    {{ cargando ? 'Guardando...' : 'Crear Especialista' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

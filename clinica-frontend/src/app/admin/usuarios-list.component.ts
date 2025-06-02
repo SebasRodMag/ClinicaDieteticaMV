@@ -158,7 +158,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     }
 
     editarUsuario(usuario: Usuario) {
-        this.usuarioSeleccionado = { ...usuario }; // copia por seguridad
+        this.usuarioSeleccionado = { ...usuario };
         this.esNuevoUsuario = false;
         this.modalVisible = true;
     }

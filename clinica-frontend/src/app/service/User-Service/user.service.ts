@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Paciente } from '../../models/paciente.model';
 import { Usuario } from '../../models/usuario.model';
+import { Especialista } from '../../models/especialista.model';
+import { EspecialistaList } from '../../models/especialistaList.model';
+import { UsuarioDisponible } from '../../models/usuarioDisponible.model';
 
 
 @Injectable({
@@ -23,8 +26,8 @@ export class UserService {
     }
 
 
-    updateRolUsuario(id: number, rol: string): Observable<any> {
-        return this.http.put(`${this.apiUrl}/usuarios/${id}/rol`, { rol });
+    updateRolUsuario(id: number): Observable<any> {
+        return this.http.put(`${this.apiUrl}/usuariosbaja/${id}`, null);
     }
 
 
@@ -46,5 +49,44 @@ export class UserService {
 
     actualizarUsuario(usuario: Usuario): Observable<Usuario> {
         return this.http.put<Usuario>(`${this.apiUrl}/usuarios/${usuario.id}`, usuario);
+    }
+
+    getListarEspecialistas(): Observable<EspecialistaList[]> {
+        return this.http.get<EspecialistaList[]>(`${this.apiUrl}/especialistasfull`);
+    }
+
+    crearEspecialista(data: { user_id: number, especialidad: string }): Observable<any> {
+        return this.http.post(`${this.apiUrl}/especialistas`, data);
+    }
+
+    getUsuariosSinRolEspecialistaNiPaciente(): Observable<UsuarioDisponible[]> {
+        return this.http.get<UsuarioDisponible[]>(`${this.apiUrl}/usuarios/listar/usuarios`);
+    }
+
+    /******************************************************************************/
+    /**************** Rutas para Dashboard de pacientes ***************************/
+    /******************************************************************************/
+
+    obtenerCitasDelUsuarioAutenticado(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/pacientes/citas/todas`);
+    }
+
+    cancelarCita(idCita: number): Observable<any> {
+        return this.http.patch(`${this.apiUrl}/citas/${idCita}/cancelar`, {});
+    }
+
+    verPaciente(id: number): Observable<any>{
+        return this.http.get(`${this.apiUrl}/pacientes/${id}`);
+    }
+
+
+    /******************************************************************************/
+    /**************** Rutas para Dashboard de especialista ***************************/
+    /******************************************************************************/
+
+
+
+    obtenerCitasEspecialista(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/especialistas/me/citas`);
     }
 }

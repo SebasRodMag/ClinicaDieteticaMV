@@ -1,8 +1,9 @@
 <div class="mb-3">
-    <input type="text" [(ngModel)]="filtro" (ngModelChange)="filtrarUsuarios()" placeholder="Buscar usuarios"
-        class="form-control" />
-</div>
+    <h2 class="text-2xl font-bold mb-4">Listado de usuarios</h2>
 
+    <input type="text" [(ngModel)]="filtro" placeholder="Buscar pacientes o especialistas" class="form-control mb-3"
+        (ngModelChange)="filtrarUsuarios()" />
+</div>
 
 <app-tabla-datos [datosTotales]="usuariosFiltrados" [columnas]="columnas" [templatesMap]="templatesMap"
     [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"

@@ -124,6 +124,13 @@ export class AuthService {
     }
 
     // ========================
+    // Obtener el id del usuario logueado
+    // ========================
+    getUserId(): number | null {
+        return this.getUser()?.id || null;
+    }
+
+    // ========================
     // Helpers: Storage
     // ========================
     private setItem(key: string, value: any): void {

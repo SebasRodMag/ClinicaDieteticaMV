@@ -1,0 +1,34 @@
+<div class="mb-3">
+    <h2 class="text-2xl font-bold mb-4">Listado de especialistas</h2>
+
+    <input type="text" [(ngModel)]="filtro" placeholder="Buscar especialistas" class="form-control mb-3"
+        (ngModelChange)="filtrarEspecialistas()" />
+</div>
+
+<app-tabla-datos [columnas]="columnas" [templatesMap]="templatesMap" [columnaOrden]="columnaOrden"
+    [direccionOrdenAsc]="direccionOrdenAsc" [datosTotales]="especialistasFiltrados" [paginaActual]="paginaActual"
+    [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
+    (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
+
+<div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<button (click)="nuevoEspecialista()" class="btn btn-primary">
+    Nuevo Especialista
+</button>
+
+<ng-template #nombreTemplate let-especialista>
+    {{ especialista.nombre_apellidos }}
+</ng-template>
+
+<ng-template #accionesTemplate let-especialista>
+    <button (click)="confirmarDarDeBaja(especialista.user_id)" class="btn btn-outline-danger btn-sm">
+        Dar de baja
+    </button>
+</ng-template>
+
+<app-modal-nuevo-especialista *ngIf="modalVisible" (cerrado)="cerrarModal()"
+    (creado)="cargarEspecialistas()"></app-modal-nuevo-especialista>

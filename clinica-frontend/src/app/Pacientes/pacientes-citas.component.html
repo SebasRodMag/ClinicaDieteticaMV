@@ -1,0 +1,16 @@
+<h2 class="text-2xl font-bold mb-4">Mis Citas</h2>
+
+<app-tabla-datos [datosTotales]="citas" [columnas]="columnas" [templatesMap]="templatesMap" [columnaOrden]="null"
+    [direccionOrdenAsc]="true" [paginaActual]="1" [itemsPorPagina]="10" [maxPaginasVisibles]="5"></app-tabla-datos>
+
+<ng-template #accionTemplate let-cita>
+    <button *ngIf="cita.estado === 'pendiente'" class="btn btn-outline-danger btn-sm" (click)="cancelarCita(cita)">
+        Cancelar
+    </button>
+</ng-template>
+
+<div *ngIf="loading" class="spinner mt-3">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>

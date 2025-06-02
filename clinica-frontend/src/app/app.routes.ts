@@ -9,8 +9,8 @@ import { PacientesListComponent } from './admin/pacientes-list.component';
 import { EspecialistasListComponent } from './admin/especialistas-list.component';
 import { UsuariosListComponent } from './admin/usuarios-list.component';
 
-import { PacienteDashboardComponent } from './Pacientes/paciente-dashboard-component';
-import { EspecialistaDashboardComponent } from './Especialistas/especialista-dashboard-component';
+import { PacienteDashboardComponent } from './Pacientes/paciente-dashboard.component';
+import { EspecialistaDashboardComponent } from './Especialistas/especialista-dashboard.component';
 import { UsuariosDashboardComponent } from './Usuarios/usuarios-dashboard.component';
 
 import { AuthGuard } from './auth.guard';
