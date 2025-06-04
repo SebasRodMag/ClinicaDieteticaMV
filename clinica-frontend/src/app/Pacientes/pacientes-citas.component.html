@@ -1,14 +1,25 @@
-<h2 class="text-2xl font-bold mb-4">Mis Citas</h2>
+<div class="mb-3">
+    <h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
 
-<app-tabla-datos [datosTotales]="citas" [columnas]="columnas" [templatesMap]="templatesMap" [columnaOrden]="null"
-    [direccionOrdenAsc]="true" [paginaActual]="1" [itemsPorPagina]="10" [maxPaginasVisibles]="5"></app-tabla-datos>
+    <input type="text" [(ngModel)]="filtro" placeholder="Buscar pacientes o especialistas" class="form-control mb-3"
+        (ngModelChange)="filtrarCitas()" />
+</div>
+
+
+<app-tabla-datos [datosTotales]="citasFiltradas" [columnas]="columnas" [templatesMap]="templatesMap"
+    [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"
+    [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
+    (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
 
 <ng-template #accionTemplate let-cita>
     <button *ngIf="cita.estado === 'pendiente'" class="btn btn-outline-danger btn-sm" (click)="cancelarCita(cita)">
         Cancelar
     </button>
 </ng-template>
-
+<app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible" [idPaciente]="paciente.id"
+    [idEspecialista]="especialista.id" (cerrado)="modalVisible = false"
+    (creada)="obtenerCitas(); modalVisible = false">
+</app-modal-nueva-cita>
 <div *ngIf="loading" class="spinner mt-3">
     <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>

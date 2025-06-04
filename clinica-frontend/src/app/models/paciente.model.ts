@@ -1,5 +1,6 @@
 import { Especialista } from './especialista.model';
 import { Cita } from './cita.model';
+import { Usuario } from './usuario.model';
 
 export interface Paciente {
     id: number;
@@ -12,4 +13,5 @@ export interface Paciente {
     deleted_at: string | null;
     ultima_cita: Cita | null;
     especialista: Especialista | null;
+    usuario: Usuario | null;
 }

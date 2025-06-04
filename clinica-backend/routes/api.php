@@ -45,13 +45,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('pacientestodos', [PacienteController::class, 'getFullPacientes']);
         Route::get('citas', [CitaController::class, 'listarCitas']);
         Route::get('citas/{id}', [CitaController::class, 'verCita']);
-        Route::post('citas', [CitaController::class, 'crearCita']);
         Route::put('citas/{id}', [CitaController::class, 'actualizarCita']);
         Route::delete('citas/{id}', [CitaController::class, 'eliminarCita']);
+        Route::get('configuraciones', [ConfiguracionController::class, 'obtenerConfiguraciones']);
         
 
     });
 
+    Route::middelware('role:paciente|paciente')->group(function(){
+        Route::post('citas', [CitaController::class, 'nuevaCita']);
+    })
     /**
      * 
      * Rutas para la vista de Paciente

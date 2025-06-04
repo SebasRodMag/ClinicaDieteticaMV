@@ -25,7 +25,7 @@
     <button class="btn btn-outline-primary btn-sm me-1" (click)="editarUsuario(usuario)">Editar</button>
     <button class="btn btn-outline-danger btn-sm" (click)="confirmarEliminarUsuario(usuario)">Eliminar</button>
 </ng-template>
-<button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo Usuario</button>
+<button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo usuario</button>
 <app-modal-edit-usuario [visible]="modalVisible" [usuario]="usuarioSeleccionado" [esNuevo]="esNuevoUsuario"
     (cerrar)="cerrarModal()" (guardar)="guardarUsuario($event)">
 </app-modal-edit-usuario>

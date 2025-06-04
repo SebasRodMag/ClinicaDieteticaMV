@@ -89,4 +89,16 @@ export class UserService {
     obtenerCitasEspecialista(): Observable<any[]> {
         return this.http.get<any[]>(`${this.apiUrl}/especialistas/me/citas`);
     }
+
+    crearCita(data: any): Observable<any> {
+        return this.http.post('/api/citas', data);
+    }
+
+    getPacientes(): Observable<Paciente[]> {
+        return this.http.get<Paciente[]>('/api/pacientes/listado-minimo');
+    }
+
+    getEspecialistas(): Observable<Especialista[]> {
+        return this.http.get<Especialista[]>('/api/especialistas/listado-minimo');
+    }
 }

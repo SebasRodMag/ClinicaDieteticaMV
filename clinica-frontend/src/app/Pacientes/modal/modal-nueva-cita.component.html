@@ -1,0 +1,52 @@
+<div class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Cita</h5>
+                <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrar()"></button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Paciente -->
+                <div class="mb-3">
+                    <label for="paciente" class="form-label">Paciente</label>
+                    <select id="paciente" class="form-select" [(ngModel)]="pacienteSeleccionado">
+                        <option [ngValue]="null">Seleccione un paciente</option>
+                        <option *ngFor="let p of pacientes" [ngValue]="p.id">{{ p.usuario?.nombre}}</option>
+                    </select>
+                </div>
+
+                <!-- Especialista -->
+                <div class="mb-3">
+                    <label for="especialista" class="form-label">Especialista</label>
+                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado">
+                        <option [ngValue]="null">Seleccione un especialista</option>
+                        <option *ngFor="let e of especialistas" [ngValue]="e.id">{{ e.usuario.nombre }} {{e.usuario.apellidos}}</option>
+                    </select>
+                </div>
+
+                <!-- Tipo de cita -->
+                <div class="mb-3">
+                    <label for="tipo" class="form-label">Tipo de cita</label>
+                    <select id="tipo" class="form-select" [(ngModel)]="tipoCita">
+                        <option value="presencial">Presencial</option>
+                        <option value="teleática">Teleática</option>
+                    </select>
+                </div>
+
+                <!-- Fecha y Hora -->
+                <div class="mb-3">
+                    <label for="fechaHora" class="form-label">Fecha y hora</label>
+                    <input id="fechaHora" type="datetime-local" class="form-control" [(ngModel)]="fechaHora" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
+                <button type="button" class="btn btn-primary" [disabled]="cargando" (click)="confirmar()">
+                    {{ cargando ? 'Guardando...' : 'Crear Cita' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
