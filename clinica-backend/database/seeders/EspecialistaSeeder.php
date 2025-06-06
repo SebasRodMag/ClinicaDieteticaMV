@@ -20,6 +20,7 @@ class EspecialistaSeeder extends Seeder
 
         $usuariosEspecialistas = User::role('especialista')->get();
 
+        $creados = 0;
         foreach ($usuariosEspecialistas as $usuario) {
             $especialistaExistente = Especialista::where('user_id', $usuario->id)->first();
 
@@ -29,7 +30,9 @@ class EspecialistaSeeder extends Seeder
                     'especialidad' => $faker->randomElement(['Nutrición', 'Endocrinología', 'Medicina General']),
 
                 ]);
+                $creados++;
             }
         }
+        $this->command->info("Se crearon {$creados} especialistas correctamente.");
     }
 }

@@ -13,39 +13,39 @@ class ConfiguracionSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('settings')->insert([
+        DB::table('Configuracion')->insert([
             [
                 'clave' => 'duracion_cita',
-                'valor' => '30',
+                'valor' => '30',//tiempo en minutos
                 'descripcion' => 'Duración estándar de cada cita en minutos',
             ],
             [
                 'clave' => 'precio_cita',
-                'valor' => '25.00',
+                'valor' => '25.00',//precio en euros
                 'descripcion' => 'Precio base de cada cita',
             ],
             [
                 'clave' => 'dias_no_laborables',
-                'valor' => json_encode(['2025-06-05', '2025-12-25']),
+                'valor' => json_encode(['2025-12-25', '2025-01-01', '2025-05-01']),
                 'descripcion' => 'Fechas específicas en las que no se trabaja',
             ],
             [
                 'clave' => 'horario_laboral',
                 'valor' => json_encode([
-                    'apertura' => '09:00',
-                    'cierre' => '17:00',
+                    'apertura' => '08:00',//hora de inicio de la jornada
+                    'cierre' => '16:00',//hora de fin de la jornada
                     'jornada_partida' => false,
                 ]),
                 'descripcion' => 'Horario general de atención',
             ],
             [
                 'clave' => 'notificaciones_email',
-                'valor' => 'true',
+                'valor' => 'false',//Idea de implementar notificaciones por email, más adelante
                 'descripcion' => '¿Enviar correos recordatorios de citas?',
             ],
             [
                 'clave' => 'color_tema',
-                'valor' => '#28a745',
+                'valor' => '#28a745',//Idea de configurar el color del tema, más adelante
                 'descripcion' => 'Color principal del sistema',
             ],
         ]);

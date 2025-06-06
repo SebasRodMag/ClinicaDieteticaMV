@@ -21,7 +21,7 @@ class CitasSeeder extends Seeder
      */
     public function run()
     {
-        $citasACrear = 800;
+        $citasACrear = 1000;
         $intentosMaximos = 1000;
         $creadas = 0;
         $intentos = 0;

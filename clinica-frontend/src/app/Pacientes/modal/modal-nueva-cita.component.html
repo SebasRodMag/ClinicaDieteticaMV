@@ -7,21 +7,26 @@
             </div>
 
             <div class="modal-body">
-                <!-- Paciente -->
+                <!-- Especialidades -->
                 <div class="mb-3">
-                    <label for="paciente" class="form-label">Paciente</label>
-                    <select id="paciente" class="form-select" [(ngModel)]="pacienteSeleccionado">
-                        <option [ngValue]="null">Seleccione un paciente</option>
-                        <option *ngFor="let p of pacientes" [ngValue]="p.id">{{ p.usuario?.nombre}}</option>
+                    <label for="especialidad" class="form-label">Especialidad</label>
+                    <select id="especialidad" class="form-select" [(ngModel)]="especialidadSeleccionada"
+                        (ngModelChange)="filtrarEspecialistasPorEspecialidad()">
+                        <option [ngValue]="null">Seleccione una especialidad</option>
+                        <option *ngFor="let especialidad of especialidades" [ngValue]="especialidad">
+                            {{ especialidad }}
+                        </option>
                     </select>
                 </div>
 
-                <!-- Especialista -->
+                <!-- Especialistas -->
                 <div class="mb-3">
                     <label for="especialista" class="form-label">Especialista</label>
                     <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado">
                         <option [ngValue]="null">Seleccione un especialista</option>
-                        <option *ngFor="let e of especialistas" [ngValue]="e.id">{{ e.usuario.nombre }} {{e.usuario.apellidos}}</option>
+                        <option *ngFor="let esp of especialistasFiltrados" [ngValue]="esp.id">
+                            {{ esp.usuario.nombre }} {{ esp.usuario.apellidos }}
+                        </option>
                     </select>
                 </div>
 
@@ -34,16 +39,23 @@
                     </select>
                 </div>
 
-                <!-- Fecha y Hora -->
+                <!-- Fecha -->
                 <div class="mb-3">
-                    <label for="fechaHora" class="form-label">Fecha y hora</label>
-                    <input id="fechaHora" type="datetime-local" class="form-control" [(ngModel)]="fechaHora" />
+                    <label for="fecha" class="form-label">Fecha</label>
+                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate" (change)="validateDate()" />
+                    <div *ngIf="dateError" class="text-danger mt-1">{{ dateError }}</div>
+                </div>
+
+                <!-- Hora -->
+                <div class="mb-3">
+                    <label for="hora" class="form-label">Hora</label>
+                    <input id="hora" type="time" class="form-control" [(ngModel)]="hora" />
                 </div>
             </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
-                <button type="button" class="btn btn-primary" [disabled]="cargando" (click)="confirmar()">
+                <button type="button" class="btn btn-primary" [disabled]="cargando || !!dateError || !fecha || !hora || !pacienteSeleccionado || !especialistaSeleccionado" (click)="confirmar()">
                     {{ cargando ? 'Guardando...' : 'Crear Cita' }}
                 </button>
             </div>

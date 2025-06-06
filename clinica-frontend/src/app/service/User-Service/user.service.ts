@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Paciente } from '../../models/paciente.model';
 import { Usuario } from '../../models/usuario.model';
+import { EspecialistaNombre } from '../../models/especialistaPorNombre.modelo';
+import { PacienteNombre } from '../../models/pacientePorNombre.model';
 import { Especialista } from '../../models/especialista.model';
 import { EspecialistaList } from '../../models/especialistaList.model';
 import { UsuarioDisponible } from '../../models/usuarioDisponible.model';
@@ -99,6 +101,31 @@ export class UserService {
     }
 
     getEspecialistas(): Observable<Especialista[]> {
-        return this.http.get<Especialista[]>('/api/especialistas/listado-minimo');
+        return this.http.get<Especialista[]>('/especialistas/listado-minimo');
+    }
+
+    getPacientesPorNombre(): Observable<PacienteNombre[]>{
+        return this.http.get<PacienteNombre[]>('/pacientespornombre');
+    }
+
+    getEspecialistaPorNombre(): Observable<EspecialistaNombre[]>{
+        return this.http.get<EspecialistaNombre[]>('/pacientespornombre');
+    }
+
+    getEspecialidades(): Observable<string[]> {
+        return this.http.get<string[]>(`${this.apiUrl}/especialidades`);
+    }
+
+    getEspecialistasPorEspecialidad(especialidad: string): Observable<Especialista[]> {
+        return this.http.get<Especialista[]>(`${this.apiUrl}/especialistas?especialidad=${encodeURIComponent(especialidad)}`);
+    }
+
+    /******************************************************************************/
+    /************************ Rutas para Configuración ****************************/
+    /******************************************************************************/
+
+
+    getConfiguracion(): Observable<any[]>{
+        return this.http.get<any>(`${this.apiUrl}/configuracion-general`);
     }
 }

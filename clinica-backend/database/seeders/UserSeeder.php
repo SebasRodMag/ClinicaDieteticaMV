@@ -34,13 +34,18 @@ class UserSeeder extends Seeder
         // Definimos la cantidad de usuarios a crear por rol
         $cantidadUsuario = 100;
         $cantidadAdministrador = 2;
-        $cantidadPaciente = 600;
+        $cantidadPaciente = 1000;
         $cantidadEspecialista = 100;
 
         $this->crearUsuariosConRol($cantidadUsuario, 'usuario', $faker);
         $this->crearUsuariosConRol($cantidadAdministrador, 'administrador', $faker);
         $this->crearUsuariosConRol($cantidadPaciente, 'paciente', $faker);
         $this->crearUsuariosConRol($cantidadEspecialista, 'especialista', $faker);
+
+        $this->command->info("Se crearon {$cantidadUsuario} usuarios normales correctamente.");
+        $this->command->info("Se crearon {$cantidadAdministrador} administradores correctamente.");
+        $this->command->info("Se crearon {$cantidadPaciente} pacientes correctamente.");
+        $this->command->info("Se crearon {$cantidadEspecialista} especialistas correctamente.");
     }
 
     /**
@@ -71,17 +76,19 @@ class UserSeeder extends Seeder
             $user->assignRole($rol);
 
             if ($rol === 'paciente') {
-                Paciente::create([
-                    'user_id' => $user->id,
-                    'numero_historial' => strtoupper(Str::random(10)),
-                    'fecha_alta' => $faker->dateTimeBetween('-2 years', 'now'),
-                    'fecha_baja' => null,
-                ]);
+                // Removed creation of Paciente here to avoid overlap with PacienteSeeder
+                // Paciente::create([
+                //     'user_id' => $user->id,
+                //     'numero_historial' => strtoupper(Str::random(10)),
+                //     'fecha_alta' => $faker->dateTimeBetween('-2 years', 'now'),
+                //     'fecha_baja' => null,
+                // ]);
             } elseif ($rol === 'especialista') {
-                Especialista::create([
-                    'user_id' => $user->id,
-                    'especialidad' => $faker->randomElement(['Nutrición', 'Endocrinología', 'Medicina General'])
-                ]);
+                // Removed creation of Especialista here to avoid overlap with EspecialistaSeeder
+                // Especialista::create([
+                //     'user_id' => $user->id,
+                //     'especialidad' => $faker->randomElement(['Nutrición', 'Endocrinología', 'Medicina General'])
+                // ]);
             }
         }
     }

@@ -52,9 +52,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
-    Route::middelware('role:paciente|paciente')->group(function(){
+    Route::middleware('role:paciente|especialista|especialista')->group(function(){
         Route::post('citas', [CitaController::class, 'nuevaCita']);
-    })
+        Route::get('pacientespornombre', [PacienteController::class, 'listarPacientesPorNombre']);
+        Route::get('especialistapornombre',[Especialista::class, 'listarEspecialistasPorNombre']);
+        Route::get('especialistas/{id}/horas-disponibles', [CitaController::class, 'horasDisponibles']);
+        Route::get('configuracion-general', [CitaController::class, 'configuracion']);
+        Route::get('especialidades', [EspecialistaController::class, 'listarEspecialidades']);
+        Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
+    });
     /**
      * 
      * Rutas para la vista de Paciente
@@ -62,10 +68,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:paciente')->group(function () {
         Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
-        Route::post('pacientes/{id}/citas',[CistaController::class, 'crearNuevaCita']);
+        Route::post('pacientes/{id}/citas',[CitaController::class, 'crearNuevaCita']);
         Route::patch('citas/{id}/cancelar',[CitaController::class,'cancelarCita']);
-        Route::get('especialidades', [EspecialistaController::class, 'listarEspecialidades']);
-        Route::get('especialistas?especialidad=xxx', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
+        
+        Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
         Route::get('pacientes/{id}', [PacienteController::class, 'verPaciente']);
         Route::put('pacientes/{id}',[PacienteController::class, 'actualizarPaciente']);
         Route::put('pacientes/{id}/cambiar-password', [PacienteController::class, 'cambiarPassword']);
@@ -94,5 +100,5 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Ruta ejemplo para área admin con middleware de rol
     Route::get('/admin', fn() => response()->json(['message' => 'Área de admin']))
-        ->middleware('role:adminstrador');
+        ->middleware('role:administrador');
 });

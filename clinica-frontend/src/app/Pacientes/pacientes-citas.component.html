@@ -16,8 +16,11 @@
         Cancelar
     </button>
 </ng-template>
-<app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible" [idPaciente]="paciente.id"
-    [idEspecialista]="especialista.id" (cerrado)="modalVisible = false"
+<button (click)="nuevaCita()" class="btn btn-primary">
+    Nuevo Especialista
+</button>
+<app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible"
+    [idEspecialista]="especialista?.id" (cerrado)="modalVisible = false"
     (creada)="obtenerCitas(); modalVisible = false">
 </app-modal-nueva-cita>
 <div *ngIf="loading" class="spinner mt-3">

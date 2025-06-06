@@ -20,6 +20,7 @@ class PacienteSeeder extends Seeder
 
         $usuariosPaciente = User::role('paciente')->get();
 
+        $creados = 0;
         foreach ($usuariosPaciente as $usuario) {
             //Verificar si ya tiene paciente para evitar duplicados
             if ($usuario->paciente) {
@@ -32,6 +33,8 @@ class PacienteSeeder extends Seeder
                 'fecha_alta' => $faker->dateTimeBetween('-2 years', 'now'),
                 'fecha_baja' => $faker->boolean(20) ? $faker->dateTimeBetween('now', '+1 year') : null,
             ]);
+            $creados++;
         }
+        $this->command->info("Se crearon {$creados} pacientes correctamente.");
     }
 }

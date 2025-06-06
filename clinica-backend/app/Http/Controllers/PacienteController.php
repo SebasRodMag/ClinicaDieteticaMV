@@ -41,6 +41,43 @@ class PacienteController extends Controller
     }
 
 
+
+    /**
+     * Muestra la lista de pacientes con su nombre
+     * Lista todo los pacientes registrados en la base de datos con id y su nombre y apellido.
+     * @return \Illuminate\Http\JsonResponse esta función devuelve una respuesta JSON con el listado de pacientes.
+     * @throws \Exception Envía un mensaje de error si no se encuentra el paciente.
+     */
+
+    public function listarPacientesPorNombre(): JsonResponse
+    {
+        $respuesta = [];
+        $codigo = 200;
+        try{
+            $user = Auth::user()->id;
+            $pacientes = Pacientes::all();
+            $usuarios = Users::all();
+
+            if($paciente->isempty()){
+                $this->registrarLog(auth()->id(), 'listar_pacientes_por_nombre_no_encontrados',$user);
+                $respuesta = ['message' => 'No hay pacientes disponibles'];
+                $codigo = 404;
+            }else{
+                $this->registrarLog(auth()->id(), 'listar', 'listado_paciente_por_nombre', $user);
+                $respuesta = [
+                    'id' => $paciente->usuario->id,
+                    'nombre' => $paciente->usuario->nombre,
+                ];
+            }
+        }catch (\Throwable $e) {
+                $this->logError(auth()->id(),'Error al obtener pacientes: ' . $e->getMessage(), $user);
+                $respuesta = ['message' => 'Error al obtener los pacientes'];
+                $codigo = 500;
+            }
+        return response()->json($respuesta, $codigo);
+    }
+
+
     /**
      * Crea un nuevo paciente.
      * Registra un nuevo paciente en la base de datos.

@@ -6,10 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\Paciente;
 use App\Models\Especialista;
 use App\Models\Cita;
+use App\Models\Configuracion;
 use Illuminate\Support\Facades\Log;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 
 class CitaController extends Controller
 {
@@ -453,22 +455,94 @@ class CitaController extends Controller
 
             $paciente = $cita->paciente;
             if (auth()->user()->id !== $paciente->user_id) {
+                $this->registrarLog($userId, 'Error_cancelar_cita_paciente_usuario_no_autorizado', $userId);
                 $respuesta = response()->json(['error' => 'No autorizado'], 403);
+                
             } elseif ($cita->estado !== 'pendiente') {
+                $this->registrarLog($userId, 'Error_cancelar_cita_no_tiene_estado_pendiente', $userId);
                 $respuesta = response()->json(['error' => 'Sólo se pueden cancelar citas pendientes'], 422);
             } else {
                 $cita->estado = 'cancelado';
                 $cita->save();
-
+                $this->registrarLog($userId, 'Cita_cancelada_correctamente', $userId);
                 $respuesta = response()->json(['mensaje' => 'Cita cancelada correctamente']);
             }
         } catch (\Exception $e) {
             $respuesta = response()->json(['error' => 'Cita no encontrada'], 404);
+            $this->registrarLog($userId, 'Error_al_buscar_cita_no_encontrada', $userId);
         }
 
         return $respuesta;
     }
 
+
+    /**
+     * Método para listar las horas disponibles de un medico, para un dia determinado
+     * Esté método, recibe como parámetro, el id del medico y la fecha de la cita para listar los horarios disponibles
+     * para ello, se apoya en las funciones auxiliares, esFinDeSemana(), esFestivo(), esHoraValida().
+     */
+    public function horasDisponibles(Request $request, int $idEspecialista)
+    {
+        // Validar que la fecha venga en el formato correcto
+        $request->validate([
+            'fecha' => 'required|date_format:Y-m-d',
+        ]);
+
+        $fecha = Carbon::createFromFormat('Y-m-d', $request->input('fecha'))->startOfDay();
+
+        // Si es fin de semana
+        if ($fecha->isWeekend()) {
+            return response()->json(['horas_disponibles' => []]);
+        }
+
+        // Festivos desde tabla 'configuracion'
+        $festivos = json_decode(
+            Configuracion::where('clave', 'dias_no_laborables')->value('valor'),
+            true
+        ) ?? [];
+
+        if (in_array($fecha->toDateString(), $festivos)) {
+            return response()->json(['horas_disponibles' => []]);
+        }
+
+        // Horario laboral y duración
+        $horario = json_decode(
+            Configuracion::where('clave', 'horario_laboral')->value('valor'),
+            true
+        ) ?? [];
+
+        if (!isset($horario['apertura'], $horario['cierre'])) {
+            return response()->json(['horas_disponibles' => []]);
+        }
+
+        $duracion = (int) Configuracion::where('clave', 'duracion_cita')->value('valor') ?? 30;
+
+        $horaInicio = Carbon::createFromTimeString($horario['apertura']);
+        $horaFin = Carbon::createFromTimeString($horario['cierre']);
+
+        // Citas ya ocupadas ese día
+        $citasOcupadas = Cita::where('id_especialista', $idEspecialista)
+            ->whereDate('fecha_hora_cita', $fecha)
+            ->where('estado', 'pendiente')
+            ->pluck('fecha_hora_cita')
+            ->map(fn($cita) => Carbon::parse($cita)->format('H:i'));
+
+        // Generar los bloques de horario disponibles
+        $hora = $fecha->copy()->setTimeFromTimeString($horaInicio->format('H:i'));
+        $horaLimite = $fecha->copy()->setTimeFromTimeString($horaFin->format('H:i'));
+
+        $disponibles = [];
+
+        while ($hora < $horaLimite) {
+            $horaStr = $hora->format('H:i');
+            if (!$citasOcupadas->contains($horaStr)) {
+                $disponibles[] = $horaStr;
+            }
+            $hora->addMinutes($duracion);
+        }
+
+        return response()->json(['horas_disponibles' => $disponibles]);
+    }
     // --- Funciones auxiliares privadas ---
 
     /**
@@ -488,14 +562,36 @@ class CitaController extends Controller
      * @param Carbon $fecha
      * @return bool
      */
+
     private function esFestivo(Carbon $fecha): bool
     {
-        $festivos = [
-            '2025-01-01',
-            '2025-05-01',
-            '2025-12-25',
-        ];
-        return in_array($fecha->toDateString(), $festivos);
+        $userId = auth()->user()->id;
+
+        try {
+            $config = Configuracion::where('clave', 'dias_no_laborables')->first();
+
+            if (!$config) {
+                Log::warning('Configuración dias_no_laborables no encontrada');
+                $this->registrarLog($userId, 'Error_Configuracion_dias_no_laborables no encontrada', $userId);
+                return false;
+            }
+
+            $diasNoLaborables = json_decode($config->valor, true);
+
+            if (!is_array($diasNoLaborables)) {
+                Log::warning('dias_no_laborables no es un array válido');
+                return false;
+            }
+
+            $fechaSolo = $fecha->toDateString(); // convierte a 'YYYY-MM-DD'
+
+            $this->registrarLog($userId, 'Se_consulta_Configuracion_dias_no_laborables', $userId);
+
+            return in_array($fechaSolo, $diasNoLaborables);
+        } catch (\Exception $e) {
+            Log::error('Error al consultar dias_no_laborables: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -506,14 +602,32 @@ class CitaController extends Controller
      */
     private function esHoraValida(Carbon $fechaHora): bool
     {
-        $horaInicio = Carbon::createFromTime(8, 0);
-        $horaFin = Carbon::createFromTime(14, 30);
-        $minutos = $fechaHora->minute;
+        try {
+            $config = Configuracion::where('clave', 'horario_laboral')->first();
 
-        $esMinutoValido = ($minutos === 0 || $minutos === 30);
-        $esHoraValida = $fechaHora->between($horaInicio, $horaFin);
+            if (!$config) {
+                Log::warning('Configuración horario_laboral no encontrada');
+                return false;
+            }
 
-        return $esMinutoValido && $esHoraValida;
+            $horario = json_decode($config->valor, true);
+
+            if (!is_array($horario) || !isset($horario['apertura']) || !isset($horario['cierre'])) {
+                Log::warning('Valor de horario_laboral no es válido');
+                return false;
+            }
+
+            $horaInicio = Carbon::createFromFormat('H:i', $horario['apertura']);
+            $horaFin = Carbon::createFromFormat('H:i', $horario['cierre']);
+
+            $esMinutoValido = in_array($fechaHora->minute, [0, 30]);
+            $esHoraValida = $fechaHora->between($horaInicio, $horaFin);
+
+            return $esMinutoValido && $esHoraValida;
+        } catch (\Exception $e) {
+            Log::error('Error al validar horario laboral: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -530,6 +644,21 @@ class CitaController extends Controller
             ->where('estado', 'pendiente')
             ->exists();
     }
+
+
+    /**
+     * Compartir la configuración principal con el Frontend
+     */
+    public function configuracion()
+    {
+        return response()->json([
+            'horario_laboral' => json_decode(Configuracion::where('clave', 'horario_laboral')->value('valor'), true),
+            'dias_no_laborables' => json_decode(Configuracion::where('clave', 'dias_no_laborables')->value('valor'), true),
+            'duracion_cita' => (int) Configuracion::where('clave', 'duracion_cita')->value('valor')
+        ]);
+    }
+
+    
 
 
 }

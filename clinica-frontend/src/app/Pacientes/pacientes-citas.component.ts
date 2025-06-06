@@ -8,6 +8,7 @@ import { CitaPorPaciente } from '../models/citasPorPaciente.model';
 import { FormsModule } from '@angular/forms';
 import { Paciente } from '../models/paciente.model';
 import {ModalNuevaCitaComponent}from './modal/modal-nueva-cita.component';
+import { Especialista } from '../models/especialista.model';
 
 @Component({
     selector: 'app-pacientes-citas',
@@ -30,6 +31,9 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
 
     columnaOrden: string | null = null;
     direccionOrdenAsc: boolean = true;
+
+    especialistas: Especialista[] = [];
+    especialidades: string[] = [];
 
     columnas = ['id', 'fecha', 'hora', 'estado', 'nombre_especialista', 'accion'];
 
@@ -139,6 +143,8 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
     }
 
     nuevaCita(): void {
-        
+        this.modalVisible = true;
     }
+
+
 }
