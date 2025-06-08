@@ -18,6 +18,10 @@ export class UserService {
 
     constructor(private http: HttpClient) { }
 
+    logout(): Observable<any>{
+        return this.http.post(`${this.apiUrl}/logout`, null);
+    }
+
     getUsuarios(): Observable<Usuario[]> {
         return this.http.get<Usuario[]>(`${this.apiUrl}/usuarios`);
     }
@@ -81,6 +85,12 @@ export class UserService {
         return this.http.get(`${this.apiUrl}/pacientes/${id}`);
     }
 
+    getHorasDisponibles(idEspecialista: number, fecha: string): Observable<string[]> {
+        return this.http.get<string[]>(`${this.apiUrl}/especialistas/${idEspecialista}/horas-disponibles`, {
+            params: { fecha }
+        });
+    }
+
 
     /******************************************************************************/
     /**************** Rutas para Dashboard de especialista ***************************/
@@ -93,7 +103,7 @@ export class UserService {
     }
 
     crearCita(data: any): Observable<any> {
-        return this.http.post('/api/citas', data);
+        return this.http.post(`${this.apiUrl}/citas`, data);
     }
 
     getPacientes(): Observable<Paciente[]> {
@@ -120,6 +130,8 @@ export class UserService {
         return this.http.get<Especialista[]>(`${this.apiUrl}/especialistas?especialidad=${encodeURIComponent(especialidad)}`);
     }
 
+    
+
     /******************************************************************************/
     /************************ Rutas para Configuración ****************************/
     /******************************************************************************/
@@ -128,4 +140,6 @@ export class UserService {
     getConfiguracion(): Observable<any[]>{
         return this.http.get<any>(`${this.apiUrl}/configuracion-general`);
     }
+
+    
 }

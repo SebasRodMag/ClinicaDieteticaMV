@@ -22,7 +22,7 @@
                 <!-- Especialistas -->
                 <div class="mb-3">
                     <label for="especialista" class="form-label">Especialista</label>
-                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado">
+                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado" (ngModelChange)="onEspecialistaChange()">
                         <option [ngValue]="null">Seleccione un especialista</option>
                         <option *ngFor="let esp of especialistasFiltrados" [ngValue]="esp.id">
                             {{ esp.usuario.nombre }} {{ esp.usuario.apellidos }}
@@ -42,21 +42,26 @@
                 <!-- Fecha -->
                 <div class="mb-3">
                     <label for="fecha" class="form-label">Fecha</label>
-                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate" (change)="validateDate()" />
+                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate" (change)="onFechaChange()" />
                     <div *ngIf="dateError" class="text-danger mt-1">{{ dateError }}</div>
                 </div>
 
                 <!-- Hora -->
                 <div class="mb-3">
                     <label for="hora" class="form-label">Hora</label>
-                    <input id="hora" type="time" class="form-control" [(ngModel)]="hora" />
+                    <select id="hora" class="form-select" [(ngModel)]="hora" [disabled]="horasDisponibles.length === 0">
+                        <option [ngValue]="null">Seleccione una hora</option>
+                        <option *ngFor="let horaDisponible of horasDisponibles" [value]="horaDisponible">
+                            {{ horaDisponible }}
+                        </option>
+                    </select>
                 </div>
             </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
-                <button type="button" class="btn btn-primary" [disabled]="cargando || !!dateError || !fecha || !hora || !pacienteSeleccionado || !especialistaSeleccionado" (click)="confirmar()">
-                    {{ cargando ? 'Guardando...' : 'Crear Cita' }}
+                <button type="button" class="btn btn-primary" [disabled]="cargando || !!dateError || !fecha || !hora || especialistaSeleccionado == null" (click)="confirmar()">
+                    {{ cargando ? 'Guardando...' : 'Crear cita' }}
                 </button>
             </div>
         </div>

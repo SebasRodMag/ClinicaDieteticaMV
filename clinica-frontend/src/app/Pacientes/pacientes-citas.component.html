@@ -1,6 +1,7 @@
 <div class="mb-3">
     <h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
 
+
     <input type="text" [(ngModel)]="filtro" placeholder="Buscar pacientes o especialistas" class="form-control mb-3"
         (ngModelChange)="filtrarCitas()" />
 </div>
@@ -17,7 +18,7 @@
     </button>
 </ng-template>
 <button (click)="nuevaCita()" class="btn btn-primary">
-    Nuevo Especialista
+    Nueva cita
 </button>
 <app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible"
     [idEspecialista]="especialista?.id" (cerrado)="modalVisible = false"

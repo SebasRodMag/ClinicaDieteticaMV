@@ -4,6 +4,7 @@ import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.compo
 import { UserService } from '../service/User-Service/user.service';
 import { AuthService } from '../service/Auth-Service/Auth.service';
 import { PacientesCitasComponent } from './pacientes-citas.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-paciente-citas',
@@ -14,13 +15,31 @@ import { PacientesCitasComponent } from './pacientes-citas.component';
 export class PacienteDashboardComponent {
 
   constructor(
-    private userService: UserService,
-    private authService: AuthService
+    private UserService: UserService,
+    private authService: AuthService,
+    private snackBar: MatSnackBar 
   ) { }
 
 
 
-  logout(){
-    this.authService.logout();
+  logout(): void {
+    this.UserService.logout().subscribe({
+      next: () => {
+        this.authService.logout();
+        this.mostrarMensaje('Sesión cerrada correctamente', 'success');
+        // Redirect to login or reload page
+        window.location.href = '/login';
+      },
+      error: () => {
+        this.mostrarMensaje('Error al cerrar sesión', 'error');
+      }
+    });
+  }
+
+  mostrarMensaje(mensaje: string, tipo: 'success' | 'error') {
+    this.snackBar.open(mensaje, 'Cerrar', {
+      duration: 3000,
+      panelClass: tipo === 'success' ? ['snackbar-' + tipo] : undefined,
+    });
   }
 }

@@ -16,7 +16,6 @@ import { Especialista } from '../../models/especialista.model';
 })
 export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     @Input() modalVisible!: boolean;
-    @Input() idPaciente!: number;
     @Input() idEspecialista!: number;
     especialidades: string[] = [];
     @Input() todosLosEspecialistas: Especialista[] = [];
@@ -27,7 +26,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     pacientes: Paciente[] = [];
     especialistas: Especialista[] = [];
 
-    pacienteSeleccionado: number | null = null;
     especialistaSeleccionado: number | null = null;
     especialidadSeleccionada: string | null = null;
     especialistasFiltrados: Especialista[] = [];
@@ -37,6 +35,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     comentarios: string = '';
     cargando = false;
     dateError: string | null = null;
+    horasDisponibles: string[] = [];
 
     diasNoLaborables: string[] = [];
     horarioLaboral: any = null;
@@ -56,6 +55,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             this.dateError = null;
             this.fecha = '';
             this.hora = '';
+            this.horasDisponibles = [];
         }
     }
 
@@ -74,6 +74,37 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
                 this.horarioLaboral = config.horario_laboral || null;
             },
             error: () => this.snackBar.open('Error al cargar configuración general', 'Cerrar', { duration: 3000 })
+        });
+    }
+
+    onEspecialistaChange(): void {
+        this.hora = '';
+        this.horasDisponibles = [];
+        if (this.especialistaSeleccionado && this.fecha) {
+            this.cargarHorasDisponibles();
+        }
+    }
+
+    onFechaChange(): void {
+        this.hora = '';
+        this.horasDisponibles = [];
+        this.validateDate();
+        if (this.especialistaSeleccionado && this.fecha && !this.dateError) {
+            this.cargarHorasDisponibles();
+        }
+    }
+
+    private cargarHorasDisponibles(): void {
+        this.UserService.getHorasDisponibles(this.especialistaSeleccionado!, this.fecha).subscribe({
+            next: (response: any) => {
+                this.horasDisponibles = response.horas_disponibles || [];
+                if (this.horasDisponibles.length === 0) {
+                    this.snackBar.open('No hay horas disponibles para la fecha seleccionada', 'Cerrar', { duration: 4000 });
+                }
+            },
+            error: () => {
+                this.snackBar.open('Error al cargar horas disponibles', 'Cerrar', { duration: 3000 });
+            }
         });
     }
 
@@ -107,7 +138,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     }
 
     confirmar(): void {
-        if (!this.pacienteSeleccionado || !this.especialistaSeleccionado || !this.fecha || !this.hora || !this.tipoCita) {
+        if (!this.especialistaSeleccionado || !this.fecha || !this.hora || !this.tipoCita) {
             this.snackBar.open('Complete todos los campos obligatorios', 'Cerrar', { duration: 3000 });
             return;
         }
@@ -121,13 +152,12 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
 
         this.cargando = true;
 
-        const fechaHora = `${this.fecha}T${this.hora}`;
+        const fechaHora = `${this.fecha} ${this.hora}:00`;
 
         this.UserService.crearCita({
-            paciente_id: this.pacienteSeleccionado,
             especialista_id: this.especialistaSeleccionado,
-            fecha_hora: fechaHora,
-            tipo: this.tipoCita,
+            fecha_hora_cita: fechaHora,
+            tipo_cita: this.tipoCita,
         }).subscribe({
             next: () => {
                 this.snackBar.open('Cita creada correctamente', 'Cerrar', { duration: 3000 });

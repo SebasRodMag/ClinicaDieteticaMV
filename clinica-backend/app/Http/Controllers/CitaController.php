@@ -87,19 +87,53 @@ class CitaController extends Controller
         $codigo = 201;
 
         $validar = $solicitud->validate([
-            'paciente_id'     => 'required|exists:pacientes,id',
-            'especialista_id' => 'required|exists:especialistas,id',
-            'fecha_hora'      => 'required|date_format:Y-m-d H:i:s|after:now',
-            'tipo'            => 'required|string|max:50',
+            'paciente_id'     => 'sometimes|exists:pacientes,id',
+            'especialista_id' => 'sometimes|exists:especialistas,id',
+            'fecha_hora_cita'      => 'required|date_format:Y-m-d H:i:s|after:now',
+            'tipo_cita'            => 'required|string|max:50',
             'comentarios'     => 'nullable|string',
         ]);
 
         try {
+            $userId = auth()->id();
+
+            // Si no se proporciona paciente_id, obtenerlo desde la tabla pacientes según user_id
+            if (empty($validar['paciente_id'])) {
+                $paciente = Paciente::where('user_id', $userId)->first();
+                if (!$paciente) {
+                    Log::error("Paciente no encontrado para el usuario autenticado con user_id: $userId");
+                    $this->registrarLog($userId, 'crear_cita_error', 'Paciente no encontrado para el usuario autenticado');
+                    // Log full exception stack trace for debugging
+                    Log::error("Request data: " . json_encode($validar));
+                    return response()->json(['message' => 'Paciente no encontrado para el usuario autenticado'], 404);
+                }
+                $validar['paciente_id'] = $paciente->id;
+            }
+
+            // Si no se proporciona especialista_id, obtenerlo desde la tabla especialistas según user_id
+            if (empty($validar['especialista_id'])) {
+                $especialista = Especialista::where('user_id', $userId)->first();
+                if (!$especialista) {
+                    return response()->json(['message' => 'Especialista no encontrado para el usuario autenticado'], 404);
+                }
+                $validar['especialista_id'] = $especialista->id;
+            }
+
             //Las citas tienen el estado 'pendiente' por defecto
-            $datos = array_merge($validar, ['estado' => 'pendiente']);
+            // Map 'paciente_id' and 'especialista_id' to 'id_paciente' and 'id_especialista'
+            $datos = $validar;
+            if (isset($datos['paciente_id'])) {
+                $datos['id_paciente'] = $datos['paciente_id'];
+                unset($datos['paciente_id']);
+            }
+            if (isset($datos['especialista_id'])) {
+                $datos['id_especialista'] = $datos['especialista_id'];
+                unset($datos['especialista_id']);
+            }
+            $datos = array_merge($datos, ['estado' => 'pendiente']);
             $cita = Cita::create($datos);
 
-            $this->registrarLog(auth()->id(), 'crear_cita', "Cita creada ID {$cita->id}");
+            $this->registrarLog($userId, 'crear_cita', "Cita creada ID {$cita->id}");
 
             $respuesta = [
                 'message' => 'Cita creada correctamente',

@@ -48,6 +48,11 @@ class ConfiguracionSeeder extends Seeder
                 'valor' => '#28a745',//Idea de configurar el color del tema, más adelante
                 'descripcion' => 'Color principal del sistema',
             ],
+            [
+                'clave' => 'Crear_cita_paciente',
+                'valor' => 'true',
+                'descripcion' => 'Permitir que un paciente pueda crear una cita',
+            ],
         ]);
     }
 }

@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
 import { Cita } from '../models/cita.model';
 import { UserService } from '../service/User-Service/user.service';
+import { AuthService } from '../service/Auth-Service/Auth.service';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
 import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -41,10 +42,29 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
 
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
-    constructor(private UserService: UserService, private snackBar: MatSnackBar) { }
+    allowCrearCitaPaciente: boolean = false;
+
+    constructor(private UserService: UserService, private authService: AuthService, private snackBar: MatSnackBar) { }
 
     ngOnInit(): void {
         this.obtenerCitas();
+        this.cargarConfiguracion();
+    }
+
+    cargarConfiguracion(): void {
+        this.UserService.getConfiguracion().subscribe({
+            next: (config: any) => {
+                if (config && config['Crear_cita_paciente'] !== undefined) {
+                    this.allowCrearCitaPaciente = config['Crear_cita_paciente'] === 'true';
+                } else {
+                    this.allowCrearCitaPaciente = false;
+                }
+            },
+            error: () => {
+                this.allowCrearCitaPaciente = false;
+                this.snackBar.open('Error al cargar configuración', 'Cerrar', { duration: 3000 });
+            }
+        });
     }
 
     ngAfterViewInit(): void {
