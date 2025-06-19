@@ -55,27 +55,27 @@ class PacienteController extends Controller
     {
         $respuesta = [];
         $codigo = 200;
-        try{
+        try {
             $user = Auth::user()->id;
             $pacientes = Paciente::all();
             $usuarios = User::all();
 
-            if($pacientes->isempty()){
-                $this->registrarLog(auth()->id(), 'listar_pacientes_por_nombre_no_encontrados',$user);
+            if ($pacientes->isempty()) {
+                $this->registrarLog(auth()->id(), 'listar_pacientes_por_nombre_no_encontrados', $user);
                 $respuesta = ['message' => 'No hay pacientes disponibles'];
                 $codigo = 404;
-            }else{
+            } else {
                 $this->registrarLog(auth()->id(), 'listar', 'listado_paciente_por_nombre', $user);
                 $respuesta = [
                     'id' => $pacientes->usuario->id,
                     'nombre' => $pacientes->usuario->nombre,
                 ];
             }
-        }catch (\Throwable $e) {
-                $this->logError(auth()->id(),'Error al obtener pacientes: ' . $e->getMessage(), $user);
-                $respuesta = ['message' => 'Error al obtener los pacientes'];
-                $codigo = 500;
-            }
+        } catch (\Throwable $e) {
+            $this->logError(auth()->id(), 'Error al obtener pacientes: ' . $e->getMessage(), $user);
+            $respuesta = ['message' => 'Error al obtener los pacientes'];
+            $codigo = 500;
+        }
         return response()->json($respuesta, $codigo);
     }
 
@@ -140,8 +140,8 @@ class PacienteController extends Controller
             $codigo = 500;
         }
 
-    return response()->json($respuesta, $codigo);
-}
+        return response()->json($respuesta, $codigo);
+    }
 
 
     /**
@@ -229,14 +229,14 @@ class PacienteController extends Controller
     // originalmente se empleaba una consulta compleja, por medio de un left join, pero aquí se simplifica utilizando Eloquent,
     // utilizando la relación definida en el modelo Paciente para obtener la última cita.
     public function getFullPacientes(): JsonResponse
-        {
-            $respuesta = [];
-            $codigo = 200;
+    {
+        $respuesta = [];
+        $codigo = 200;
 
-            try {
-                $pacientes = Paciente::with(['usuario', 'ultimaCita'])->get();
+        try {
+            $pacientes = Paciente::with(['usuario', 'ultimaCita'])->get();
 
-                $resultado = $pacientes->map(function ($paciente) {
+            $resultado = $pacientes->map(function ($paciente) {
                 $especialista = optional($paciente->ultimaCita->especialista);
                 $usuarioEspecialista = optional($especialista->usuario);
 
@@ -264,25 +264,25 @@ class PacienteController extends Controller
                 ];
             });
 
-                if ($resultado->isEmpty()) {
-                    $this->registrarLog(auth()->id(), 'Pacientes_no_encontrados', 'paciente', null);
-                    $respuesta = ['message' => 'No se encontraron pacientes'];
-                    $codigo = 404;
-                } else {
-                    $this->registrarLog(auth()->id(), 'Pacientes_no_encontrados', 'paciente', null);
-                    $respuesta = $resultado;
-                }
-
-            } catch (\Throwable $e) {
-                $this->logError(auth()->id(),'Error al obtener pacientes: ' . $e->getMessage(), null);
-                $respuesta = ['message' => 'Error al obtener los pacientes'];
-                $codigo = 500;
+            if ($resultado->isEmpty()) {
+                $this->registrarLog(auth()->id(), 'Pacientes_no_encontrados', 'paciente', null);
+                $respuesta = ['message' => 'No se encontraron pacientes'];
+                $codigo = 404;
+            } else {
+                $this->registrarLog(auth()->id(), 'Pacientes_no_encontrados', 'paciente', null);
+                $respuesta = $resultado;
             }
 
-            return response()->json($respuesta, $codigo);
+        } catch (\Throwable $e) {
+            $this->logError(auth()->id(), 'Error al obtener pacientes: ' . $e->getMessage(), null);
+            $respuesta = ['message' => 'Error al obtener los pacientes'];
+            $codigo = 500;
         }
 
-        public function pacientesConEspecialista()
+        return response()->json($respuesta, $codigo);
+    }
+
+    public function pacientesConEspecialista()
     {
         // Cargar pacientes con su usuario y preparar el resultado
         $pacientes = Paciente::with('user')->get()->map(function ($paciente) {
@@ -486,6 +486,64 @@ class PacienteController extends Controller
             return response()->json(['message' => 'Paciente no encontrado'], 404);
         }
         return response()->json($paciente);
+    }
+
+    /**
+     * Almacena un nuevo paciente en la base de datos.
+     * Esta función recibe una solicitud con los datos del paciente,
+     * valida los datos y crea un nuevo registro en la base de datos.
+     * Se maneja la transacción para asegurar que los datos se guarden correctamente
+     * y se registran los logs correspondientes.
+     *
+     * @param  \Illuminate\Http\Request  $solicitud request que contiene los datos del paciente
+     * @throws \Illuminate\Validation\ValidationException devuelve una excepción si los datos no cumplen con las reglas de validación.
+     * @throws \Exception lanza una excepción si ocurre un error al guardar el paciente.
+     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o error y el código de respuesta HTTP.
+     */
+    public function nuevoPaciente(Request $solicitud): JsonResponse
+    {
+        $respuesta = [];
+        $codigo = 201;
+
+        $validar = Validator::make($solicitud->all(), [
+            'user_id' => 'required|integer|exists:users,id',
+        ]);
+
+        if ($validar->fails()) {
+            return response()->json(['errors' => $validar->errors()], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Buscar el usuario por ID
+            $user = User::findOrFail($solicitud->user_id);
+
+            // Crear el paciente
+            $paciente = Paciente::create([
+                'user_id' => $user->id,
+            ]);
+
+            // Asignar el rol al usuario
+            $user->assignRole('paciente');
+
+            // Registrar log en la tabla correspondiente
+            $this->registrarLog(auth()->id(), 'create', "Paciente creado, user_id: {$user->id}", $paciente->id);
+
+
+            DB::commit();
+
+            $respuesta = [
+                'message' => 'Paciente creado correctamente',
+                'user' => $user,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $respuesta = ['message' => 'Error interno al crear paciente', 'error' => $e->getMessage()];
+            $codigo = 500;
+        }
+
+        return response()->json($respuesta, $codigo);
     }
 
 
