@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class EspecialistaController extends Controller
@@ -91,7 +92,7 @@ class EspecialistaController extends Controller
         
         try{
             $user = Auth::user()->id;
-            $especialista = Especialistas::all();
+            $especialista = Especialista::all();
             $usuarios = User::all();
 
             if($especialista->isEmpty()){
@@ -132,7 +133,7 @@ class EspecialistaController extends Controller
         $especialista = Especialista::find($id);
 
         if (!$especialista) {
-            $this->registrarLog(auth()->id(), 'actualizar_especialista_fallido', "Especialista ID $id no encontrado", 'especialistas');
+            $this->registrarLog(auth()->id(), 'actualizar_especialista_fallido', "Especialista ID $id no encontrado", $especialista->id);
             $respuesta = ['message' => 'Especialista no encontrado'];
             $codigo = 404;
         } elseif (!$solicitud->hasAny(['nombre', 'apellidos'])) {
@@ -147,7 +148,7 @@ class EspecialistaController extends Controller
             $especialista->fill($solicitud->only(['nombre', 'apellidos']));
             $especialista->save();
 
-            $this->registrarLog(auth()->id(), 'actualizar_especialista', "Actualización del especialista ID $id", 'especialistas');
+            $this->registrarLog(auth()->id(), 'actualizar_especialista', "Actualización del especialista ID $id", $especialista->id);
 
             $respuesta = [
                 'message' => 'Especialista actualizado correctamente',
@@ -179,7 +180,7 @@ class EspecialistaController extends Controller
         $especialista = Especialista::find($id);
 
         if (!$especialista) {
-            $this->registrarLog(auth()->id(), 'eliminar_especialista_fallido', 'Especialista no encontrado', 'especialistas');
+            $this->registrarLog(auth()->id(), 'eliminar_especialista_fallido', 'Especialista no encontrado', $especialista->id);
             $mensaje = ['message' => 'Especialista no encontrado'];
             $codigo = 404;
         } else {
