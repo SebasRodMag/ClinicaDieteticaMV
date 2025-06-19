@@ -17,8 +17,7 @@ export class AdminDashboardComponent {
   ) {}
 
   logout() {
-  // Aquí implementa la lógica real de logout, por ejemplo:
-  this.authService.logout(); // suponiendo que tienes un servicio de auth
-  this.router.navigate(['/login']); // o la ruta que uses para login
+  this.authService.logout();
+  this.router.navigate(['/login']);
 }
 }
