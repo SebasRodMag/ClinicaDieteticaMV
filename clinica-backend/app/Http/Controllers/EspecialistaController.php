@@ -243,7 +243,7 @@ class EspecialistaController extends Controller
             // Asignar el rol al usuario
             $user->assignRole('especialista');
 
-            // Registrar log (si tienes sistema de logging personalizado)
+            // Registrar log en su tabla especifica
             $this->registrarLog(auth()->id(), 'create', "Especialista creado, user_id: {$user->id}", $especialista->id);
 
 
