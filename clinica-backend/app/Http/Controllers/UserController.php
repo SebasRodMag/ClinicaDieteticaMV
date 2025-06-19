@@ -22,7 +22,7 @@ class UserController extends Controller
 
     /**
      * 
-     * Función para llistar todos los usuarios.
+     * Función para listar todos los usuarios.
      * Obtiene todos los usuarios de la base de datos y devuelve una respuesta JSON.
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el listado de usuarios.
      * 

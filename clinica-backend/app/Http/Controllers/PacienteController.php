@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Models\Log;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
 
 
 class PacienteController extends Controller
@@ -55,18 +57,18 @@ class PacienteController extends Controller
         $codigo = 200;
         try{
             $user = Auth::user()->id;
-            $pacientes = Pacientes::all();
-            $usuarios = Users::all();
+            $pacientes = Paciente::all();
+            $usuarios = User::all();
 
-            if($paciente->isempty()){
+            if($pacientes->isempty()){
                 $this->registrarLog(auth()->id(), 'listar_pacientes_por_nombre_no_encontrados',$user);
                 $respuesta = ['message' => 'No hay pacientes disponibles'];
                 $codigo = 404;
             }else{
                 $this->registrarLog(auth()->id(), 'listar', 'listado_paciente_por_nombre', $user);
                 $respuesta = [
-                    'id' => $paciente->usuario->id,
-                    'nombre' => $paciente->usuario->nombre,
+                    'id' => $pacientes->usuario->id,
+                    'nombre' => $pacientes->usuario->nombre,
                 ];
             }
         }catch (\Throwable $e) {
@@ -93,22 +95,22 @@ class PacienteController extends Controller
     {
         $respuesta = [];
         $codigo = 201;
-
+        $user = Auth::user()->id;
         //Validar que el ID sea numérico
         if (!is_numeric($id)) {
-            $this->registrarLog('user', 'nuevo_paciente_id_invalido', auth()->id(), null);
+            $this->registrarLog($user, 'nuevo_paciente_id_invalido', auth()->id(), null);
             return response()->json(['message' => 'ID inválido'], 400);
         }
 
         $usuario = User::find($id);
 
         if (!$usuario) {
-            $this->registrarLog('user', 'usuario_para_paciente_no_encontrado', auth()->id(), $id);
+            $this->registrarLog($user, 'usuario_para_paciente_no_encontrado', auth()->id(), $id);
             return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
 
         if ($usuario->rol !== 'usuario') {
-            $this->registrarLog('user', 'usuario_no_convertible_a_paciente', auth()->id(), $id);
+            $this->registrarLog($user, 'usuario_no_convertible_a_paciente', auth()->id(), $id);
             return response()->json(['message' => 'Este usuario no puede ser convertido a paciente'], 403);
         }
 
@@ -123,7 +125,7 @@ class PacienteController extends Controller
                 'user_id' => $usuario->id,
             ]);
 
-            $this->registrarLog('paciente', 'usuario_convertido_paciente', auth()->id(), $paciente->id);
+            $this->registrarLog($user, 'usuario_convertido_paciente', auth()->id(), $paciente->id);
 
             DB::commit();
             $respuesta = $paciente;
@@ -132,7 +134,7 @@ class PacienteController extends Controller
 
             //Por si el paciente nunca se crea, registrar el error
             $pacienteId = isset($paciente) ? $paciente->id : null;
-            $this->registrarLog('paciente', 'crear_paciente_error', auth()->id(), $pacienteId);
+            $this->registrarLog($user, 'crear_paciente_error', auth()->id(), $pacienteId);
 
             $respuesta = ['message' => 'Error interno al crear el paciente'];
             $codigo = 500;
