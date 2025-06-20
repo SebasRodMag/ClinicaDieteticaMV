@@ -12,6 +12,7 @@ use App\Traits\Loggable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Validator;
 
 class CitaController extends Controller
 {
@@ -482,6 +483,8 @@ class CitaController extends Controller
      */
     public function cancelarCitaPaciente(int $idCita)
     {
+        // Obtener el ID del usuario autenticado
+        $userId = Auth::id();
         $respuesta = null;
 
         try {

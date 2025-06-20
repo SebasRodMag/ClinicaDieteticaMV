@@ -8,6 +8,7 @@ use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\DocumentoController;
 use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\ConfiguracionController;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
 // Rutas públicas (sin autenticación)
@@ -47,7 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('citas/{id}', [CitaController::class, 'verCita']);
         Route::put('citas/{id}', [CitaController::class, 'actualizarCita']);
         Route::delete('citas/{id}', [CitaController::class, 'eliminarCita']);
-        Route::get('configuraciones', [ConfiguracionController::class, 'obtenerConfiguraciones']);
+        Route::get('obtenerConfiguraciones', [ConfiguracionController::class, 'obtenerConfiguracionesConMensaje']);
+        Route::put('cambiarConfiguraciones/{clave}', [ConfiguracionController::class, 'actualizarPorClave']);
         
 
     });
@@ -55,7 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:paciente|especialista|especialista')->group(function(){
         Route::post('citas', [CitaController::class, 'nuevaCita']);
         Route::get('pacientespornombre', [PacienteController::class, 'listarPacientesPorNombre']);
-        Route::get('especialistapornombre',[Especialista::class, 'listarEspecialistasPorNombre']);
+        Route::get('especialistapornombre',[EspecialistaController::class, 'listarEspecialistasPorNombre']);
         Route::get('especialistas/{id}/horas-disponibles', [CitaController::class, 'horasDisponibles']);
         Route::get('configuracion-general', [CitaController::class, 'configuracion']);
         Route::get('especialidades', [EspecialistaController::class, 'listarEspecialidades']);

@@ -12,6 +12,7 @@ import { UsuariosListComponent } from './admin/usuarios-list.component';
 import { PacienteDashboardComponent } from './Pacientes/paciente-dashboard.component';
 import { EspecialistaDashboardComponent } from './Especialistas/especialista-dashboard.component';
 import { UsuariosDashboardComponent } from './Usuarios/usuarios-dashboard.component';
+import { ConfiguracionComponent } from './admin/configuracion/configuracion.component';
 
 import { AuthGuard } from './auth.guard';
 
@@ -31,6 +32,7 @@ export const routes: Routes = [
             { path: 'pacientes', component: PacientesListComponent },
             { path: 'especialistas', component: EspecialistasListComponent },
             { path: 'usuarios', component: UsuariosListComponent },
+            { path: 'admin/configuracion', component: ConfiguracionComponent },
             { path: '', redirectTo: 'pacientes', pathMatch: 'full' },
         ],
     },

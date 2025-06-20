@@ -18,7 +18,7 @@ export class UserService {
 
     constructor(private http: HttpClient) { }
 
-    logout(): Observable<any>{
+    logout(): Observable<any> {
         return this.http.post(`${this.apiUrl}/logout`, null);
     }
 
@@ -81,7 +81,7 @@ export class UserService {
         return this.http.patch(`${this.apiUrl}/citas/${idCita}/cancelar`, {});
     }
 
-    verPaciente(id: number): Observable<any>{
+    verPaciente(id: number): Observable<any> {
         return this.http.get(`${this.apiUrl}/pacientes/${id}`);
     }
 
@@ -114,11 +114,11 @@ export class UserService {
         return this.http.get<Especialista[]>('/especialistas/listado-minimo');
     }
 
-    getPacientesPorNombre(): Observable<PacienteNombre[]>{
+    getPacientesPorNombre(): Observable<PacienteNombre[]> {
         return this.http.get<PacienteNombre[]>('/pacientespornombre');
     }
 
-    getEspecialistaPorNombre(): Observable<EspecialistaNombre[]>{
+    getEspecialistaPorNombre(): Observable<EspecialistaNombre[]> {
         return this.http.get<EspecialistaNombre[]>('/pacientespornombre');
     }
 
@@ -130,16 +130,31 @@ export class UserService {
         return this.http.get<Especialista[]>(`${this.apiUrl}/especialistas?especialidad=${encodeURIComponent(especialidad)}`);
     }
 
-    
+
 
     /******************************************************************************/
     /************************ Rutas para Configuración ****************************/
     /******************************************************************************/
 
 
-    getConfiguracion(): Observable<any[]>{
-        return this.http.get<any>(`${this.apiUrl}/configuracion-general`);
+    getConfiguracion(): Observable<{ message: string, configuraciones: Record<string, any> }> {
+        return this.http.get<any>(`${this.apiUrl}/obtenerConfiguraciones`);
     }
 
-    
+    updateConfiguracion(id: number, data: { clave: string, valor: string, descripcion: string }): Observable<any> {
+        // Usamos PUT o PATCH para actualizar un registro específico.
+        // Aquí pasamos el ID de la configuración y un objeto con los datos a actualizar.
+        return this.http.put<any>(`${this.apiUrl}/configuracion-general/${id}`, data);
+    }
+
+    /**
+     * Actualiza el valor de una configuración por su clave.
+     * @param clave Clave de la configuración
+     * @param data Objeto con el nuevo valor: { valor: any }
+     */
+    updateConfiguracionPorClave(clave: string, data: { valor: any }): Observable<any> {
+        return this.http.put<any>(`${this.apiUrl}/cambiarConfiguraciones/${clave}`, data);
+    }
+
+
 }

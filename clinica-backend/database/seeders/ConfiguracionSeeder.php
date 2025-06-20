@@ -53,6 +53,12 @@ class ConfiguracionSeeder extends Seeder
                 'valor' => 'true',
                 'descripcion' => 'Permitir que un paciente pueda crear una cita',
             ],
+            [
+                'clave' => 'Especialidades',
+                // ¡Aquí está la corrección!
+                'valor' => json_encode(['Endocrinología', 'Nutrición', 'Psicología', 'Psiquiatría', 'Reumatología', 'Pediatría', 'Medicina general']),
+                'descripcion' => 'Lista de especialidades para las que se presta servicio',
+            ],
         ]);
     }
 }

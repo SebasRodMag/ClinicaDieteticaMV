@@ -46,3 +46,37 @@ body {
     background-color: #f1f1f1;
     cursor: pointer;
 }
+
+@media (max-width: 600px) {
+    nav.navbar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.5rem 1rem;
+    }
+
+    nav.navbar .navbar-brand {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    nav.navbar .navbar-nav {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    nav.navbar .nav-link {
+        padding: 0.25rem 0;
+        font-size: 0.95rem;
+    }
+
+    nav.navbar .d-flex {
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 0.5rem;
+    }
+
+    nav.navbar .btn {
+        font-size: 0.9rem;
+        padding: 0.3rem 0.75rem;
+    }
+}

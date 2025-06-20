@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Log;
 use App\Traits\Loggable;
+use Illuminate\Support\Facades\Auth;
 
 
 class HistorialController extends Controller
@@ -21,6 +22,8 @@ class HistorialController extends Controller
      */
     public function listarHistoriales(): JsonResponse
     {
+        // Obtener el ID del usuario autenticado
+        $userId = Auth::id();
         $respuesta = [];
         $codigo = 200;
 
@@ -28,17 +31,17 @@ class HistorialController extends Controller
             $historiales = Historial::all();
 
             if ($historiales->isEmpty()) {
-                $this->registrarLog('historiales', 'index', null, 'No hay historiales disponibles');
+                $this->registrarLog($userId, 'No hay historiales disponibles', null, $historiales->id);
                 $codigo = 404;
                 $respuesta = ['message' => 'No hay historiales disponibles'];
             } else {
-                $this->registrarLog('historiales', 'index', null, 'Listado de historiales');
+                $this->registrarLog($userId, 'Listado de historiales', null, $historiales->id);
                 $respuesta = $historiales;
             }
         } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog('historiales', 'index', null, 'Error al listar historiales: ' . $e->getMessage());
+            $this->registrarLog($userId, 'index', null, 'Error al listar historiales: ' . $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -54,6 +57,7 @@ class HistorialController extends Controller
      */
     public function verHistorial(int $id): JsonResponse
     {
+        $userId = Auth::id();
         $codigo = 200;
         $respuesta = [];
 
@@ -61,17 +65,17 @@ class HistorialController extends Controller
             $historial = Historial::find($id);
 
             if (!$historial) {
-                $this->registrarLog('historiales', 'show', $id, 'Historial no encontrado');
+                $this->registrarLog($userId, 'show -> Historial no encontrado', $id, $historial->id);
                 $codigo = 404;
                 $respuesta = ['message' => 'Historial no encontrado'];
             } else {
-                $this->registrarLog('historiales', 'show', $id, 'Historial consultado');
+                $this->registrarLog($userId, 'show -> Historial consultado', $id, $historial->id);
                 $respuesta = $historial;
             }
         } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog('historiales', 'show', $id, 'Error al consultar historial: ' . $e->getMessage());
+            $this->registrarLog($userId, 'show', $id, 'Error al consultar historial: ' . $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -87,6 +91,7 @@ class HistorialController extends Controller
      */
     public function nuevoHistorial(Request $solicitud): JsonResponse
     {
+        $userId = Auth::id();
         $codigo = 200;
         $respuesta = [];
 
@@ -103,19 +108,19 @@ class HistorialController extends Controller
 
             $historial = Historial::create($solicitud->all());
 
-            $this->registrarLog('historiales', 'store', $historial->id, 'Historial creado');
+            $this->registrarLog($userId, 'store->Historial creado', 'Historial', $historial->id);
 
             $respuesta = $historial;
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
             $respuesta = ['message' => 'Error de validación', 'errors' => $e->errors()];
-            $this->registrarLog('historiales', 'store', null, 'Error de validación: ' . json_encode($e->errors()));
+            $this->registrarLog($userId, 'store', null, 'Error de validación: ' . json_encode($e->errors()));
 
         } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog('historiales', 'store', null, 'Error al crear historial: ' . $e->getMessage());
+            $this->registrarLog($userId, 'store->Error al crear historial: ' . $e->getMessage(), 'Historial', );
         }
 
         return response()->json($respuesta, $codigo);
@@ -134,6 +139,7 @@ class HistorialController extends Controller
      */
     public function actualizarHistorial(Request $solicitud, int $id): JsonResponse
     {
+        $userId = Auth::id();
         $codigo = 200;
         $respuesta = [];
 
@@ -143,7 +149,7 @@ class HistorialController extends Controller
             if (!$historial) {
                 $codigo = 404;
                 $respuesta = ['message' => 'Historial no encontrado'];
-                $this->registrarLog('historiales', 'update', $id, 'Historial no encontrado');
+                $this->registrarLog($userId, 'update->Historial no encontrado', 'Historial', $historial->id);
             } else {
                 $solicitud->validate([
                     'comentarios_paciente' => 'nullable|string',
@@ -155,7 +161,7 @@ class HistorialController extends Controller
 
                 $historial->update($solicitud->all());
 
-                $this->registrarLog('historiales', 'update', $id, 'Historial actualizado');
+                $this->registrarLog($userId, 'update->Historial actualizado', 'Historial', $historial->id);
 
                 $respuesta = [
                     'message' => 'Historial actualizado correctamente',
@@ -165,11 +171,11 @@ class HistorialController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
             $respuesta = ['message' => 'Error de validación', 'errors' => $e->errors()];
-            $this->registrarLog('historiales', 'update', $id, 'Error de validación: ' . json_encode($e->errors()));
+            $this->registrarLog($userId, 'update -> Error de validación: ' . json_encode($e->errors()), 'Historial', $historial->id);
         } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog('historiales', 'update', $id, 'Error al actualizar historial: ' . $e->getMessage());
+            $this->registrarLog($userId, 'update->Error al actualizar historial '. $e->getMessage(), 'Historial', $historial->id );
         }
 
         return response()->json($respuesta, $codigo);
@@ -185,6 +191,7 @@ class HistorialController extends Controller
      */
     public function borrarHistorial(int $id): JsonResponse
     {
+        $userId = Auth::id();
         $codigo = 200;
         $respuesta = [];
 
@@ -194,17 +201,17 @@ class HistorialController extends Controller
             if (!$historial) {
                 $codigo = 404;
                 $respuesta = ['message' => 'Historial no encontrado'];
-                $this->registrarLog('historiales', 'destroy', $id, 'Historial no encontrado');
+                $this->registrarLog($userId, 'destroy -> Historial no encontrado', $id, $historial->id);
             } else {
                 $historial->delete();
-                $this->registrarLog('historiales', 'destroy', $id, 'Historial eliminado');
+                $this->registrarLog($userId, 'destroy -> Historial eliminado', $id, $historial->id);
 
                 $respuesta = ['message' => 'Historial eliminado correctamente'];
             }
         } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno al eliminar el historial'];
-            $this->registrarLog('historiales', 'destroy', $id, 'Error al eliminar historial: ' . $e->getMessage());
+            $this->registrarLog($userId, 'destroy -> Error al eliminar historial: ' . $e->getMessage(), 'Historial', $historial->id);
         }
 
         return response()->json($respuesta, $codigo);

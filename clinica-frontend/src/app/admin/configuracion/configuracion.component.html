@@ -1,0 +1,134 @@
+<div class="container mt-4">
+
+    <h2 class="mb-4">Configuración del Sistema</h2>
+
+    <!-- Spinner de carga -->
+    <div *ngIf="loading" class="d-flex align-items-center gap-2 fw-bold">
+        <div class="spinner-border text-primary" role="status" style="width: 1.5rem; height: 1.5rem;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        Cargando configuración...
+    </div>
+
+    <!-- Tabla con las configuraciones -->
+    <div *ngIf="!loading" class="table-responsive">
+        <table class="table table-striped table-hover table-sm tabla-configuracion">
+            <thead class="table-light d-none d-md-table-header-group">
+                <tr>
+                    <th scope="col">Clave</th>
+                    <th scope="col">Valor</th>
+                    <th scope="col">Descripción</th>
+                    <th scope="col" style="width: 100px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let clave of Object.keys(configuraciones)">
+                    <!-- Fila principal visible siempre -->
+                    <tr class="fila-principal" (click)="toggleExpand(clave)">
+                        <td class="text-break">{{ clave }}</td>
+
+                        <!-- Vista escritorio -->
+                        <td class="text-break d-none d-md-table-cell">
+                            <ng-container *ngIf="typeof configuraciones[clave] === 'object'; else valorSimple">
+                                <pre class="mb-0 text-truncate"
+                                    style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ configuraciones[clave] | json }}
+                </pre>
+                            </ng-container>
+                            <ng-template #valorSimple>
+                                {{ configuraciones[clave] }}
+                            </ng-template>
+                        </td>
+                        <td class="text-break d-none d-md-table-cell">{{ descripciones[clave] || 'Sin descripción
+                            disponible' }}</td>
+                        <td class="d-none d-md-table-cell">
+                            <button class="btn btn-outline-primary btn-sm me-1"
+                                (click)="abrirModal(clave); $event.stopPropagation()">Editar</button>
+                        </td>
+                    </tr>
+
+                    <!-- Fila expandida solo en móvil -->
+                    <tr *ngIf="claveExpandida === clave" class="d-md-none bg-light fila-expandida-animada">
+                        <td colspan="4">
+                            <div class="text-break mb-1">
+                                <strong>Valor:</strong>
+                                <ng-container
+                                    *ngIf="typeof configuraciones[clave] === 'object'; else valorSimpleMobile">
+                                    <pre class="json-preview">{{ configuraciones[clave] | json }}</pre>
+                                </ng-container>
+                                <ng-template #valorSimpleMobile>
+                                    {{ configuraciones[clave] }}
+                                </ng-template>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm"
+                                (click)="abrirModal(clave); $event.stopPropagation()">Editar</button>
+                        </td>
+                    </tr>
+                </ng-container>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal para editar configuración -->
+    <div *ngIf="modalAbierto" class="modal-backdrop-custom d-flex justify-content-center align-items-center"
+        (click)="cerrarModal()">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm"
+            (click)="$event.stopPropagation()">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar configuración: {{ configuracionSeleccionada?.clave }}</h5>
+                    <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p><small class="text-muted">{{ configuracionSeleccionada?.descripcion }}</small></p>
+
+                    <div *ngIf="configuracionSeleccionada">
+                        <!-- Boolean -->
+                        <div *ngIf="typeof configuracionSeleccionada.valor === 'boolean'" class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                [(ngModel)]="configuracionSeleccionada.valor" id="checkConfig" />
+                            <label class="form-check-label" for="checkConfig">Activado</label>
+                        </div>
+
+                        <!-- Número -->
+                        <div *ngIf="typeof configuracionSeleccionada.valor === 'number'" class="mb-3">
+                            <input class="form-control form-control-sm" type="number"
+                                [(ngModel)]="configuracionSeleccionada.valor" />
+                        </div>
+
+                        <!-- Objeto o Array editable como JSON -->
+                        <div *ngIf="typeof configuracionSeleccionada.valor === 'object' && configuracionSeleccionada.valorJson !== undefined"
+                            class="mb-3">
+                            <textarea class="form-control form-control-sm"
+                                [(ngModel)]="configuracionSeleccionada.valorJson"
+                                (ngModelChange)="validarJson(configuracionSeleccionada)" rows="6"></textarea>
+                            <div *ngIf="!configuracionSeleccionada.jsonValido" class="text-danger mt-1 small">
+                                JSON inválido, revisa el formato.
+                            </div>
+                        </div>
+
+                        <!-- Texto simple -->
+                        <div *ngIf="typeof configuracionSeleccionada.valor !== 'object' && typeof configuracionSeleccionada.valor !== 'boolean' && typeof configuracionSeleccionada.valor !== 'number'"
+                            class="mb-3">
+                            <input class="form-control form-control-sm" type="text"
+                                [(ngModel)]="configuracionSeleccionada.valor" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary btn-sm me-1" (click)="guardarConfiguracion()"
+                        [disabled]="configuracionSeleccionada?.jsonValido === false">
+                        Guardar
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-1"
+                        (click)="cerrarModal()">Cancelar</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
