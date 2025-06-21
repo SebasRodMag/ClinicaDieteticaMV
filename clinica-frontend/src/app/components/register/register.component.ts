@@ -1,12 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../service/Auth-Service/Auth.service';
-import { ToastrService } from 'ngx-toastr';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 
-// Interfaz con tipos explícitos para los controles del formulario
+//Interfaz con tipos explícitos para los controles del formulario
 interface RegisterFormControls {
   nombre: FormControl;
   apellidos: FormControl;
@@ -21,14 +21,19 @@ interface RegisterFormControls {
   selector: 'app-register',
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css'],
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule],
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   registerForm: FormGroup;
   errorMessages: { [key: string]: string[] } = {};
   loading = false;
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router,
+    private snackBar: MatSnackBar
+  ) {
     this.registerForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(2)]],
       apellidos: ['', [Validators.required, Validators.minLength(2)]],
@@ -39,7 +44,13 @@ export class RegisterComponent {
     }, { validators: this.confirmarContraseña });
   }
 
-  // Getter tipado para evitar errores en el template
+  ngOnInit(): void {
+    // Limpia los errores cuando el formulario cambia
+    this.registerForm.valueChanges.subscribe(() => {
+      this.errorMessages = {};
+    });
+  }
+
   get formulario(): RegisterFormControls {
     return this.registerForm.controls as unknown as RegisterFormControls;
   }
@@ -57,16 +68,36 @@ export class RegisterComponent {
     }
 
     this.loading = true;
+    this.errorMessages = {};
 
     this.authService.register(this.registerForm.value).subscribe({
       next: () => {
         this.loading = false;
+        this.snackBar.open('Registro exitoso. ¡Bienvenido!', 'Cerrar', {
+          duration: 3000,
+          panelClass: ['snackbar-success'],
+        });
         this.router.navigate(['/']);
       },
       error: (error) => {
         this.loading = false;
-        this.errorMessages = error.error?.errors || { general: ['Error en el registro'] };
         console.error('[Register] Error:', error);
+
+        if (error.error?.errors) {
+          this.errorMessages = error.error.errors;
+
+          if (this.errorMessages['general']) {
+            this.snackBar.open(this.errorMessages['general'][0], 'Cerrar', {
+              duration: 4000,
+              panelClass: ['snackbar-error'],
+            });
+          }
+        } else {
+          this.snackBar.open('Error inesperado al registrarse.', 'Cerrar', {
+            duration: 4000,
+            panelClass: ['snackbar-error'],
+          });
+        }
       }
     });
   }

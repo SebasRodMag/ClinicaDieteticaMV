@@ -33,14 +33,15 @@ body {
 
 /*mensajes de notificación*/
 .snackbar-success {
-    background-color: #4caf50;
-    color: #fff;
+    background-color: #28a745 !important;
+    color: white;
 }
 
 .snackbar-error {
-    background-color: #f44336;
-    color: #fff;
+    background-color: #dc3545 !important;
+    color: white;
 }
+
 
 .list-group-item:hover {
     background-color: #f1f1f1;

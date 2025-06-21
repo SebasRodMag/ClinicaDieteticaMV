@@ -78,7 +78,8 @@
             </div>
         </div>
 
-        <div *ngIf="errorMessages">
+        <!-- Aquí solo muestro el bloque de errores del backend -->
+        <div *ngIf="errorMessages | keyvalue as errores" class="alert alert-danger">
             <div *ngFor="let msg of errorMessages | keyvalue">
                 <div *ngFor="let m of msg.value">
                     {{ msg.key }}: {{ m }}

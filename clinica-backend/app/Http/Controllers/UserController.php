@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\Loggable;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
@@ -27,19 +28,27 @@ class UserController extends Controller
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el listado de usuarios.
      * 
      * 
-     *  */    
+     *  */
     public function listarTodos(): JsonResponse
     {
-        $usuarios = User::all();
         $codigo = 200;
-        $respuesta = $usuarios;
+        $respuesta = [];
 
-        if ($usuarios->isEmpty()) {
-            $respuesta = ['message' => 'No hay usuarios registrados'];
-            $codigo = 404;
-            $this->registrarLog(auth()->id(), 'listar', 'users', null);
-        } else {
-            $this->registrarLog(auth()->id(), 'listar', 'users', null);
+        try {
+            $usuarios = User::all();
+
+            if ($usuarios->isEmpty()) {
+                $codigo = 404;
+                $respuesta = ['errors' => ['general' => ['No hay usuarios registrados.']]];
+            } else {
+                $respuesta = ['data' => $usuarios];
+            }
+
+            $this->registrarLog(auth()->id(), 'listar', 'users');
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Ocurrió un error al obtener los usuarios.']]];
+            $this->logError(auth()->id(), 'Error inesperado al listar todos los usuarios', $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -56,21 +65,28 @@ class UserController extends Controller
     public function verUsuario($id): JsonResponse
     {
         $codigo = 200;
+        $respuesta = [];
 
         if (!is_numeric($id)) {
-            $respuesta = ['mensaje' => 'ID inválido. Debe ser numérico'];
             $codigo = 400;
-        } else {
+            $respuesta = ['errors' => ['id' => ['ID inválido. Debe ser numérico.']]];
+            return response()->json($respuesta, $codigo);
+        }
+
+        try {
             $usuario = User::find($id);
 
             if (!$usuario) {
-                $respuesta = ['mensaje' => 'Usuario no encontrado'];
                 $codigo = 404;
+                $respuesta = ['errors' => ['general' => ['Usuario no encontrado.']]];
             } else {
-                $respuesta = $usuario;
+                $respuesta = ['data' => $usuario];
+                $this->registrarLog(auth()->id(), 'ver_usuario', 'users', $id);
             }
-
-            $this->registrarLog(auth()->id(), 'ver_usuario', 'users', $id);
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Ocurrió un error al obtener el usuario.']]];
+            $this->logError(auth()->id(), 'Error inesperado al consultar usuario', $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -89,30 +105,65 @@ class UserController extends Controller
     public function crearUsuario(Request $solicitud): JsonResponse
     {
         $codigo = 201;
+        $respuesta = [];
 
+        // Validación de los datos
         $validador = Validator::make($solicitud->all(), [
-            'nombre'     => 'required|string|max:255',
-            'apellidos'  => 'required|string|max:255',
-            'email'      => 'required|email|unique:users,email',
-            'password'   => 'required|string|min:6|confirmed',
+            'nombre' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
             'dni_usuario' => 'required|string|max:9|unique:users,dni_usuario',
+        ], [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'Debe ser un correo válido.',
+            'email.unique' => 'Este correo ya está registrado.',
+            'dni_usuario.unique' => 'Este DNI ya está registrado.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
+        // Si falla la validación
         if ($validador->fails()) {
-            $respuesta = ['errores' => $validador->errors()];
             $codigo = 422;
-        } else {
+            $respuesta = ['errors' => $validador->errors()];
+            return response()->json($respuesta, $codigo);
+        }
+
+        try {
+            // Crear el usuario
             $usuario = User::create([
-                'nombre'     => $solicitud->input('nombre'),
-                'apellidos'  => $solicitud->input('apellidos'),
-                'email'      => $solicitud->input('email'),
-                'password'   => Hash::make($solicitud->input('password')),
+                'nombre' => $solicitud->input('nombre'),
+                'apellidos' => $solicitud->input('apellidos'),
+                'email' => $solicitud->input('email'),
+                'password' => Hash::make($solicitud->input('password')),
                 'dni_usuario' => $solicitud->input('dni_usuario'),
             ]);
+
+            // Asignar rol por defecto
             $usuario->assignRole('paciente');
+
+            // Registrar log
+            $this->registrarLog(auth()->id(), 'crear usuario', 'users', $usuario->id);
+
+            // Respuesta con usuario y sus roles
             $respuesta = $usuario->load('roles');
 
-            $this->registrarLog(auth()->id(), 'crear', 'users', $usuario->id);
+        } catch (QueryException $e) {
+            $codigo = 500;
+            $respuesta = [
+                'errors' => [
+                    'general' => ['Error en la base de datos. Revisa que el email o DNI no estén duplicados.']
+                ]
+            ];
+            $this->logError(auth()->id(), 'Error al crear usuario (DB)', $e->getMessage());
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = [
+                'errors' => [
+                    'general' => ['Ocurrió un error inesperado al crear el usuario.']
+                ]
+            ];
+            $this->logError(auth()->id(), 'Error inesperado al crear usuario', $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -131,59 +182,88 @@ class UserController extends Controller
      */
     public function actualizarUsuario(Request $solicitud, $id): JsonResponse
     {
-        $respuesta = [];
         $codigo = 200;
+        $respuesta = [];
 
         if (!is_numeric($id)) {
-            $respuesta = ['mensaje' => 'ID inválido'];
             $codigo = 400;
-        } else {
-            $usuario = User::find($id);
+            $respuesta = ['errors' => ['id' => ['El ID proporcionado no es válido.']]];
+            return response()->json($respuesta, $codigo);
+        }
 
-            if (!$usuario) {
-                $respuesta = ['mensaje' => 'Usuario no encontrado'];
-                $codigo = 404;
-            } else {
-                // Validar datos, incluyendo validación condicional de password
-                $reglas = [
-                    'nombre'     => 'required|string|max:255',
-                    'apellidos'  => 'required|string|max:255',
-                    'email'      => 'required|email|unique:users,email,' . $usuario->id,
-                    'dni_usuario'=> 'required|string|max:9|unique:users,dni_usuario,' . $usuario->id,
-                    'fecha_nacimiento' => 'nullable|date',
-                    'telefono'   => 'nullable|string|max:20',
-                    'direccion'  => 'nullable|string|max:255',
-                ];
+        $usuario = User::find($id);
 
-                // Si viene password, validar su confirmación
-                if ($solicitud->filled('password')) {
-                    $reglas['password'] = 'string|min:6|confirmed';
-                }
+        if (!$usuario) {
+            $codigo = 404;
+            $respuesta = ['errors' => ['general' => ['Usuario no encontrado.']]];
+            return response()->json($respuesta, $codigo);
+        }
 
-                $validador = Validator::make($solicitud->all(), $reglas);
+        // Reglas de validación
+        $reglas = [
+            'nombre' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $usuario->id,
+            'dni_usuario' => 'required|string|max:9|unique:users,dni_usuario,' . $usuario->id,
+            'fecha_nacimiento' => 'nullable|date',
+            'telefono' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string|max:255',
+        ];
 
-                if ($validador->fails()) {
-                    return response()->json(['errores' => $validador->errors()], 422);
-                }
+        if ($solicitud->filled('password')) {
+            $reglas['password'] = 'string|min:6|confirmed';
+        }
 
-                $usuario->nombre = $solicitud->input('nombre');
-                $usuario->apellidos = $solicitud->input('apellidos');
-                $usuario->email = $solicitud->input('email');
-                $usuario->dni_usuario = $solicitud->input('dni_usuario');
-                $usuario->fecha_nacimiento = $solicitud->input('fecha_nacimiento');
-                $usuario->telefono = $solicitud->input('telefono');
-                $usuario->direccion = $solicitud->input('direccion');
+        $mensajes = [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'Debe ser un correo válido.',
+            'email.unique' => 'Este correo ya está registrado.',
+            'dni_usuario.unique' => 'Este DNI ya está registrado.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+        ];
 
-                if ($solicitud->filled('password')) {
-                    $usuario->password = Hash::make($solicitud->input('password'));
-                }
+        $validador = Validator::make($solicitud->all(), $reglas, $mensajes);
 
-                $usuario->save();
+        if ($validador->fails()) {
+            $codigo = 422;
+            $respuesta = ['errors' => $validador->errors()];
+            return response()->json($respuesta, $codigo);
+        }
 
-                $respuesta = User::find($usuario->id);
+        try {
+            // Asignación masiva segura
+            $usuario->fill([
+                'nombre' => $solicitud->input('nombre'),
+                'apellidos' => $solicitud->input('apellidos'),
+                'email' => $solicitud->input('email'),
+                'dni_usuario' => $solicitud->input('dni_usuario'),
+                'fecha_nacimiento' => $solicitud->input('fecha_nacimiento'),
+                'telefono' => $solicitud->input('telefono'),
+                'direccion' => $solicitud->input('direccion'),
+            ]);
 
-                $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $usuario->id);
+            if ($solicitud->filled('password')) {
+                $usuario->password = Hash::make($solicitud->input('password'));
             }
+
+            $usuario->save();
+
+            $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $usuario->id);
+
+            $respuesta = User::find($usuario->id);
+
+        } catch (QueryException $e) {
+            $codigo = 500;
+            $respuesta = [
+                'errors' => ['general' => ['Error al actualizar el usuario.']]
+            ];
+            $this->logError(auth()->id(), 'Error DB al actualizar usuario', $e->getMessage());
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = [
+                'errors' => ['general' => ['Ocurrió un error inesperado al actualizar el usuario.']]
+            ];
+            $this->logError(auth()->id(), 'Error inesperado al actualizar usuario', $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -201,24 +281,39 @@ class UserController extends Controller
      */
     public function borrarUsuario($id): JsonResponse
     {
-        $respuesta = [];
         $codigo = 200;
+        $respuesta = [];
 
         if (!is_numeric($id)) {
-            $respuesta = ['mensaje' => 'ID inválido'];
             $codigo = 400;
-        } else {
-            $usuario = User::find($id);
+            $respuesta = ['errors' => ['id' => ['El ID proporcionado no es válido.']]];
+            return response()->json($respuesta, $codigo);
+        }
 
-            if (!$usuario) {
-                $respuesta = ['mensaje' => 'Usuario no encontrado'];
-                $codigo = 404;
-            } else {
-                $usuario->delete();
-                $respuesta = ['mensaje' => 'Usuario eliminado correctamente'];
+        $usuario = User::find($id);
 
-                $this->registrarLog(auth()->id(), 'eliminar_usuario', 'users', $id);
-            }
+        if (!$usuario) {
+            $codigo = 404;
+            $respuesta = ['errors' => ['general' => ['Usuario no encontrado.']]];
+            return response()->json($respuesta, $codigo);
+        }
+
+        try {
+            $usuario->delete();
+
+            $this->registrarLog(auth()->id(), 'eliminar_usuario', 'users', $id);
+
+            $respuesta = ['mensaje' => 'Usuario eliminado correctamente.'];
+
+        } catch (QueryException $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Error al eliminar el usuario.']]];
+            $this->logError(auth()->id(), 'Error DB al eliminar usuario', $e->getMessage());
+
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Ocurrió un error inesperado al eliminar el usuario.']]];
+            $this->logError(auth()->id(), 'Error inesperado al eliminar usuario', $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -234,71 +329,107 @@ class UserController extends Controller
      */
     public function cambiarRol($id): JsonResponse
     {
+        $codigo = 200;
+        $respuesta = [];
+
+        if (!is_numeric($id)) {
+            $codigo = 400;
+            $respuesta = ['errors' => ['id' => ['El ID proporcionado no es válido.']]];
+            return response()->json($respuesta, $codigo);
+        }
+
         $usuario = User::find($id);
 
         if (!$usuario) {
-            return response()->json(['mensaje' => 'El usuario no existe'], 404);
+            $codigo = 404;
+            $respuesta = ['errors' => ['general' => ['El usuario no existe.']]];
+            return response()->json($respuesta, $codigo);
         }
 
-        if ($usuario->hasRole('especialista')) {
-            //Se elimina de la tabla especialistas
-            Especialista::where('user_id', $usuario->id)->delete();
+        try {
+            if ($usuario->hasRole('especialista')) {
+                Especialista::where('user_id', $usuario->id)->delete();
 
-            //Se eliminan citas pendientes como especialista
-            Cita::where('especialista_id', $usuario->id)
-                ->where('estado', 'pendiente')
-                ->delete();
+                Cita::where('especialista_id', $usuario->id)
+                    ->where('estado', 'pendiente')
+                    ->delete();
 
-            \Log::info("Usuario con ID {$usuario->id} cambió rol de 'especialista' a 'usuario'. Citas pendientes eliminadas.");
+                \Log::info("El usuario {$usuario->id} dejó de ser especialista. Se eliminaron citas pendientes.");
+            }
+
+            if ($usuario->hasRole('paciente')) {
+                Paciente::where('user_id', $usuario->id)->delete();
+
+                Cita::where('paciente_id', $usuario->id)
+                    ->where('estado', 'pendiente')
+                    ->delete();
+
+                \Log::info("El usuario {$usuario->id} dejó de ser paciente. Se eliminaron citas pendientes.");
+            }
+
+            $usuario->syncRoles(['usuario']);
+
+            $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $usuario->id);
+
+            $respuesta = ['mensaje' => 'El rol del usuario ha sido cambiado a "usuario" y se eliminaron sus citas pendientes.'];
+
+        } catch (QueryException $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Error al cambiar el rol del usuario.']]];
+            $this->logError(auth()->id(), 'Error DB al cambiar rol del usuario', $e->getMessage());
+
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Ocurrió un error inesperado al cambiar el rol del usuario.']]];
+            $this->logError(auth()->id(), 'Error inesperado al cambiar rol del usuario', $e->getMessage());
         }
 
-        if ($usuario->hasRole('paciente')) {
-            //Se elimina de la tabla pacientes
-            Paciente::where('user_id', $usuario->id)->delete();
-
-            //Se eliminan citas pendientes como paciente
-            Cita::where('paciente_id', $usuario->id)
-                ->where('estado', 'pendiente')
-                ->delete();
-
-            \Log::info("Usuario con ID {$usuario->id} cambió rol de 'paciente' a 'usuario'. Citas pendientes eliminadas.");
-        }
-
-
-        $usuario->syncRoles(['usuario']);
-
-        return response()->json(['mensaje' => 'El rol del usuario ha sido cambiado a usuario y sus citas pendientes han sido eliminadas.'], 200);
+        return response()->json($respuesta, $codigo);
     }
 
 
     /**
-     * Funcion para obtener todos los usuario de la tabla user cuyo rol sea 'usuario'
-     * Este metodo sirve para listar los usuarios que pueden ser seleccionado para convertirse en 'pacientes' o 'especialistas'
+     * Función para obtener todos los usuario de la tabla user cuyo rol sea 'usuario'
+     * Este método sirve para listar los usuarios que pueden ser seleccionado para convertirse en 'pacientes' o 'especialistas'
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los usuarios que tienen el rol de 'usuario' o mensaje de error.
      */
     public function getUsuariosSinRolEspecialistaNiPaciente(): JsonResponse
     {
+        $codigo = 200;
+        $respuesta = [];
+
+        // Validar acceso solo a administradores
         if (!auth()->check() || !auth()->user()->hasRole('administrador')) {
-            return response()->json(['message' => 'No autorizado.'], 403);
+            $codigo = 403;
+            $respuesta = ['errors' => ['autorizacion' => ['No autorizado.']]];
+            return response()->json($respuesta, $codigo);
         }
 
-        $usuarios = DB::table('users')
-            ->leftJoin('pacientes', 'users.id', '=', 'pacientes.user_id')
-            ->leftJoin('especialistas', 'users.id', '=', 'especialistas.user_id')
-            ->whereNull('pacientes.user_id')
-            ->whereNull('especialistas.user_id')
-            ->select('users.id', 'users.nombre', 'users.apellidos')
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'id'               => $user->id,
-                    'nombre_apellidos' => $user->nombre . ' ' . $user->apellidos,
-                ];
-            });
+        try {
+            $usuarios = DB::table('users')
+                ->leftJoin('pacientes', 'users.id', '=', 'pacientes.user_id')
+                ->leftJoin('especialistas', 'users.id', '=', 'especialistas.user_id')
+                ->whereNull('pacientes.user_id')
+                ->whereNull('especialistas.user_id')
+                ->select('users.id', 'users.nombre', 'users.apellidos')
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'nombre_apellidos' => $user->nombre . ' ' . $user->apellidos,
+                    ];
+                });
 
-        $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'usuarios', null);
+            $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
 
-        return response()->json($usuarios);
+            $respuesta = ['data' => $usuarios];
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Ocurrió un error al obtener los usuarios.']]];
+            $this->logError(auth()->id(), 'Error al listar usuarios sin rol paciente/especialista', $e->getMessage());
+        }
+
+        return response()->json($respuesta, $codigo);
     }
 
 
