@@ -32,40 +32,66 @@ class AuthController extends Controller
 
     public function login(Request $solicitud): JsonResponse
     {
-        $solicitud->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        $respuesta = [];
         $codigoRespuesta = 200;
+        $respuesta = [];
 
-        if (!Auth::attempt($solicitud->only('email', 'password'))) {
-            $respuesta = ['message' => 'Credenciales inválidas'];
-            $codigoRespuesta = 401;
-            //Este return debe estar aquí para evitar que se ejecute el resto del código si las credenciales son inválidas.
-            return response()->json($respuesta, $codigoRespuesta);
+        try {
+            $solicitud->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+            ], [
+                'email.required' => 'El correo es obligatorio.',
+                'email.email' => 'Formato de correo inválido.',
+                'password.required' => 'La contraseña es obligatoria.',
+            ]);
+
+            if (!Auth::attempt($solicitud->only('email', 'password'))) {
+                // Registrar intento fallido
+                $this->logError(null, 'Intento fallido de login', [
+                    'email' => $solicitud->email,
+                    'ip' => $solicitud->ip(),
+                    'user_agent' => $solicitud->userAgent(),
+                ]);
+
+                $codigoRespuesta = 401;
+                $respuesta = ['message' => 'Credenciales inválidas'];
+            } else {
+                $user = Auth::user();
+                $token = $user->createToken('auth_token')->plainTextToken;
+
+                $this->registrarLog($user->id, 'login', 'users', $user->id);
+
+                $respuesta = [
+                    'access_token' => $token,
+                    'user' => [
+                        'id' => $user->id,
+                        'nombre' => $user->nombre,
+                        'apellidos' => $user->apellidos,
+                        'email' => $user->email,
+                        'rol' => $user->getRoleNames()->first(),
+                    ],
+                ];
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $codigoRespuesta = 422;
+            $respuesta = [
+                'message' => 'Los datos enviados no son válidos.',
+                'errors' => $e->errors(),
+            ];
+        } catch (\Exception $e) {
+            $codigoRespuesta = 500;
+            $this->logError(null, 'Error inesperado en login', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $respuesta = [
+                'message' => 'Ha ocurrido un error inesperado al intentar iniciar sesión.',
+            ];
         }
-
-        $user = Auth::user();
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        $this->registrarLog($user->id, 'login', 'users', $user->id);
-
-        $respuesta = [
-            'access_token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'nombre' => $user->nombre,
-                'apellidos' => $user->apellidos,
-                'email' => $user->email,
-                'rol' => $user->getRoleNames()->first(),
-            ],
-        ];
 
         return response()->json($respuesta, $codigoRespuesta);
     }
+
 
     /**
      * Manejo de la solicitud de cierre de sesión.
@@ -79,19 +105,30 @@ class AuthController extends Controller
         $codigoRespuesta = 200;
         $respuesta = ['message' => 'Sesión cerrada correctamente'];
 
-        $user = auth()->user();
+        try {
+            $user = auth()->user();
 
-        if ($user) {
-            $user->tokens()->delete();
+            if ($user) {
+                // Elimina todos los tokens del usuario para cerrar sesión en todos lados
+                $user->tokens()->delete();
 
-            $this->registrarLog($user->id, 'logout', 'users', $user->id);
-        } else {
-            $codigoRespuesta = 401;
-            $respuesta = ['message' => 'No autenticado'];
+                $this->registrarLog($user->id, 'logout', 'users', $user->id);
+            } else {
+                $codigoRespuesta = 401;
+                $respuesta = ['message' => 'No autenticado'];
+            }
+        } catch (\Exception $e) {
+            $codigoRespuesta = 500;
+            $this->logError(null, 'Error inesperado en logout', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $respuesta = ['message' => 'Error inesperado al cerrar sesión'];
         }
 
         return response()->json($respuesta, $codigoRespuesta);
     }
+
 
     /**
      * Devuelve los datos del usuario autenticado.
@@ -123,22 +160,22 @@ class AuthController extends Controller
      * Registra un nuevo usuario y emite un token de acceso.
      * Valida los datos proporcionados, crea un nuevo usuario en la base de datos,
      * genera un token de acceso y registra el evento en el log.
-     * @param  \Illuminate\Http\Request $request recibe los datos de la solicitud HTTP
+     * @param  \Illuminate\Http\Request $solicitud recibe los datos de la solicitud HTTP
      * @throws \Illuminate\Validation\ValidationException si los datos proporcionados no son válidos
      * @throws \Exception si ocurre un error al intentar registrar el usuario
      * @return \Illuminate\Http\JsonResponse Devuelve los datos del usuario registrado, el token de acceso y el código de respuesta HTTP
      */
-    public function registrar(Request $request): JsonResponse
+    public function registrar(Request $solicitud): JsonResponse
     {
-        $response = [
+        $respuesta = [
             'access_token' => null,
             'token_type' => 'Bearer',
             'user' => null,
         ];
-        $statusCode = 201;
+        $codigo = 201;
 
         try {
-            $validatedData = $request->validate([
+            $validarDatos = $solicitud->validate([
                 'nombre' => 'required|string|min:2|max:50',
                 'apellidos' => 'required|string|min:2|max:50',
                 'email' => 'required|email|unique:users,email',
@@ -154,11 +191,11 @@ class AuthController extends Controller
             ]);
 
             $user = User::create([
-                'nombre' => $validatedData['nombre'],
-                'apellidos' => $validatedData['apellidos'],
-                'email' => $validatedData['email'],
-                'dni_usuario' => $validatedData['dni_usuario'],
-                'password' => Hash::make($validatedData['password']),
+                'nombre' => $validarDatos['nombre'],
+                'apellidos' => $validarDatos['apellidos'],
+                'email' => $validarDatos['email'],
+                'dni_usuario' => $validarDatos['dni_usuario'],
+                'password' => Hash::make($validarDatos['password']),
             ]);
 
             //Se asigna el rol "paciente" al nuevo usuario por defecto
@@ -174,8 +211,8 @@ class AuthController extends Controller
                 $user->id
             );
 
-            $response['access_token'] = $token;
-            $response['user'] = [
+            $respuesta['access_token'] = $token;
+            $respuesta['user'] = [
                 'id' => $user->id,
                 'nombre' => $user->nombre,
                 'apellidos' => $user->apellidos,
@@ -185,24 +222,24 @@ class AuthController extends Controller
             ];
 
         } catch (ValidationException $e) {
-            $response = [
+            $respuesta = [
                 'message' => 'Los datos proporcionados no son válidos.',
                 'errors' => $e->errors(),
             ];
-            $statusCode = 422;
+            $codigo = 422;
 
         } catch (\Exception $e) {
             LaravelLog::error('Error al registrar nuevo usuario: ' . $e->getMessage(), [
-                'email' => $request->input('email'),
+                'email' => $solicitud->input('email'),
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            $response = [
+            $respuesta = [
                 'message' => 'Ocurrió un error interno al intentar registrar el usuario. Por favor, inténtalo de nuevo más tarde.',
             ];
-            $statusCode = 500;
+            $codigo = 500;
         }
 
-        return response()->json($response, $statusCode);
+        return response()->json($respuesta, $codigo);
     }
 }
