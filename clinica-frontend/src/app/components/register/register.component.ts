@@ -101,4 +101,7 @@ export class RegisterComponent implements OnInit {
       }
     });
   }
+  isErrorObjectNotEmpty(): boolean {
+    return this.errorMessages && Object.keys(this.errorMessages).length > 0;
+  }
 }

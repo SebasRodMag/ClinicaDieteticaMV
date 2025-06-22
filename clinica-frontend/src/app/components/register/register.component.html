@@ -78,8 +78,13 @@
             </div>
         </div>
 
-        <!-- Aquí solo muestro el bloque de errores del backend -->
-        <div *ngIf="errorMessages | keyvalue as errores" class="alert alert-danger">
+        <div class="alert alert-info small mb-3">
+            Todos los campos son obligatorios. El botón de registro se habilitará al completar correctamente el
+            formulario.
+        </div>
+
+        <!-- Bloque de errores del backend -->
+        <div *ngIf="isErrorObjectNotEmpty()" class="alert alert-danger">
             <div *ngFor="let msg of errorMessages | keyvalue">
                 <div *ngFor="let m of msg.value">
                     {{ msg.key }}: {{ m }}

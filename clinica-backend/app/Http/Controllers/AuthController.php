@@ -44,7 +44,7 @@ class AuthController extends Controller
             $respuesta = ['message' => 'Credenciales inválidas'];
             $codigoRespuesta = 401;
             //Este return debe estar aquí para evitar que se ejecute el resto del código si las credenciales son inválidas.
-            return response()->json($respuesta, $codigoRespuesta);  
+            return response()->json($respuesta, $codigoRespuesta);
         }
 
         $user = Auth::user();
@@ -109,11 +109,11 @@ class AuthController extends Controller
 
         $respuesta = [
             'user' => [
-                'id'        => $user->id,
-                'nombre'    => $user->nombre,
+                'id' => $user->id,
+                'nombre' => $user->nombre,
                 'apellidos' => $user->apellidos,
-                'email'     => $user->email,
-                'rol'       => $user->getRoleNames()->first() ?? null,
+                'email' => $user->email,
+                'rol' => $user->getRoleNames()->first() ?? null,
             ],
         ];
         return response()->json($respuesta, 200);
@@ -143,7 +143,14 @@ class AuthController extends Controller
                 'apellidos' => 'required|string|min:2|max:50',
                 'email' => 'required|email|unique:users,email',
                 'dni_usuario' => 'required|string|size:9|unique:users,dni_usuario',
-                'password' => ['required', 'confirmed', Rules\Password::defaults()], 
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ], [
+                'email.unique' => 'El correo electrónico ya está registrado. Posiblemente el usuario ya está registrado o verifique que el email esté bien escrito',
+                'dni_usuario.unique' => 'El DNI ya está registrado. Posiblemente el usuario ya está registrado o verifique que el DNI esté bien escrito',
+                'nombre.required' => 'El nombre es obligatorio.',
+                'apellidos.required' => 'El apellido es obligatorio.',
+                'nombre.min' => 'El nombre debe tener al menos 2 caracteres.',
+                'apellidos.min' => 'El apellido debe tener al menos 2 caracteres.',
             ]);
 
             $user = User::create([

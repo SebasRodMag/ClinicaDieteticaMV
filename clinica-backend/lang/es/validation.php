@@ -188,8 +188,7 @@ return [
         'description'              => 'descripción',
         'display_type'             => 'tipo de visualización',
         'district'                 => 'distrito',
-        'dni_usuario'              
-        => 'DNI',
+        'dni_usuario'              => 'DNI',
         'duration'                 => 'duración',
         'email'                    => 'correo electrónico',
         'excerpt'                  => 'extracto',
