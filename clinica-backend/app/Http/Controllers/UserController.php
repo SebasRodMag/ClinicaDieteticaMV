@@ -107,7 +107,7 @@ class UserController extends Controller
         $codigo = 201;
         $respuesta = [];
 
-        $validador = Validator::make($solicitud->all(), [
+        $validar = Validator::make($solicitud->all(), [
             'nombre' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -121,9 +121,9 @@ class UserController extends Controller
             'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
-        if ($validador->fails()) {
+        if ($validar->fails()) {
             $codigo = 422;
-            $respuesta = ['errors' => $validador->errors()];
+            $respuesta = ['errors' => $validar->errors()];
         } else {
             try {
                 $usuario = User::create([
@@ -213,11 +213,11 @@ class UserController extends Controller
             'password.confirmed' => 'Las contraseñas no coinciden.',
         ];
 
-        $validador = Validator::make($solicitud->all(), $reglas, $mensajes);
+        $validar = Validator::make($solicitud->all(), $reglas, $mensajes);
 
-        if ($validador->fails()) {
+        if ($validar->fails()) {
             $codigo = 422;
-            $respuesta = ['errors' => $validador->errors()];
+            $respuesta = ['errors' => $validar->errors()];
             return response()->json($respuesta, $codigo);
         }
 

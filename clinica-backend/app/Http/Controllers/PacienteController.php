@@ -110,9 +110,9 @@ class PacienteController extends Controller
         $codigo = 201;
 
         // Validar que el ID sea numérico
-        $validator = Validator::make(['id' => $id], ['id' => 'required|integer']);
+        $validar = Validator::make(['id' => $id], ['id' => 'required|integer']);
 
-        if ($validator->fails()) {
+        if ($validar->fails()) {
             $this->registrarLog($userId, 'nuevo_paciente_id_invalido', $userId, null);
             $respuesta = ['message' => 'ID inválido'];
             $codigo = 400;
@@ -422,7 +422,7 @@ class PacienteController extends Controller
                 $respuesta = ['error' => 'No autorizado'];
                 $this->registrarLog(auth()->id(), 'actualizar_paciente_no_autorizado', 'paciente', $idPaciente);
             } else {
-                $validator = Validator::make($request->all(), [
+                $validar = Validator::make($request->all(), [
                     'nombre' => 'required|string|max:255',
                     'apellidos' => 'required|string|max:255',
                     'dni_usuario' => 'required|string|max:20|unique:users,dni_usuario,' . $paciente->user_id,
@@ -433,9 +433,9 @@ class PacienteController extends Controller
                     'password_actual' => 'required|string',
                 ]);
 
-                if ($validator->fails()) {
+                if ($validar->fails()) {
                     $codigo = 422;
-                    $respuesta = ['errors' => $validator->errors()];
+                    $respuesta = ['errors' => $validar->errors()];
                     $this->registrarLog(auth()->id(), 'actualizar_paciente_validacion_fallida', 'paciente', $idPaciente);
                 } elseif (!\Hash::check($request->password_actual, $paciente->user->password)) {
                     $codigo = 422;
@@ -488,14 +488,14 @@ class PacienteController extends Controller
                 $respuesta = ['error' => 'No autorizado'];
                 $this->registrarLog(auth()->id(), 'cambiar_password_no_autorizado', 'paciente', $idPaciente);
             } else {
-                $validator = Validator::make($request->all(), [
+                $validar = Validator::make($request->all(), [
                     'password_actual' => 'required|string',
                     'password_nuevo' => 'required|string|min:8|confirmed',
                 ]);
 
-                if ($validator->fails()) {
+                if ($validar->fails()) {
                     $codigo = 422;
-                    $respuesta = ['errors' => $validator->errors()];
+                    $respuesta = ['errors' => $validar->errors()];
                     $this->registrarLog(auth()->id(), 'cambiar_password_validacion_fallida', 'paciente', $idPaciente);
                 } elseif (!\Hash::check($request->password_actual, $paciente->user->password)) {
                     $codigo = 422;

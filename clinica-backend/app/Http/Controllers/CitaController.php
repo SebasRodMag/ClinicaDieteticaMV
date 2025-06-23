@@ -587,18 +587,18 @@ class CitaController extends Controller
      * Luego se obtiene el horario laboral configurado y la duración estándar de la cita.
      * Se descartan los horarios ya ocupados por citas pendientes del especialista.
      * 
-     * @param Request $request Debe incluir campo 'fecha' en formato 'Y-m-d'.
+     * @param Request $solicitud Debe incluir campo 'fecha' en formato 'Y-m-d'.
      * @param int $idEspecialista Identificador del especialista.
      * @return \Illuminate\Http\JsonResponse JSON con las horas disponibles.
      */
-    public function horasDisponibles(Request $request, int $idEspecialista): JsonResponse
+    public function horasDisponibles(Request $solicitud, int $idEspecialista): JsonResponse
     {
-        $request->validate([
+        $solicitud->validate([
             'fecha' => 'required|date_format:Y-m-d',
         ]);
 
         //Se parsea la fecha al inicio del día para comparaciones
-        $fecha = Carbon::createFromFormat('Y-m-d', $request->input('fecha'))->startOfDay();
+        $fecha = Carbon::createFromFormat('Y-m-d', $solicitud->input('fecha'))->startOfDay();
 
         // Comprobar si la fecha es fin de semana
         if ($fecha->isWeekend()) {
@@ -677,15 +677,15 @@ class CitaController extends Controller
     private function esFestivo(Carbon $fecha): bool
     {
         try {
-            $config = Configuracion::where('clave', 'dias_no_laborables')->first();
+            $configuracion = Configuracion::where('clave', 'dias_no_laborables')->first();
 
-            if (!$config) {
+            if (!$configuracion) {
                 Log::warning('Configuración dias_no_laborables no encontrada');
                 $this->registrarLog(auth()->id(), 'Error_Configuracion_dias_no_laborables_no_encontrada', auth()->id());
                 return false;
             }
 
-            $diasNoLaborables = json_decode($config->valor, true);
+            $diasNoLaborables = json_decode($configuracion->valor, true);
 
             if (!is_array($diasNoLaborables)) {
                 Log::warning('dias_no_laborables no es un array válido');
@@ -708,14 +708,14 @@ class CitaController extends Controller
     private function esHoraValida(Carbon $fechaHora): bool
     {
         try {
-            $config = Configuracion::where('clave', 'horario_laboral')->first();
+            $configuracion = Configuracion::where('clave', 'horario_laboral')->first();
 
-            if (!$config) {
+            if (!$configuracion) {
                 Log::warning('Configuración horario_laboral no encontrada');
                 return false;
             }
 
-            $horario = json_decode($config->valor, true);
+            $horario = json_decode($configuracion->valor, true);
 
             if (!is_array($horario) || !isset($horario['apertura'], $horario['cierre'])) {
                 Log::warning('Valor de horario_laboral no es válido');

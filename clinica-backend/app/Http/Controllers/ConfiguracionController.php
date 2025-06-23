@@ -62,10 +62,10 @@ class ConfiguracionController extends Controller
      * Solo puede ser ejecutado por usuarios con rol 'administrador'.
      *
      * @param string $clave
-     * @param Request $request
+     * @param Request $solicitud
      * @return JsonResponse
      */
-    public function actualizarPorClave(string $clave, Request $request): JsonResponse
+    public function actualizarPorClave(string $clave, Request $solicitud): JsonResponse
     {
         $user = Auth::user();
 
@@ -73,16 +73,16 @@ class ConfiguracionController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        $request->validate([
+        $solicitud->validate([
             'valor' => ['required'],
         ]);
 
         try {
-            $config = Configuracion::where('clave', $clave)->firstOrFail();
-            $config->valor = is_array($request->valor)
-                ? json_encode($request->valor)
-                : $request->valor;
-            $config->save();
+            $configuracion = Configuracion::where('clave', $clave)->firstOrFail();
+            $configuracion->valor = is_array($solicitud->valor)
+                ? json_encode($solicitud->valor)
+                : $solicitud->valor;
+            $configuracion->save();
 
             $this->registrarLog($user->id, 'configuracion_actualizada', "Clave: $clave");
 
