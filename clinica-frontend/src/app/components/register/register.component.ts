@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../service/Auth-Service/Auth.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -21,7 +21,7 @@ interface RegisterFormControls {
   selector: 'app-register',
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css'],
-  imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule],
+  imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule, RouterModule],
 })
 export class RegisterComponent implements OnInit {
   registerForm: FormGroup;

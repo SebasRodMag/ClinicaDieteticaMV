@@ -1,0 +1,131 @@
+/* Fondo degradado en todo el contenedor */
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: row;
+    background: linear-gradient(to right, #28a745 0%, #ffffff 100%);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Columna izquierda: imagen + texto */
+.auth-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    color: white;
+    text-align: center;
+}
+
+.auth-info>div {
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+
+.auth-info h2 {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.auth-info p {
+    font-size: 1.1rem;
+    max-width: 400px;
+    color: #f8f9fa;
+}
+
+.auth-info img {
+    max-height: 260px;
+    margin-top: 2rem;
+    border-radius: 1rem;
+    /* Sombra eliminada */
+    box-shadow: none;
+}
+
+/* Columna derecha: formulario */
+.auth-form {
+    flex: 1;
+    background-color: transparent;
+    /* No tapa el degradado */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+}
+
+.auth-form>div {
+    width: 100%;
+    max-width: 420px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    /* ligera sombra opcional */
+}
+
+.col-md-6.bg-white {
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive: solo se muestra el formulario */
+@media (max-width: 768px) {
+    .auth-wrapper {
+        flex-direction: column;
+        /* background: #ffffff; */
+    }
+
+    .auth-info img {
+        display: none !important;
+    }
+
+    .auth-info h2,
+    .auth-info p {
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4);
+        width: 100%;
+    }
+
+    .auth-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .auth-form {
+        padding: 2rem 1rem;
+    }
+
+    .auth-form>div {
+        box-shadow: none;
+        padding: 1.5rem;
+    }
+
+    .row.g-0.min-vh-100 {
+        background: linear-gradient(to bottom, #28a745, #f8f9fa);
+        /* Verde a blanco vertical */
+    }
+
+    .col-md-6.bg-white {
+        background-color: transparent !important;
+    }
+
+    .auth-info,
+    .col-md-6.bg-white {
+        border: none !important;
+    }
+
+
+}

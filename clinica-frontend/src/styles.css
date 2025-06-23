@@ -48,6 +48,20 @@ body {
     cursor: pointer;
 }
 
+form label {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+input {
+    font-size: 0.9rem;
+    padding: 0.45rem 0.75rem;
+}
+
+button {
+    font-size: 1rem;
+}
+
 @media (max-width: 600px) {
     nav.navbar {
         flex-direction: column;

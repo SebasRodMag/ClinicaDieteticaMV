@@ -3,16 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log as LaravelLog;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use App\Models\User;
-use App\Models\Log;
 use App\Traits\Loggable;
 
 class AuthController extends Controller
