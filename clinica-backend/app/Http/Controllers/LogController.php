@@ -20,7 +20,7 @@ class LogController extends Controller
         'crear_cita',
         'actualizar_usuario',
     ];
-    
+
     /**
      * 
      * Constructor para aplicar middleware de autenticación y rol.
@@ -39,12 +39,12 @@ class LogController extends Controller
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con todos los logs.
      * @throws \Exception si ocurre un error al consultar los logs.
      */
-    public function listarLogs()
+    public function listarLogs(): JsonResponse
     {
         try {
-            $logs = Log::with('usuario:id,nombre,apellidos,email')
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+            $logs = Log::with('user:id,nombre,apellidos,email')
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             return response()->json(['data' => $logs], 200);
         } catch (\Exception $e) {
@@ -74,10 +74,10 @@ class LogController extends Controller
         }
 
         try {
-            $logs = Log::with('usuario:id,nombre,apellidos,email')
-                        ->where('usuario_id', $id)
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+            $logs = Log::with('user:id,nombre,apellidos,email')
+                ->where('user_id', $id)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             \Log::info("Consulta de logs del usuario ID {$id}");
 
@@ -101,7 +101,7 @@ class LogController extends Controller
      * @return \Illuminate\Http\JsonResponse devuelve los logs filtrados por acción o un mensaje de error si la acción no es válida.
      * @throws \Exception si ocurre un error al consultar los logs.
      */
-    public function porAccion($accion)
+    public function porAccion($accion): JsonResponse
     {
         if (!in_array($accion, self::ACCIONES_VALIDAS)) {
             return response()->json([
@@ -110,10 +110,10 @@ class LogController extends Controller
         }
 
         try {
-            $logs = Log::with('usuario:id,nombre,apellidos,email')
-                        ->where('accion', $accion)
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+            $logs = Log::with('user:id,nombre,apellidos,email')
+                ->where('accion', $accion)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             \Log::info("Consulta de logs por acción: {$accion}");
 

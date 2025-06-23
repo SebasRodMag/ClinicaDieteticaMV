@@ -3,41 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Configuracion;
-use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Traits\Loggable;
+use Illuminate\Support\Facades\Auth;
 
 class ConfiguracionController extends Controller
 {
     use Loggable;
+
+    /**
+     * Devuelve todas las configuraciones del sistema en formato clave-valor, convirtiendo tipos automáticamente.
+     *
+     * @return array
+     * @throws \RuntimeException
+     */
     public function obtenerConfiguraciones(): array
     {
         try {
             return Configuracion::all()->mapWithKeys(function ($item) {
-                $valor = json_decode($item->valor, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    $valor = match (strtolower($item->valor)) {
-                        'true' => true,
-                        'false' => false,
-                        default => is_numeric($item->valor) ? (float) $item->valor : $item->valor,
-                    };
-                }
-
-                return [$item->clave => $valor];
+                return [$item->clave => $this->procesarValor($item->valor)];
             })->toArray();
         } catch (\Throwable $e) {
-            // Lo re-lanzamos para que el controlador superior lo capture
             throw new \RuntimeException('Error al procesar la configuración: ' . $e->getMessage(), 0, $e);
         }
     }
 
-
     /**
-     * Esta Método, llamam al primero para obtener la configuración y luego la actualiza.
-     * La unica diferencia es que este envia un mensaje de configrmacion
-     * @return JsonResponse|mixed
+     * Obtiene todas las configuraciones y devuelve un mensaje de confirmación.
+     *
+     * @return JsonResponse
+     * 
      */
     public function obtenerConfiguracionesConMensaje(): JsonResponse
     {
@@ -49,12 +45,9 @@ class ConfiguracionController extends Controller
                 'configuraciones' => $configuraciones,
             ], 200);
         } catch (\Throwable $e) {
-            $userId = auth()->id();
+            $userId = Auth::id();
 
-            // Registrar en tabla `logs`
             $this->registrarLog($userId, 'error_configuracion', 'configuracion');
-
-            // Registrar en el log del sistema con contexto
             $this->logError($userId, 'Error al obtener configuraciones', $e->getMessage());
 
             return response()->json([
@@ -64,12 +57,61 @@ class ConfiguracionController extends Controller
         }
     }
 
-    public function actualizarPorClave($clave, Request $request)
+    /**
+     * Actualiza el valor de una configuración existente por su clave.
+     * Solo puede ser ejecutado por usuarios con rol 'administrador'.
+     *
+     * @param string $clave
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function actualizarPorClave(string $clave, Request $request): JsonResponse
     {
-        $config = Configuracion::where('clave', $clave)->firstOrFail();
-        $config->valor = is_array($request->valor) ? json_encode($request->valor) : $request->valor;
-        $config->save();
+        $user = Auth::user();
 
-        return response()->json(['message' => 'Configuración actualizada correctamente']);
+        if (!$user || !$user->hasRole('administrador')) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $request->validate([
+            'valor' => ['required'],
+        ]);
+
+        try {
+            $config = Configuracion::where('clave', $clave)->firstOrFail();
+            $config->valor = is_array($request->valor)
+                ? json_encode($request->valor)
+                : $request->valor;
+            $config->save();
+
+            $this->registrarLog($user->id, 'configuracion_actualizada', "Clave: $clave");
+
+            return response()->json(['message' => 'Configuración actualizada correctamente']);
+        } catch (\Throwable $e) {
+            $this->logError($user->id, 'Error actualizando configuración', $e->getMessage());
+
+            return response()->json(['message' => 'Error al actualizar configuración'], 500);
+        }
+    }
+
+    /**
+     * Convierte un valor en su forma apropiada: JSON, booleano, numérico o cadena.
+     *
+     * @param string $valor
+     * @return mixed
+     */
+    private function procesarValor(string $valor): mixed
+    {
+        $decodificado = json_decode($valor, true);
+
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decodificado;
+        }
+
+        return match (strtolower($valor)) {
+            'true' => true,
+            'false' => false,
+            default => is_numeric($valor) ? (float) $valor : $valor,
+        };
     }
 }

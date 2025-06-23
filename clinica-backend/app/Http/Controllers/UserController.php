@@ -107,7 +107,6 @@ class UserController extends Controller
         $codigo = 201;
         $respuesta = [];
 
-        // Validación de los datos
         $validador = Validator::make($solicitud->all(), [
             'nombre' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
@@ -122,48 +121,40 @@ class UserController extends Controller
             'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
-        // Si falla la validación
         if ($validador->fails()) {
             $codigo = 422;
             $respuesta = ['errors' => $validador->errors()];
-            return response()->json($respuesta, $codigo);
-        }
+        } else {
+            try {
+                $usuario = User::create([
+                    'nombre' => $solicitud->input('nombre'),
+                    'apellidos' => $solicitud->input('apellidos'),
+                    'email' => $solicitud->input('email'),
+                    'password' => Hash::make($solicitud->input('password')),
+                    'dni_usuario' => $solicitud->input('dni_usuario'),
+                ]);
 
-        try {
-            // Crear el usuario
-            $usuario = User::create([
-                'nombre' => $solicitud->input('nombre'),
-                'apellidos' => $solicitud->input('apellidos'),
-                'email' => $solicitud->input('email'),
-                'password' => Hash::make($solicitud->input('password')),
-                'dni_usuario' => $solicitud->input('dni_usuario'),
-            ]);
+                $usuario->assignRole('paciente');
+                $this->registrarLog(auth()->id(), 'crear usuario', 'users', $usuario->id);
 
-            // Asignar rol por defecto
-            $usuario->assignRole('paciente');
-
-            // Registrar log
-            $this->registrarLog(auth()->id(), 'crear usuario', 'users', $usuario->id);
-
-            // Respuesta con usuario y sus roles
-            $respuesta = $usuario->load('roles');
-
-        } catch (QueryException $e) {
-            $codigo = 500;
-            $respuesta = [
-                'errors' => [
-                    'general' => ['Error en la base de datos. Revisa que el email o DNI no estén duplicados.']
-                ]
-            ];
-            $this->logError(auth()->id(), 'Error al crear usuario (DB)', $e->getMessage());
-        } catch (\Exception $e) {
-            $codigo = 500;
-            $respuesta = [
-                'errors' => [
-                    'general' => ['Ocurrió un error inesperado al crear el usuario.']
-                ]
-            ];
-            $this->logError(auth()->id(), 'Error inesperado al crear usuario', $e->getMessage());
+                $respuesta = $usuario->load('roles');
+            } catch (QueryException $e) {
+                $codigo = 500;
+                $respuesta = [
+                    'errors' => [
+                        'general' => ['Error en la base de datos. Revisa que el email o DNI no estén duplicados.']
+                    ]
+                ];
+                $this->logError(auth()->id(), 'Error al crear usuario (DB)', $e->getMessage());
+            } catch (\Exception $e) {
+                $codigo = 500;
+                $respuesta = [
+                    'errors' => [
+                        'general' => ['Ocurrió un error inesperado al crear el usuario.']
+                    ]
+                ];
+                $this->logError(auth()->id(), 'Error inesperado al crear usuario', $e->getMessage());
+            }
         }
 
         return response()->json($respuesta, $codigo);

@@ -9,8 +9,6 @@ use App\Models\User;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class EspecialistaController extends Controller
 {
@@ -21,31 +19,25 @@ class EspecialistaController extends Controller
      * Devolverá una lista de todos los especialistas registrados en la base de datos.
      * @return \Illuminate\Http\JsonResponse devolverá una respuesta JSON con el listado de especialistas o un mensaje de error si no hay especialistas registrados.
      */
-    public function listarEspecialistas(Request $request): JsonResponse
+    public function listarEspecialistas(Request $solicitud): JsonResponse
     {
-        $respuesta = [];
-        $codigo = 200;
+        $especialidades = $solicitud->query('especialidades');
+        $query = Especialista::query();
 
-        $especialidadesParam = $request->query('especialidades');
-
-        if ($especialidadesParam) {
-            $especialidades = array_map('trim', explode(',', $especialidadesParam));
-            $especialistas = Especialista::whereIn('especialidad', $especialidades)
-                ->get(['id', 'especialidad']);
-        } else {
-            $especialistas = Especialista::all(['id', 'especialidad']);
+        if ($especialidades) {
+            $especialidadesArray = array_map('trim', explode(',', $especialidades));
+            $query->whereIn('especialidad', $especialidadesArray);
         }
+
+        $especialistas = $query->get(['id', 'especialidad']);
+
+        $this->registrarLog(auth()->id(), 'listar', 'especialistas');
 
         if ($especialistas->isEmpty()) {
-            $this->registrarLog(auth()->id(), 'listar', 'especialistas', null);
-            $respuesta = ['message' => 'No hay especialistas disponibles'];
-            $codigo = 404;
-        } else {
-            $this->registrarLog(auth()->id(), 'listar', 'especialistas', null);
-            $respuesta = ['especialistas' => $especialistas];
+            return response()->json(['message' => 'No hay especialistas disponibles'], 404);
         }
 
-        return response()->json($respuesta, $codigo);
+        return response()->json(['especialistas' => $especialistas]);
     }
 
 
@@ -62,19 +54,13 @@ class EspecialistaController extends Controller
     {
         $especialista = Especialista::find($id);
 
-        $respuesta = [];
-        $codigo = 200;
-
         if (!$especialista) {
-            $this->registrarLog(auth()->id(), 'mostrar_especialista_fallido', 'especialistas',$id );
-            $respuesta = ['message' => 'Especialista no encontrado'];
-            $codigo = 404;
-        } else {
-            $this->registrarLog(auth()->id(), 'mostrar_especialista', 'especialistas',$id );
-            $respuesta = ['especialista' => $especialista];
+            $this->registrarLog(auth()->id(), 'mostrar_especialista_fallido', 'especialistas', $id);
+            return response()->json(['message' => 'Especialista no encontrado'], 404);
         }
 
-        return response()->json($respuesta, $codigo);
+        $this->registrarLog(auth()->id(), 'mostrar_especialista', 'especialistas', $id);
+        return response()->json(['especialista' => $especialista]);
     }
 
 
@@ -87,31 +73,26 @@ class EspecialistaController extends Controller
 
     public function listarEspecialistasPorNombre(): JsonResponse
     {
-        $respuesta = [];
-        $codigo = 200;
-        
-        try{
-            $user = Auth::user()->id;
-            $especialista = Especialista::all();
-            $usuarios = User::all();
+        try {
+            $especialistas = Especialista::with('user')->get();
 
-            if($especialista->isEmpty()){
-                $this->registrarLog(auth()->id(), 'listar_especialistas_por_nombre_no_encontrados',$user);
-                $respuesta = ['message' => 'No hay especialistas disponibles'];
-                $codigo = 404;
-            }else{
-                $this->registrarLog(auth()->id(), 'listar', 'listado_especialistas_por_nombre', $user);
-                $respuesta = [
-                    'id' => $especialista->usuario->id,
-                    'nombre' => $especialista->usuario->nombre,
-                ];
+            if ($especialistas->isEmpty()) {
+                $this->registrarLog(auth()->id(), 'listar_especialistas_por_nombre_no_encontrados');
+                return response()->json(['message' => 'No hay especialistas disponibles'], 404);
             }
-        }catch(\Throwable $e){
-            $this->logError(auth()->id(),'Error al obtener especialistas: ' . $e->getMessage(), $user);
-            $respuesta = ['message' => 'Error al obtener los especialistas'];
-            $codigo = 500;
+
+            $resultado = $especialistas->map(fn($e) => [
+                'id' => $e->user->id,
+                'nombre' => $e->user->nombre,
+            ]);
+
+            $this->registrarLog(auth()->id(), 'listar', 'listado_especialistas_por_nombre');
+            return response()->json(['especialistas' => $resultado]);
+
+        } catch (\Throwable $e) {
+            $this->logError(auth()->id(), 'Error al obtener especialistas', $e->getMessage());
+            return response()->json(['message' => 'Error al obtener los especialistas'], 500);
         }
-        return response()->json($respuesta, $codigo);
     }
 
 
@@ -127,36 +108,31 @@ class EspecialistaController extends Controller
      */
     public function actualizarEspecialista(Request $solicitud, int $id): JsonResponse
     {
-        $respuesta = [];
-        $codigo = 200;
-
         $especialista = Especialista::find($id);
 
         if (!$especialista) {
-            $this->registrarLog(auth()->id(), 'actualizar_especialista_fallido', "Especialista ID $id no encontrado", $especialista->id);
-            $respuesta = ['message' => 'Especialista no encontrado'];
-            $codigo = 404;
-        } elseif (!$solicitud->hasAny(['nombre', 'apellidos'])) {
-            $respuesta = ['message' => 'No se proporcionaron campos para actualizar'];
-            $codigo = 400;
-        } else {
-            $solicitud->validate([
-                'nombre'    => 'string|nullable',
-                'apellidos' => 'string|nullable',
-            ]);
-
-            $especialista->fill($solicitud->only(['nombre', 'apellidos']));
-            $especialista->save();
-
-            $this->registrarLog(auth()->id(), 'actualizar_especialista', "Actualización del especialista ID $id", $especialista->id);
-
-            $respuesta = [
-                'message' => 'Especialista actualizado correctamente',
-                'especialista' => $especialista,
-            ];
+            $this->registrarLog(auth()->id(), 'actualizar_especialista_fallido', 'Especialista no encontrado', $id);
+            return response()->json(['message' => 'Especialista no encontrado'], 404);
         }
 
-        return response()->json($respuesta, $codigo);
+        if (!$solicitud->hasAny(['nombre', 'apellidos'])) {
+            return response()->json(['message' => 'No se proporcionaron campos para actualizar'], 400);
+        }
+
+        $solicitud->validate([
+            'nombre' => 'nullable|string',
+            'apellidos' => 'nullable|string',
+        ]);
+
+        $especialista->fill($solicitud->only(['nombre', 'apellidos']));
+        $especialista->save();
+
+        $this->registrarLog(auth()->id(), 'actualizar_especialista', 'Actualización exitosa', $id);
+
+        return response()->json([
+            'message' => 'Especialista actualizado correctamente',
+            'especialista' => $especialista,
+        ]);
     }
 
 
@@ -174,31 +150,21 @@ class EspecialistaController extends Controller
      */
     public function borrarEspecialista(int $id): JsonResponse
     {
-        $codigo = 200;
-        $mensaje = [];
-
         $especialista = Especialista::find($id);
 
         if (!$especialista) {
-            $this->registrarLog(auth()->id(), 'eliminar_especialista_fallido', 'Especialista no encontrado', $especialista->id);
-            $mensaje = ['message' => 'Especialista no encontrado'];
-            $codigo = 404;
-        } else {
-            try {
-                $especialista->delete();
-
-                $this->registrarLog(auth()->id(), 'eliminar_especialista', "Especialista ID $id eliminado");
-
-                $mensaje = ['message' => 'Especialista eliminado correctamente'];
-            } catch (\Exception $e) {
-                $this->registrarLog(auth()->id(), 'eliminar_especialista_error', "Error al eliminar especialista ID $id: " . $e->getMessage());
-
-                $mensaje = ['message' => 'Error interno al eliminar especialista'];
-                $codigo = 500;
-            }
+            $this->registrarLog(auth()->id(), 'eliminar_especialista_fallido', 'Especialista no encontrado', $id);
+            return response()->json(['message' => 'Especialista no encontrado'], 404);
         }
 
-        return response()->json($mensaje, $codigo);
+        try {
+            $especialista->delete();
+            $this->registrarLog(auth()->id(), 'eliminar_especialista', 'Especialista eliminado', $id);
+            return response()->json(['message' => 'Especialista eliminado correctamente']);
+        } catch (\Exception $e) {
+            $this->logError(auth()->id(), 'Error al eliminar especialista', $e->getMessage());
+            return response()->json(['message' => 'Error interno al eliminar especialista'], 500);
+        }
     }
 
 
@@ -216,50 +182,39 @@ class EspecialistaController extends Controller
      */
     public function nuevoEspecialista(Request $solicitud): JsonResponse
     {
-        $respuesta = [];
-        $codigo = 201;
-
-        $validar = Validator::make($solicitud->all(), [
-            'user_id'      => 'required|integer|exists:users,id',
+        $validator = Validator::make($solicitud->all(), [
+            'user_id' => 'required|integer|exists:users,id',
             'especialidad' => 'required|string|max:150',
         ]);
 
-        if ($validar->fails()) {
-            return response()->json(['errors' => $validar->errors()], 422);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         DB::beginTransaction();
 
         try {
-            // Buscar el usuario por ID
             $user = User::findOrFail($solicitud->user_id);
 
-            // Crear el especialista
             $especialista = Especialista::create([
-                'user_id'      => $user->id,
+                'user_id' => $user->id,
                 'especialidad' => $solicitud->especialidad,
             ]);
 
-            // Asignar el rol al usuario
             $user->assignRole('especialista');
 
-            // Registrar log en su tabla especifica
             $this->registrarLog(auth()->id(), 'create', "Especialista creado, user_id: {$user->id}", $especialista->id);
-
-
             DB::commit();
 
-            $respuesta = [
+            return response()->json([
                 'message' => 'Especialista creado correctamente',
-                'user'    => $user,
-            ];
+                'user' => $user,
+            ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            $respuesta = ['message' => 'Error interno al crear especialista', 'error' => $e->getMessage()];
-            $codigo = 500;
+            $this->logError(auth()->id(), 'Error creando especialista', $e->getMessage());
+            return response()->json(['message' => 'Error interno al crear especialista'], 500);
         }
-
-        return response()->json($respuesta, $codigo);
     }
 
 
@@ -268,28 +223,27 @@ class EspecialistaController extends Controller
      * @return \Illuminate\Http\JsonResponse devuelve un json con la lista de especialistas o un mensaje de error.
      */
 
-    public function listarEspecialistasFull():JsonResponse
+    public function listarEspecialistasFull(): JsonResponse
     {
         if (!auth()->check() || !auth()->user()->hasRole('administrador')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
         $especialistas = Especialista::with('user')
-            ->whereNull('deleted_at')
             ->get()
             ->map(function ($especialista) {
                 return [
-                    'id_especialista'=> $especialista->id,
-                    'user_id'=> $especialista->user_id,
-                    'nombre_apellidos'=> $especialista->user->nombre . ' ' . $especialista->user->apellidos,
-                    'email'=> $especialista->user->email,
-                    'telefono'=> $especialista->user->telefono,
-                    'especialidad'=> $especialista->especialidad,
-                    'fecha_alta'=> $especialista->created_at->format('Y-m-d'),
+                    'id_especialista' => $especialista->id,
+                    'user_id' => $especialista->user_id,
+                    'nombre_apellidos' => $especialista->user->nombre . ' ' . $especialista->user->apellidos,
+                    'email' => $especialista->user->email,
+                    'telefono' => $especialista->user->telefono,
+                    'especialidad' => $especialista->especialidad,
+                    'fecha_alta' => $especialista->created_at->format('Y-m-d'),
                 ];
             });
 
-        $this->registrarLog(auth()->id(), 'listar_todos_los_especialistas_', 'especialistas', null);
+        $this->registrarLog(auth()->id(), 'listar_todos_los_especialistas_', 'especialistas');
 
         return response()->json($especialistas);
     }
@@ -299,7 +253,7 @@ class EspecialistaController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function listarEspecialidades()
+    public function listarEspecialidades(): JsonResponse
     {
         $especialidades = Especialista::select('especialidad')->distinct()->pluck('especialidad');
         return response()->json($especialidades);
@@ -308,12 +262,12 @@ class EspecialistaController extends Controller
     /**
      * Lista especialistas filtrados por especialidad.
      *
-     * @param Request $request
+     * @param Request $solicitud
      * @return \Illuminate\Http\JsonResponse
      */
-    public function listarEspecialistasPorEspecialidad(Request $request)
+    public function listarEspecialistasPorEspecialidad(Request $solicitud): JsonResponse
     {
-        $especialidad = $request->query('especialidad');
+        $especialidad = $solicitud->query('especialidad');
 
         if (!$especialidad) {
             return response()->json(['error' => 'Se requiere el parámetro especialidad'], 422);
@@ -323,15 +277,14 @@ class EspecialistaController extends Controller
             ->where('especialidad', $especialidad)
             ->get()
             ->map(function ($especialista) {
-                $especialista->usuario = $especialista->user;
-                unset($especialista->user);
-                return $especialista;
+                return [
+                    'id_especialista' => $especialista->id,
+                    'nombre' => $especialista->user->nombre,
+                    'apellidos' => $especialista->user->apellidos,
+                    'email' => $especialista->user->email,
+                ];
             });
 
         return response()->json($especialistas);
     }
-
-
-
-
 }

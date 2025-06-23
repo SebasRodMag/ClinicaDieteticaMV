@@ -13,7 +13,7 @@ trait Loggable
      * @param string $accion Acción realizada
      * @param string|null $tablaAfectada Tabla afectada por la acción
      * @param int|null $registroId ID del registro afectado
-     * @return void No devuelve nada, solo registra el log.
+     * @return void
      */
     public function registrarLog(?int $userId, string $accion, ?string $tablaAfectada = null, ?int $registroId = null): void
     {

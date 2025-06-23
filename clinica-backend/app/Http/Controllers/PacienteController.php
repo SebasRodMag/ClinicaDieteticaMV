@@ -28,15 +28,22 @@ class PacienteController extends Controller
         $respuesta = [];
         $codigo = 200;
 
-        $pacientes = Paciente::all();
+        try {
+            $pacientes = Paciente::with('user')->get();
 
-        if ($pacientes->isEmpty()) {
-            $this->registrarLog(auth()->id(), 'listar', 'pacientes', null);
-            $respuesta = ['message' => 'No hay pacientes disponibles'];
-            $codigo = 404;
-        } else {
-            $this->registrarLog(auth()->id(), 'listar', 'pacientes', null);
-            $respuesta = $pacientes;
+            if ($pacientes->isEmpty()) {
+                $respuesta = ['message' => 'No hay pacientes disponibles'];
+                $codigo = 404;
+            } else {
+                $respuesta = ['pacientes' => $pacientes];
+            }
+
+            $this->registrarLog(auth()->id(), 'listar', 'pacientes');
+        } catch (\Throwable $e) {
+            $codigo = 500;
+            $respuesta = ['message' => 'Error al obtener pacientes'];
+            $this->logError(auth()->id(), 'Error al listar pacientes', $e->getMessage());
+            $this->registrarLog(auth()->id(), 'error_listar', 'pacientes');
         }
 
         return response()->json($respuesta, $codigo);
@@ -55,27 +62,32 @@ class PacienteController extends Controller
     {
         $respuesta = [];
         $codigo = 200;
-        try {
-            $user = Auth::user()->id;
-            $pacientes = Paciente::all();
-            $usuarios = User::all();
+        $userId = Auth::id();
 
-            if ($pacientes->isempty()) {
-                $this->registrarLog(auth()->id(), 'listar_pacientes_por_nombre_no_encontrados', $user);
+        try {
+            $pacientes = Paciente::with('user')->get();
+
+            if ($pacientes->isEmpty()) {
+                $this->registrarLog($userId, 'listar_pacientes_por_nombre_no_encontrados', $userId);
                 $respuesta = ['message' => 'No hay pacientes disponibles'];
                 $codigo = 404;
             } else {
-                $this->registrarLog(auth()->id(), 'listar', 'listado_paciente_por_nombre', $user);
-                $respuesta = [
-                    'id' => $pacientes->usuario->id,
-                    'nombre' => $pacientes->usuario->nombre,
-                ];
+                $listado = $pacientes->map(function ($paciente) {
+                    return [
+                        'id' => $paciente->user->id,
+                        'nombre' => $paciente->user->nombre . ' ' . $paciente->user->apellidos,
+                    ];
+                });
+
+                $this->registrarLog($userId, 'listar', 'listado_pacientes_por_nombre', $userId);
+                $respuesta = ['pacientes' => $listado];
             }
         } catch (\Throwable $e) {
-            $this->logError(auth()->id(), 'Error al obtener pacientes: ' . $e->getMessage(), $user);
+            $this->logError($userId, 'Error al obtener pacientes: ' . $e->getMessage(), $userId);
             $respuesta = ['message' => 'Error al obtener los pacientes'];
             $codigo = 500;
         }
+
         return response()->json($respuesta, $codigo);
     }
 
@@ -93,48 +105,52 @@ class PacienteController extends Controller
      */
     public function viejoPaciente(Request $solicitud, $id): JsonResponse
     {
+        $userId = Auth::id();
         $respuesta = [];
         $codigo = 201;
-        $user = Auth::user()->id;
-        //Validar que el ID sea numérico
-        if (!is_numeric($id)) {
-            $this->registrarLog($user, 'nuevo_paciente_id_invalido', auth()->id(), null);
-            return response()->json(['message' => 'ID inválido'], 400);
-        }
 
-        $usuario = User::find($id);
+        // Validar que el ID sea numérico
+        $validator = Validator::make(['id' => $id], ['id' => 'required|integer']);
 
-        if (!$usuario) {
-            $this->registrarLog($user, 'usuario_para_paciente_no_encontrado', auth()->id(), $id);
-            return response()->json(['message' => 'Usuario no encontrado'], 404);
-        }
-
-        if ($usuario->rol !== 'usuario') {
-            $this->registrarLog($user, 'usuario_no_convertible_a_paciente', auth()->id(), $id);
-            return response()->json(['message' => 'Este usuario no puede ser convertido a paciente'], 403);
+        if ($validator->fails()) {
+            $this->registrarLog($userId, 'nuevo_paciente_id_invalido', $userId, null);
+            $respuesta = ['message' => 'ID inválido'];
+            $codigo = 400;
+            return response()->json($respuesta, $codigo);
         }
 
         try {
-            DB::beginTransaction();
+            $usuario = User::find($id);
 
-            //Actualizar rol
-            $usuario->rol = 'paciente';
-            $usuario->save();
+            if (!$usuario) {
+                $this->registrarLog($userId, 'usuario_para_paciente_no_encontrado', $userId, $id);
+                $respuesta = ['message' => 'Usuario no encontrado'];
+                $codigo = 404;
+            } elseif ($usuario->rol !== 'usuario') {
+                $this->registrarLog($userId, 'usuario_no_convertible_a_paciente', $userId, $id);
+                $respuesta = ['message' => 'Este usuario no puede ser convertido a paciente'];
+                $codigo = 403;
+            } else {
+                DB::beginTransaction();
 
-            $paciente = Paciente::create([
-                'user_id' => $usuario->id,
-            ]);
+                // Actualizar rol
+                $usuario->rol = 'paciente';
+                $usuario->save();
 
-            $this->registrarLog($user, 'usuario_convertido_paciente', auth()->id(), $paciente->id);
+                $paciente = Paciente::create(['user_id' => $usuario->id]);
 
-            DB::commit();
-            $respuesta = $paciente;
+                $this->registrarLog($userId, 'usuario_convertido_paciente', $userId, $paciente->id);
+
+                DB::commit();
+
+                $respuesta = $paciente;
+                $codigo = 201;
+            }
         } catch (\Exception $e) {
             DB::rollBack();
 
-            //Por si el paciente nunca se crea, registrar el error
             $pacienteId = isset($paciente) ? $paciente->id : null;
-            $this->registrarLog($user, 'crear_paciente_error', auth()->id(), $pacienteId);
+            $this->registrarLog($userId, 'crear_paciente_error', $userId, $pacienteId);
 
             $respuesta = ['message' => 'Error interno al crear el paciente'];
             $codigo = 500;
@@ -152,24 +168,25 @@ class PacienteController extends Controller
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los datos del paciente o un mensaje de error.
      * 
      */
-    public function verPaciente($id)
+    public function verPaciente($id): JsonResponse
     {
+        $userId = auth()->id();
         $respuesta = [];
         $codigo = 200;
 
         if (!is_numeric($id)) {
-            $this->registrarLog(auth()->id(), 'mostrar_usuario', 'user', $id);
+            $this->registrarLog($userId, 'mostrar_usuario_id_invalido', 'user', $id);
             $respuesta = ['message' => 'ID inválido'];
             $codigo = 400;
         } else {
             $paciente = Paciente::find($id);
 
             if (!$paciente) {
-                $this->registrarLog(auth()->id(), 'usuario_no_encontrado', 'user', $id);
+                $this->registrarLog($userId, 'paciente_no_encontrado', 'user', $id);
                 $respuesta = ['message' => 'Paciente no encontrado'];
                 $codigo = 404;
             } else {
-                $this->registrarLog(auth()->id(), 'ver_paciente', 'user', $id);
+                $this->registrarLog($userId, 'ver_paciente', 'user', $id);
                 $respuesta = $paciente;
             }
         }
@@ -186,28 +203,30 @@ class PacienteController extends Controller
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o un mensaje de error.
      * 
      */
-    public function borrarPaciente($id)
+    public function borrarPaciente($id): JsonResponse
     {
+        $userId = auth()->id();
         $respuesta = [];
         $codigo = 200;
 
         if (!is_numeric($id)) {
-            $this->registrarLog(auth()->id(), 'borrar_paciente_id_invalido', 'paciente', null);
+            $this->registrarLog($userId, 'borrar_paciente_id_invalido', 'paciente', null);
             $respuesta = ['message' => 'ID inválido'];
             $codigo = 400;
         } else {
             $paciente = Paciente::find($id);
 
             if (!$paciente) {
-                $this->registrarLog(auth()->id(), 'borrar_paciente_id_no_encontrado', 'paciente', $id);
+                $this->registrarLog($userId, 'borrar_paciente_id_no_encontrado', 'paciente', $id);
                 $respuesta = ['message' => 'Paciente no encontrado'];
                 $codigo = 404;
             } else {
-                if ($paciente->delete()) {
-                    $this->registrarLog(auth()->id(), 'borrar_paciente', 'paciente', $id);
+                try {
+                    $paciente->delete();
+                    $this->registrarLog($userId, 'borrar_paciente', 'paciente', $id);
                     $respuesta = ['message' => 'Paciente eliminado correctamente'];
-                } else {
-                    $this->registrarLog(auth()->id(), 'borrar_paciente_error', 'paciente', $id);
+                } catch (\Exception $e) {
+                    $this->registrarLog($userId, 'borrar_paciente_error', 'paciente', $id);
                     $respuesta = ['message' => 'No se pudo eliminar el paciente'];
                     $codigo = 500;
                 }
@@ -230,11 +249,12 @@ class PacienteController extends Controller
     // utilizando la relación definida en el modelo Paciente para obtener la última cita.
     public function getFullPacientes(): JsonResponse
     {
+        $userId = auth()->id();
         $respuesta = [];
         $codigo = 200;
 
         try {
-            $pacientes = Paciente::with(['usuario', 'ultimaCita'])->get();
+            $pacientes = Paciente::with(['usuario', 'ultimaCita', 'ultimaCita.especialista', 'ultimaCita.especialista.usuario'])->get();
 
             $resultado = $pacientes->map(function ($paciente) {
                 $especialista = optional($paciente->ultimaCita->especialista);
@@ -247,8 +267,8 @@ class PacienteController extends Controller
                     'telefono' => $paciente->usuario->telefono,
                     'email' => $paciente->usuario->email,
                     'numero_historial' => $paciente->numero_historial,
-                    'fecha_alta' => $paciente->fecha_alta,
-                    'fecha_baja' => $paciente->fecha_baja,
+                    'fecha_alta' => optional($paciente->fecha_alta)?->format('Y-m-d'),
+                    'fecha_baja' => optional($paciente->fecha_baja)?->format('Y-m-d'),
                     'estado' => optional($paciente->ultimaCita)->estado,
                     'especialista_asociado' => $especialista ? $especialista->id : null,
                     'especialista' => $especialista ? [
@@ -265,16 +285,15 @@ class PacienteController extends Controller
             });
 
             if ($resultado->isEmpty()) {
-                $this->registrarLog(auth()->id(), 'Pacientes_no_encontrados', 'paciente', null);
+                $this->registrarLog($userId, 'pacientes_no_encontrados', 'paciente', null);
                 $respuesta = ['message' => 'No se encontraron pacientes'];
                 $codigo = 404;
             } else {
-                $this->registrarLog(auth()->id(), 'Pacientes_no_encontrados', 'paciente', null);
+                $this->registrarLog($userId, 'listar_pacientes_completo', 'paciente', null);
                 $respuesta = $resultado;
             }
-
         } catch (\Throwable $e) {
-            $this->logError(auth()->id(), 'Error al obtener pacientes: ' . $e->getMessage(), null);
+            $this->logError($userId, 'Error al obtener pacientes: ' . $e->getMessage(), null);
             $respuesta = ['message' => 'Error al obtener los pacientes'];
             $codigo = 500;
         }
@@ -282,101 +301,104 @@ class PacienteController extends Controller
         return response()->json($respuesta, $codigo);
     }
 
-    public function pacientesConEspecialista()
-    {
-        // Cargar pacientes con su usuario y preparar el resultado
-        $pacientes = Paciente::with('user')->get()->map(function ($paciente) {
-            // Obtener la última cita con el especialista y su usuario
-            $ultimaCita = $paciente->citas()
-                ->with('especialista.user')
-                ->orderBy('fecha_hora_cita', 'desc')
-                ->first();
 
-            // Crear un objeto de paciente con estructura anidada
-            return [
-                'id' => $paciente->id,
-                'user_id' => $paciente->user_id,
-                'numero_historial' => $paciente->numero_historial,
-                'fecha_alta' => $paciente->fecha_alta,
-                'fecha_baja' => $paciente->fecha_baja,
-                'created_at' => $paciente->created_at,
-                'updated_at' => $paciente->updated_at,
-                'deleted_at' => $paciente->deleted_at,
-                'ultima_cita' => $ultimaCita ? [
-                    'id_cita' => $ultimaCita->id_cita,
-                    'id_paciente' => $ultimaCita->id_paciente,
-                    'id_especialista' => $ultimaCita->id_especialista,
-                    'fecha_hora_cita' => $ultimaCita->fecha_hora_cita,
-                    'tipo_cita' => $ultimaCita->tipo_cita,
-                    'estado' => $ultimaCita->estado,
-                    'es_primera' => $ultimaCita->es_primera,
-                    'comentario' => $ultimaCita->comentario,
-                    'created_at' => $ultimaCita->created_at,
-                    'updated_at' => $ultimaCita->updated_at,
-                    'deleted_at' => $ultimaCita->deleted_at,
-                    'especialista' => $ultimaCita->especialista ? [
-                        'id' => $ultimaCita->especialista->id,
-                        'user_id' => $ultimaCita->especialista->user_id,
-                        'especialidad' => $ultimaCita->especialista->especialidad,
-                        'created_at' => $ultimaCita->especialista->created_at,
-                        'updated_at' => $ultimaCita->especialista->updated_at,
-                        'deleted_at' => $ultimaCita->especialista->deleted_at,
-                        'usuario' => $ultimaCita->especialista->user ? [
-                            'id' => $ultimaCita->especialista->user->id,
-                            'nombre' => $ultimaCita->especialista->user->nombre,
-                            'apellidos' => $ultimaCita->especialista->user->apellidos,
-                            'dni_usuario' => $ultimaCita->especialista->user->dni_usuario,
-                            'email' => $ultimaCita->especialista->user->email,
-                            'email_verified_at' => $ultimaCita->especialista->user->email_verified_at,
-                            'direccion' => $ultimaCita->especialista->user->direccion,
-                            'fecha_nacimiento' => $ultimaCita->especialista->user->fecha_nacimiento,
-                            'telefono' => $ultimaCita->especialista->user->telefono,
-                            'created_at' => $ultimaCita->especialista->user->created_at,
-                            'updated_at' => $ultimaCita->especialista->user->updated_at,
-                            'deleted_at' => $ultimaCita->especialista->user->deleted_at,
+    /**
+     * Función para listar la relación de citas de un paciente y los epecialistas adjuntando la información necesaria
+     * @return JsonResponse|mixed
+     */
+    public function pacientesConEspecialista(): JsonResponse
+    {
+        $userId = auth()->id();
+        $respuesta = [];
+        $codigo = 200;
+
+        try {
+            $pacientes = Paciente::with('user')->get();
+
+            $resultado = $pacientes->map(function ($paciente) {
+                $ultimaCita = $paciente->citas()
+                    ->with('especialista.user')
+                    ->orderBy('fecha_hora_cita', 'desc')
+                    ->first();
+
+                $especialista = $ultimaCita ? $ultimaCita->especialista : null;
+                $usuarioEspecialista = $especialista ? $especialista->user : null;
+
+                return [
+                    'id' => $paciente->id,
+                    'user_id' => $paciente->user_id,
+                    'numero_historial' => $paciente->numero_historial,
+                    'fecha_alta' => optional($paciente->fecha_alta)?->format('Y-m-d'),
+                    'fecha_baja' => optional($paciente->fecha_baja)?->format('Y-m-d'),
+                    'created_at' => optional($paciente->created_at)?->format('Y-m-d H:i:s'),
+                    'updated_at' => optional($paciente->updated_at)?->format('Y-m-d H:i:s'),
+                    'deleted_at' => optional($paciente->deleted_at)?->format('Y-m-d H:i:s'),
+
+                    'ultima_cita' => $ultimaCita ? [
+                        'id_cita' => $ultimaCita->id_cita,
+                        'id_paciente' => $ultimaCita->id_paciente,
+                        'id_especialista' => $ultimaCita->id_especialista,
+                        'fecha_hora_cita' => optional($ultimaCita->fecha_hora_cita)?->format('Y-m-d H:i:s'),
+                        'tipo_cita' => $ultimaCita->tipo_cita,
+                        'estado' => $ultimaCita->estado,
+                        'es_primera' => $ultimaCita->es_primera,
+                        'comentario' => $ultimaCita->comentario,
+                        'created_at' => optional($ultimaCita->created_at)?->format('Y-m-d H:i:s'),
+                        'updated_at' => optional($ultimaCita->updated_at)?->format('Y-m-d H:i:s'),
+                        'deleted_at' => optional($ultimaCita->deleted_at)?->format('Y-m-d H:i:s'),
+
+                        'especialista' => $especialista ? [
+                            'id' => $especialista->id,
+                            'user_id' => $especialista->user_id,
+                            'especialidad' => $especialista->especialidad,
+                            'created_at' => optional($especialista->created_at)?->format('Y-m-d H:i:s'),
+                            'updated_at' => optional($especialista->updated_at)?->format('Y-m-d H:i:s'),
+                            'deleted_at' => optional($especialista->deleted_at)?->format('Y-m-d H:i:s'),
+
+                            'usuario' => $usuarioEspecialista ? [
+                                'id' => $usuarioEspecialista->id,
+                                'nombre' => $usuarioEspecialista->nombre,
+                                'apellidos' => $usuarioEspecialista->apellidos,
+                                'dni_usuario' => $usuarioEspecialista->dni_usuario,
+                                'email' => $usuarioEspecialista->email,
+                                'email_verified_at' => optional($usuarioEspecialista->email_verified_at)?->format('Y-m-d H:i:s'),
+                                'direccion' => $usuarioEspecialista->direccion,
+                                'fecha_nacimiento' => optional($usuarioEspecialista->fecha_nacimiento)?->format('Y-m-d'),
+                                'telefono' => $usuarioEspecialista->telefono,
+                                'created_at' => optional($usuarioEspecialista->created_at)?->format('Y-m-d H:i:s'),
+                                'updated_at' => optional($usuarioEspecialista->updated_at)?->format('Y-m-d H:i:s'),
+                                'deleted_at' => optional($usuarioEspecialista->deleted_at)?->format('Y-m-d H:i:s'),
+                            ] : null,
                         ] : null,
                     ] : null,
-                ] : null,
-                'especialista' => $ultimaCita && $ultimaCita->especialista ? [
-                    'id' => $ultimaCita->especialista->id,
-                    'user_id' => $ultimaCita->especialista->user_id,
-                    'especialidad' => $ultimaCita->especialista->especialidad,
-                    'created_at' => $ultimaCita->especialista->created_at,
-                    'updated_at' => $ultimaCita->especialista->updated_at,
-                    'deleted_at' => $ultimaCita->especialista->deleted_at,
-                    'usuario' => $ultimaCita->especialista->user ? [
-                        'id' => $ultimaCita->especialista->user->id,
-                        'nombre' => $ultimaCita->especialista->user->nombre,
-                        'apellidos' => $ultimaCita->especialista->user->apellidos,
-                        'dni_usuario' => $ultimaCita->especialista->user->dni_usuario,
-                        'email' => $ultimaCita->especialista->user->email,
-                        'email_verified_at' => $ultimaCita->especialista->user->email_verified_at,
-                        'direccion' => $ultimaCita->especialista->user->direccion,
-                        'fecha_nacimiento' => $ultimaCita->especialista->user->fecha_nacimiento,
-                        'telefono' => $ultimaCita->especialista->user->telefono,
-                        'created_at' => $ultimaCita->especialista->user->created_at,
-                        'updated_at' => $ultimaCita->especialista->user->updated_at,
-                        'deleted_at' => $ultimaCita->especialista->user->deleted_at,
-                    ] : null,
-                ] : null,
-                'usuario' => $paciente->user ? [
-                    'id' => $paciente->user->id,
-                    'nombre' => $paciente->user->nombre,
-                    'apellidos' => $paciente->user->apellidos,
-                    'dni_usuario' => $paciente->user->dni_usuario,
-                    'email' => $paciente->user->email,
-                    'email_verified_at' => $paciente->user->email_verified_at,
-                    'direccion' => $paciente->user->direccion,
-                    'fecha_nacimiento' => $paciente->user->fecha_nacimiento,
-                    'telefono' => $paciente->user->telefono,
-                    'created_at' => $paciente->user->created_at,
-                    'updated_at' => $paciente->user->updated_at,
-                    'deleted_at' => $paciente->user->deleted_at,
-                ] : null,
-            ];
-        });
 
-        return response()->json($pacientes);
+                    'usuario' => $paciente->user ? [
+                        'id' => $paciente->user->id,
+                        'nombre' => $paciente->user->nombre,
+                        'apellidos' => $paciente->user->apellidos,
+                        'dni_usuario' => $paciente->user->dni_usuario,
+                        'email' => $paciente->user->email,
+                        'email_verified_at' => optional($paciente->user->email_verified_at)?->format('Y-m-d H:i:s'),
+                        'direccion' => $paciente->user->direccion,
+                        'fecha_nacimiento' => optional($paciente->user->fecha_nacimiento)?->format('Y-m-d'),
+                        'telefono' => $paciente->user->telefono,
+                        'created_at' => optional($paciente->user->created_at)?->format('Y-m-d H:i:s'),
+                        'updated_at' => optional($paciente->user->updated_at)?->format('Y-m-d H:i:s'),
+                        'deleted_at' => optional($paciente->user->deleted_at)?->format('Y-m-d H:i:s'),
+                    ] : null,
+                ];
+            });
+
+            $respuesta = $resultado;
+            $this->registrarLog($userId, 'listar_pacientes_con_especialista', 'paciente', null);
+
+        } catch (\Throwable $e) {
+            $this->logError($userId, 'Error al obtener pacientes con especialista: ' . $e->getMessage(), null);
+            $respuesta = ['message' => 'Error interno al obtener pacientes con especialista'];
+            $codigo = 500;
+        }
+
+        return response()->json($respuesta, $codigo ?? 200);
     }
 
 
@@ -387,15 +409,18 @@ class PacienteController extends Controller
      * @param int $idPaciente
      * @return \Illuminate\Http\JsonResponse
      */
-    public function actualizarPaciente(Request $request, int $idPaciente)
+    public function actualizarPaciente(Request $request, int $idPaciente): JsonResponse
     {
-        $respuesta = null;
+        $codigo = 200;
+        $respuesta = [];
 
         try {
             $paciente = Paciente::with('user')->findOrFail($idPaciente);
 
             if (auth()->user()->id !== $paciente->user_id) {
-                $respuesta = response()->json(['error' => 'No autorizado'], 403);
+                $codigo = 403;
+                $respuesta = ['error' => 'No autorizado'];
+                $this->registrarLog(auth()->id(), 'actualizar_paciente_no_autorizado', 'paciente', $idPaciente);
             } else {
                 $validator = Validator::make($request->all(), [
                     'nombre' => 'required|string|max:255',
@@ -409,9 +434,13 @@ class PacienteController extends Controller
                 ]);
 
                 if ($validator->fails()) {
-                    $respuesta = response()->json(['errors' => $validator->errors()], 422);
+                    $codigo = 422;
+                    $respuesta = ['errors' => $validator->errors()];
+                    $this->registrarLog(auth()->id(), 'actualizar_paciente_validacion_fallida', 'paciente', $idPaciente);
                 } elseif (!\Hash::check($request->password_actual, $paciente->user->password)) {
-                    $respuesta = response()->json(['error' => 'Contraseña actual incorrecta'], 422);
+                    $codigo = 422;
+                    $respuesta = ['error' => 'Contraseña actual incorrecta'];
+                    $this->registrarLog(auth()->id(), 'actualizar_paciente_password_incorrecta', 'paciente', $idPaciente);
                 } else {
                     $user = $paciente->user;
                     $user->nombre = $request->nombre;
@@ -423,14 +452,20 @@ class PacienteController extends Controller
                     $user->telefono = $request->telefono;
                     $user->save();
 
-                    $respuesta = response()->json(['mensaje' => 'Datos actualizados correctamente', 'paciente' => $paciente->load('user')]);
+                    $respuesta = [
+                        'mensaje' => 'Datos actualizados correctamente',
+                        'paciente' => $paciente->load('user'),
+                    ];
+                    $this->registrarLog(auth()->id(), 'actualizar_paciente_exito', 'paciente', $idPaciente);
                 }
             }
         } catch (\Exception $e) {
-            $respuesta = response()->json(['error' => 'Paciente no encontrado'], 404);
+            $codigo = 404;
+            $respuesta = ['error' => 'Paciente no encontrado'];
+            $this->logError(auth()->id(), 'Error al actualizar paciente: ' . $e->getMessage(), $idPaciente);
         }
 
-        return $respuesta;
+        return response()->json($respuesta, $codigo);
     }
 
     /**
@@ -440,15 +475,18 @@ class PacienteController extends Controller
      * @param int $idPaciente
      * @return \Illuminate\Http\JsonResponse
      */
-    public function cambiarPassword(Request $request, int $idPaciente)
+    public function cambiarPassword(Request $request, int $idPaciente): JsonResponse
     {
-        $respuesta = null;
+        $codigo = 200;
+        $respuesta = [];
 
         try {
             $paciente = Paciente::with('user')->findOrFail($idPaciente);
 
             if (auth()->user()->id !== $paciente->user_id) {
-                $respuesta = response()->json(['error' => 'No autorizado'], 403);
+                $codigo = 403;
+                $respuesta = ['error' => 'No autorizado'];
+                $this->registrarLog(auth()->id(), 'cambiar_password_no_autorizado', 'paciente', $idPaciente);
             } else {
                 $validator = Validator::make($request->all(), [
                     'password_actual' => 'required|string',
@@ -456,36 +494,64 @@ class PacienteController extends Controller
                 ]);
 
                 if ($validator->fails()) {
-                    $respuesta = response()->json(['errors' => $validator->errors()], 422);
+                    $codigo = 422;
+                    $respuesta = ['errors' => $validator->errors()];
+                    $this->registrarLog(auth()->id(), 'cambiar_password_validacion_fallida', 'paciente', $idPaciente);
                 } elseif (!\Hash::check($request->password_actual, $paciente->user->password)) {
-                    $respuesta = response()->json(['error' => 'Contraseña actual incorrecta'], 422);
+                    $codigo = 422;
+                    $respuesta = ['error' => 'Contraseña actual incorrecta'];
+                    $this->registrarLog(auth()->id(), 'cambiar_password_incorrecta', 'paciente', $idPaciente);
                 } else {
                     $user = $paciente->user;
                     $user->password = Hash::make($request->password_nuevo);
                     $user->save();
 
-                    $respuesta = response()->json(['mensaje' => 'Contraseña actualizada correctamente']);
+                    $respuesta = ['mensaje' => 'Contraseña actualizada correctamente'];
+                    $this->registrarLog(auth()->id(), 'cambiar_password_exito', 'paciente', $idPaciente);
                 }
             }
         } catch (\Exception $e) {
-            $respuesta = response()->json(['error' => 'Paciente no encontrado'], 404);
+            $codigo = 404;
+            $respuesta = ['error' => 'Paciente no encontrado'];
+            $this->logError(auth()->id(), 'Error al cambiar contraseña: ' . $e->getMessage(), $idPaciente);
         }
 
-        return $respuesta;
+        return response()->json($respuesta, $codigo);
     }
 
     /**
      * obtener datos de paciente a partir del id de usuario.
      */
 
-    public function obtenerPacientePorUsuario($userId)
+    public function obtenerPacientePorUsuario($userId): JsonResponse
     {
-        $paciente = Paciente::where('user_id', $userId)->first();
+        $codigo = 200;
+        $respuesta = [];
 
-        if (!$paciente) {
-            return response()->json(['message' => 'Paciente no encontrado'], 404);
+        try {
+            if (!is_numeric($userId)) {
+                $codigo = 400;
+                $respuesta = ['message' => 'ID inválido'];
+                $this->registrarLog(auth()->id(), 'obtener_paciente_usuario_id_invalido', 'paciente', $userId);
+            } else {
+                $paciente = Paciente::where('user_id', $userId)->first();
+
+                if (!$paciente) {
+                    $codigo = 404;
+                    $respuesta = ['message' => 'Paciente no encontrado'];
+                    $this->registrarLog(auth()->id(), 'obtener_paciente_usuario_no_encontrado', 'paciente', $userId);
+                } else {
+                    $respuesta = $paciente;
+                    $this->registrarLog(auth()->id(), 'obtener_paciente_usuario_exito', 'paciente', $userId);
+                }
+            }
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['message' => 'Error interno al obtener paciente'];
+            $this->logError(auth()->id(), 'Error obtenerPacientePorUsuario: ' . $e->getMessage(), $userId);
         }
-        return response()->json($paciente);
+
+        return response()->json($respuesta, $codigo);
     }
 
     /**
@@ -504,6 +570,7 @@ class PacienteController extends Controller
     {
         $respuesta = [];
         $codigo = 201;
+        $user = null;
 
         $validar = Validator::make($solicitud->all(), [
             'user_id' => 'required|integer|exists:users,id',
@@ -516,20 +583,15 @@ class PacienteController extends Controller
         DB::beginTransaction();
 
         try {
-            // Buscar el usuario por ID
             $user = User::findOrFail($solicitud->user_id);
 
-            // Crear el paciente
             $paciente = Paciente::create([
                 'user_id' => $user->id,
             ]);
 
-            // Asignar el rol al usuario
             $user->assignRole('paciente');
 
-            // Registrar log en la tabla correspondiente
             $this->registrarLog(auth()->id(), 'create', "Paciente creado, user_id: {$user->id}", $paciente->id);
-
 
             DB::commit();
 
@@ -539,13 +601,12 @@ class PacienteController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
+            $this->logError(auth()->id(), 'Error crear paciente: ' . $e->getMessage(), $user?->id);
             $respuesta = ['message' => 'Error interno al crear paciente', 'error' => $e->getMessage()];
             $codigo = 500;
         }
 
         return response()->json($respuesta, $codigo);
     }
-
-
 
 }

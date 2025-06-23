@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Carbon\Carbon;
 
-class CitaControllerTest extends TestCase
+class PacienteCitasControllerTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -119,4 +119,44 @@ class CitaControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_crear_cita_con_datos_incompletos_falla()
+    {
+        $data = [
+            'id_especialista' => $this->especialista->id,
+            // 'tipo_cita' está ausente
+            'fecha_hora_cita' => Carbon::now()->addDay()->setHour(9)->format('Y-m-d H:i:s'),
+            'es_primera' => true,
+        ];
+
+        $response = $this->actingAs($this->usuario)->postJson("/api/pacientes/{$this->paciente->id}/citas", $data);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['tipo_cita']);
+    }
+
+    public function test_no_se_permite_doble_cita_en_mismo_horario()
+{
+    $fecha = Carbon::now()->addDays(2)->setHour(10)->setMinute(0);
+
+    Cita::factory()->create([
+        'id_paciente' => $this->paciente->id,
+        'id_especialista' => $this->especialista->id,
+        'fecha_hora_cita' => $fecha,
+        'estado' => 'pendiente',
+    ]);
+
+    $data = [
+        'id_especialista' => $this->especialista->id,
+        'fecha_hora_cita' => $fecha->format('Y-m-d H:i:s'),
+        'tipo_cita' => 'presencial',
+        'comentario' => '',
+        'es_primera' => false,
+    ];
+
+    $response = $this->actingAs($this->usuario)->postJson("/api/pacientes/{$this->paciente->id}/citas", $data);
+
+    $response->assertStatus(422);
+    $response->assertJsonFragment(['error' => 'Ya existe una cita en ese horario para este especialista']);
+}
 }
