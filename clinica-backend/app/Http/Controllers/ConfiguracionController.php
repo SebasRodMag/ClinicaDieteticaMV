@@ -7,6 +7,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 class ConfiguracionController extends Controller
 {
@@ -113,5 +116,28 @@ class ConfiguracionController extends Controller
             'false' => false,
             default => is_numeric($valor) ? (float) $valor : $valor,
         };
+    }
+
+    /**
+     * Retorna el color del tema como configuración pública.
+     */
+    public function obtenerColorTema(): JsonResponse
+    {
+        try {
+            $color = Configuracion::get('color_tema', '#28a745');
+
+            return response()->json([
+                'success' => true,
+                'color_tema' => $color,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('[CONFIG] Error al obtener color_tema: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al consultar la configuración.',
+                'color_tema' => '#28a745'
+            ], 500);
+        }
     }
 }

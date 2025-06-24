@@ -12,16 +12,10 @@ import { ConfiguracionService } from '../../service/Config-Service/configuracion
   styleUrl: './capa-auth.component.css'
 })
 export class CapaAuthComponent implements OnInit {
-  constructor(private configuracionService: ConfiguracionService) {}
+  constructor(private configuracionService: ConfiguracionService) { }
   colorTema = '#28a745'; //Valor por defecto en caso de error
 
-  
-
   ngOnInit(): void {
-    this.configuracionService.colorTema$.subscribe((color) => {
-      document.documentElement.style.setProperty('--color-tema', color);
-    });
-
-    this.configuracionService.cargarConfiguracion();
+    this.configuracionService.cargarColorTemaPublico();
   }
 }

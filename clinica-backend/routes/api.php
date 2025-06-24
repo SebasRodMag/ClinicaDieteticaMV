@@ -14,6 +14,7 @@ use Spatie\Permission\Middleware\RoleMiddleware;
 // Rutas públicas (sin autenticación)
 Route::post('/register', [AuthController::class, 'registrar']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/color-tema', [ConfiguracionController::class, 'obtenerColorTema']);
 
 // Rutas protegidas - usuarios autenticados
 Route::middleware('auth:sanctum')->group(function () {
