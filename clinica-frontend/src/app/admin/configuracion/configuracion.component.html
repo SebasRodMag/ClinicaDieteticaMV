@@ -109,8 +109,14 @@
                             </div>
                         </div>
 
-                        <!-- Texto simple -->
-                        <div *ngIf="typeof configuracionSeleccionada.valor !== 'object' && typeof configuracionSeleccionada.valor !== 'boolean' && typeof configuracionSeleccionada.valor !== 'number'"
+                        <!-- Selector de color -->
+                        <div *ngIf="configuracionSeleccionada.clave === 'color_tema'" class="mb-3">
+                            <input class="form-control form-control-color" type="color"
+                                [(ngModel)]="configuracionSeleccionada.valor" />
+                        </div>
+
+                        <!-- Texto simple (excepto color_tema) -->
+                        <div *ngIf="tipoTextoSimple(configuracionSeleccionada.valor) && configuracionSeleccionada.clave !== 'color_tema'"
                             class="mb-3">
                             <input class="form-control form-control-sm" type="text"
                                 [(ngModel)]="configuracionSeleccionada.valor" />

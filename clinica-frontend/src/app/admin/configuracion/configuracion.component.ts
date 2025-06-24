@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../service/User-Service/user.service';
+import { ConfiguracionService } from '../../service/Config-Service/configuracion.service';
 
 @Component({
   selector: 'app-configuracion',
@@ -32,7 +33,7 @@ export class ConfiguracionComponent implements OnInit {
   modalAbierto = false;
   claveSeleccionada: string | null = null;
 
-  // Aquí almacenamos el objeto seleccionado para edición
+  //Estructura para la configuración seleccionada
   configuracionSeleccionada: {
     clave: string;
     valor: any;
@@ -41,12 +42,12 @@ export class ConfiguracionComponent implements OnInit {
     descripcion: string;
   } | null = null;
 
-  // Exponer Object para usar en template Object.keys()
   public Object = Object;
 
   constructor(
     private userService: UserService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private ConfiguracionService: ConfiguracionService
   ) { }
 
   ngOnInit(): void {
@@ -101,7 +102,6 @@ export class ConfiguracionComponent implements OnInit {
 
     let valorParaEnviar: string;
     if (typeof this.configuracionSeleccionada.valor === 'object') {
-      // Si es JSON editable y válido, parseamos el texto JSON
       if (this.configuracionSeleccionada.jsonValido && this.configuracionSeleccionada.valorJson) {
         valorParaEnviar = this.configuracionSeleccionada.valorJson;
       } else {
@@ -117,7 +117,12 @@ export class ConfiguracionComponent implements OnInit {
     ).subscribe({
       next: () => {
         this.mostrarMensaje('Configuración actualizada correctamente', 'success');
-        this.obtenerConfiguracion(); // Recarga para reflejar cambios
+
+        if (this.configuracionSeleccionada?.clave === 'color_tema') {
+          this.ConfiguracionService.actualizarColorTema(valorParaEnviar);
+        }
+
+        this.obtenerConfiguracion();
         this.cerrarModal();
       },
       error: () => {
@@ -138,4 +143,10 @@ export class ConfiguracionComponent implements OnInit {
   toggleExpand(clave: string): void {
     this.claveExpandida = this.claveExpandida === clave ? null : clave;
   }
+
+  tipoTextoSimple(valor: any): boolean {
+    return typeof valor !== 'object' && typeof valor !== 'boolean' && typeof valor !== 'number';
+  }
+
+
 }

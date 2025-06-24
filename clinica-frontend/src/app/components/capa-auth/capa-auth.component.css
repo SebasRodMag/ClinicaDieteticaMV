@@ -1,9 +1,13 @@
+:root {
+    --color-tema: #28a745;
+}
+
 /* Fondo degradado en todo el contenedor */
 .auth-wrapper {
     min-height: 100vh;
     display: flex;
     flex-direction: row;
-    background: linear-gradient(to right, #28a745 0%, #ffffff 100%);
+    background: linear-gradient(to right, var(--color-tema) 0%, #ffffff 100%);
     font-family: 'Segoe UI', sans-serif;
 }
 
@@ -35,6 +39,7 @@
     font-size: 1.1rem;
     max-width: 400px;
     color: #f8f9fa;
+    margin: 0 auto;
 }
 
 .auth-info img {
@@ -82,7 +87,7 @@
     }
 }
 
-/* Responsive: solo se muestra el formulario */
+/* Responsive solo muestra el formulario */
 @media (max-width: 768px) {
     .auth-wrapper {
         flex-direction: column;
@@ -114,7 +119,7 @@
     }
 
     .row.g-0.min-vh-100 {
-        background: linear-gradient(to bottom, #28a745, #f8f9fa);
+        background: linear-gradient(to bottom, var(--color-tema), #f8f9fa);
         /* Verde a blanco vertical */
     }
 

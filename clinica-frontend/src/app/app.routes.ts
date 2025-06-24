@@ -14,7 +14,7 @@ import { EspecialistaDashboardComponent } from './Especialistas/especialista-das
 import { UsuariosDashboardComponent } from './Usuarios/usuarios-dashboard.component';
 
 import { AuthGuard } from './auth.guard';
-import { AuthLayoutComponent } from './components/capa-auth/capa-auth.component'; // Asegúrate de crearlo
+import { CapaAuthComponent } from './components/capa-auth/capa-auth.component'; // Asegúrate de crearlo
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -22,7 +22,7 @@ export const routes: Routes = [
     // Login y Registro con layout común
     {
         path: '',
-        component: AuthLayoutComponent,
+        component: CapaAuthComponent,
         children: [
             { path: 'login', component: LoginComponent },
             { path: 'register', component: RegisterComponent },
