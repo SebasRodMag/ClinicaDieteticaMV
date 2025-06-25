@@ -29,6 +29,7 @@ export class ConfiguracionComponent implements OnInit {
     Especialidades: 'Listado de especialidades disponibles'
   };
 
+  recargando = false;
   loading = true;
   modalAbierto = false;
   claveSeleccionada: string | null = null;
@@ -119,10 +120,12 @@ export class ConfiguracionComponent implements OnInit {
         this.mostrarMensaje('Configuración actualizada correctamente', 'success');
 
         if (this.configuracionSeleccionada?.clave === 'color_tema') {
-          this.ConfiguracionService.actualizarColorTema(valorParaEnviar);
+          // Aplica el nuevo color dinámicamente
+          this.ConfiguracionService.actualizarColorTema(this.configuracionSeleccionada.valor);
+        } else {
+          this.obtenerConfiguracion();
         }
 
-        this.obtenerConfiguracion();
         this.cerrarModal();
       },
       error: () => {

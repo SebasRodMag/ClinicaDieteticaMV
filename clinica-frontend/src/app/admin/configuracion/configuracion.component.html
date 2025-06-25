@@ -133,6 +133,15 @@
                         (click)="cerrarModal()">Cancelar</button>
                 </div>
 
+                <!-- Capa de recarga animada -->
+                <div *ngIf="recargando"
+                    class="reload-overlay d-flex flex-column justify-content-center align-items-center">
+                    <div class="spinner-border text-light mb-3" style="width: 2rem; height: 2rem;" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <div class="text-light fw-semibold">Aplicando nuevo color...</div>
+                </div>
+
             </div>
         </div>
     </div>

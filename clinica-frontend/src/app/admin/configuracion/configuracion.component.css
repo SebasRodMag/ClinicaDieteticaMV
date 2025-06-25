@@ -171,6 +171,17 @@ html {
     animation: fadeDown 0.3s ease-in-out;
 }
 
+.reload-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: color-mix(in srgb, var(--color-tema) 85%, white);
+    z-index: 1050;
+    transition: opacity 0.5s ease-in-out;
+}
+
 @keyframes fadeDown {
     from {
         opacity: 0;

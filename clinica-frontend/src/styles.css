@@ -4,6 +4,18 @@
     text-align: center;
 }
 
+.spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 0.2em;
+    color: var(--color-tema, #28a745);
+    /* Color dinámico */
+
+    /* Asegura que el borde visible use el color-tema */
+    border-color: var(--color-tema, #28a745) transparent var(--color-tema, #28a745) transparent;
+    transition: border-color 0.3s ease;
+}
+
 .pagination .page-item.active .page-link {
     background-color: #0d6efd;
     border-color: #0d6efd;
@@ -60,6 +72,88 @@ input {
 
 button {
     font-size: 1rem;
+}
+
+/*Botones primarios, sobre escribimos el estilo de bootstrap*/
+.btn-primary {
+    background-color: var(--color-tema) !important;
+    border-color: var(--color-tema) !important;
+    color: white !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: white !important;
+    color: var(--color-tema) !important;
+    border-color: var(--color-tema) !important;
+    font-weight: 500;
+}
+
+/*Badges*/
+.badge-primary {
+    background-color: var(--color-tema) !important;
+    color: white !important;
+}
+
+/*Links*/
+a.nav-link.active {
+    font-weight: 600;
+    border-bottom: 2px solid white;
+}
+
+/*Campos del formulario enfocados*/
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--color-tema) !important;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    /* puedes ajustar el color base aquí también */
+}
+
+/*Boton guardar del formulario*/
+button.save-button {
+    background-color: var(--color-tema) !important;
+    color: white !important;
+    font-weight: 500;
+    border: none;
+}
+
+button.save-button:hover {
+    background-color: white !important;
+    color: var(--color-tema) !important;
+    border: 1px solid var(--color-tema);
+}
+
+.navbar-dinamica {
+    background-color: var(--color-tema, #28a745) !important;
+}
+
+/* Navbar con color dinámico desde configuración */
+nav.navbar {
+    background-color: var(--color-tema) !important;
+    color: white !important;
+}
+
+nav.navbar .navbar-brand,
+nav.navbar .nav-link {
+    color: white !important;
+}
+
+nav.navbar .nav-link.active,
+nav.navbar .nav-link:hover {
+    color: #e9ecef !important;
+    font-weight: 500;
+}
+
+nav.navbar .btn-outline-danger {
+    border-color: white !important;
+    color: white !important;
+}
+
+nav.navbar .btn-outline-danger:hover {
+    background-color: white !important;
+    color: var(--color-tema) !important;
+    font-weight: 600;
 }
 
 @media (max-width: 600px) {
