@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { UserService } from '../User-Service/user.service';
+import { Observable } from 'rxjs';
 
 @Injectable({
     providedIn: 'root',
@@ -47,5 +48,9 @@ export class ConfiguracionService {
                     console.warn('No se pudo cargar el color del tema. Usando valor por defecto.');
                 }
             });
+    }
+
+    getResumenDashboard(): Observable<any> {
+        return this.http.get(`http://localhost:8000/api/admin/resumen-dashboard`);
     }
 }

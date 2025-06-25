@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Models\Paciente;
+use App\Models\Especialista;
+use App\Models\Cita;
+use Illuminate\Support\Carbon;
 
 class ConfiguracionController extends Controller
 {
@@ -137,6 +142,31 @@ class ConfiguracionController extends Controller
                 'success' => false,
                 'message' => 'Error interno al consultar la configuración.',
                 'color_tema' => '#28a745'
+            ], 500);
+        }
+    }
+
+    /**
+     * Método para enviar los datos al panel de administración con la información relevante al administrador.
+     */
+    public function resumen(): JsonResponse
+    {
+        try {
+            $totalUsuarios = User::count();
+            $totalEspecialistas = Especialista::whereHas('user')->count();
+            $totalPacientes = Paciente::whereHas('user')->count();
+            $citasHoy = Cita::whereDate('fecha', Carbon::today())->count();
+
+            return response()->json([
+                'total_usuarios' => $totalUsuarios,
+                'especialistas' => $totalEspecialistas,
+                'pacientes' => $totalPacientes,
+                'citas_hoy' => $citasHoy,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error al obtener datos del resumen',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

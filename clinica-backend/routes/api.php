@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Usuarios CRUD - solo admin puede gestionar usuarios
     Route::middleware('role:administrador')->group(function () {
+        Route::get('admin/resumen-dashboard', [ConfiguracionController::class, 'resumen']);
         Route::get('usuarios', [UserController::class, 'listarTodos']);
         Route::put('usuariosbaja/{id}', [UserController::class, 'cambiarRol']);
         Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistas']);

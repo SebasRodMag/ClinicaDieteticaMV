@@ -4,6 +4,7 @@ import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 
 import { AdminDashboardComponent } from './admin/admin-dashboard.component';
+import { HomeDashboardComponent } from './admin/home-dashboard.component';
 import { PacientesListComponent } from './admin/pacientes-list.component';
 import { EspecialistasListComponent } from './admin/especialistas-list.component';
 import { UsuariosListComponent } from './admin/usuarios-list.component';
@@ -14,12 +15,12 @@ import { EspecialistaDashboardComponent } from './Especialistas/especialista-das
 import { UsuariosDashboardComponent } from './Usuarios/usuarios-dashboard.component';
 
 import { AuthGuard } from './auth.guard';
-import { CapaAuthComponent } from './components/capa-auth/capa-auth.component'; // Asegúrate de crearlo
+import { CapaAuthComponent } from './components/capa-auth/capa-auth.component';
 
 export const routes: Routes = [
-    { path: '', component: HomeComponent },
+    { path: '', component: HomeDashboardComponent },
 
-    // Login y Registro con layout común
+    // Login y registro
     {
         path: '',
         component: CapaAuthComponent,
@@ -37,11 +38,11 @@ export const routes: Routes = [
         canActivateChild: [AuthGuard],
         data: { roles: ['administrador'] },
         children: [
+            { path: '', component: HomeDashboardComponent },
             { path: 'pacientes', component: PacientesListComponent },
             { path: 'especialistas', component: EspecialistasListComponent },
             { path: 'usuarios', component: UsuariosListComponent },
             { path: 'admin/configuracion', component: ConfiguracionComponent },
-            { path: '', redirectTo: 'pacientes', pathMatch: 'full' },
         ],
     },
 
