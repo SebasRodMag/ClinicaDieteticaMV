@@ -22,7 +22,7 @@ export class TablaDatosComponent {
     @Output() cambiarPagina = new EventEmitter<number>();
 
 
-    // Método que emite el número de página cuando el usuario cambia la página
+    //Método que emite el número de página cuando el usuario cambia la página
     cambiarPaginaEmitida(nuevaPagina: number): void {
         if (nuevaPagina < 1) return;
         const totalPaginas = this.totalPaginas;
@@ -32,12 +32,12 @@ export class TablaDatosComponent {
         this.cambiarPagina.emit(nuevaPagina);
     }
 
-    // Método para ordenar por columna
+    //Método para ordenar por columna
     ordenarPor(columna: string): void {
         this.ordenar.emit(columna);
     }
 
-    // Método para saber si la columna está ordenada asc o desc y mostrar icono
+    //Método para saber si la columna está ordenada asc o desc y mostrar icono
     isOrdenAsc(columna: string): boolean {
         return this.columnaOrden === columna && this.direccionOrdenAsc;
     }
@@ -46,18 +46,16 @@ export class TablaDatosComponent {
         return this.columnaOrden === columna && !this.direccionOrdenAsc;
     }
 
-    // Extraer la página actual de datos para mostrar (paginación local)
     get datosPaginados(): any[] {
         const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
         return this.datosTotales.slice(inicio, inicio + this.itemsPorPagina);
     }
 
-    // Calcular total de páginas para paginador
+    //Calcular total de páginas para paginador
     get totalPaginas(): number {
         return Math.ceil(this.datosTotales.length / this.itemsPorPagina);
     }
-
-    // Crear array para iterar en el paginador
+    //Generar un array de números de páginas para el paginador
     get paginas(): number[] {
         return Array(this.totalPaginas).fill(0).map((_, i) => i + 1);
     }
@@ -96,7 +94,7 @@ export class TablaDatosComponent {
         }
     }
 
-    // Métodos para avanzar/retroceder página
+    //Métodos para avanzar/retroceder página
     paginaAnterior() {
         if (this.paginaActual > 1) {
             this.onCambiarPagina(this.paginaActual - 1);

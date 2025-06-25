@@ -78,7 +78,7 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         this.UserService.obtenerCitasDelUsuarioAutenticado().subscribe({
             next: (data) => {
                 this.citaPorPaciente = data;
-                this.filtrarCitas(); // aplicar filtro al cargar
+                this.filtrarCitas();
                 this.loading = false;
             },
             error: () => {

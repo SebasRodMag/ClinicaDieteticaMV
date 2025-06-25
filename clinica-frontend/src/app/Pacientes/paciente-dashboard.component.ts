@@ -27,7 +27,6 @@ export class PacienteDashboardComponent {
       next: () => {
         this.authService.logout();
         this.mostrarMensaje('Sesión cerrada correctamente', 'success');
-        // Redirect to login or reload page
         window.location.href = '/login';
       },
       error: () => {

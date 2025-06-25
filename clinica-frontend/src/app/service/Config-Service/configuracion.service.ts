@@ -22,7 +22,7 @@ export class ConfiguracionService {
             next: (respuesta) => {
                 const color = respuesta.configuraciones?.['color_tema'] || '#28a745';
                 this.colorTemaSubject.next(color);
-                this.aplicarColorTema(color); // ← nuevo
+                this.aplicarColorTema(color);
             },
             error: () => {
                 console.warn('No se pudo cargar la configuración');
@@ -32,7 +32,7 @@ export class ConfiguracionService {
 
     actualizarColorTema(nuevoColor: string): void {
         this.colorTemaSubject.next(nuevoColor);
-        this.aplicarColorTema(nuevoColor); // ← nuevo
+        this.aplicarColorTema(nuevoColor);
     }
 
     cargarColorTemaPublico(): void {
@@ -41,7 +41,7 @@ export class ConfiguracionService {
                 next: (respuesta) => {
                     const color = respuesta.color_tema || '#28a745';
                     this.colorTemaSubject.next(color);
-                    this.aplicarColorTema(color); // ← nuevo
+                    this.aplicarColorTema(color);
                 },
                 error: () => {
                     console.warn('No se pudo cargar el color del tema. Usando valor por defecto.');

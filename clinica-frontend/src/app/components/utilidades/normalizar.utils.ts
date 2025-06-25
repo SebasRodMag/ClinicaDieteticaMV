@@ -1,5 +1,5 @@
 /**
- * Por este medio, nos aseguramos que los valores que se envian al backend
+ * Por este medio, nos aseguramos que los valores que se envían al backend
  * sean del mismo tipo que los que se reciben.
  * 
  * @param valor Es el valor que se va a verificar
@@ -19,5 +19,5 @@ export function normalizarValorParaGuardar(valor: any): string {
         return valor.toString();
     }
 
-    return valor; // Si es string o null, se envía tal cual
+    return valor; //Si es string o null, se envía tal cual
 }

@@ -34,9 +34,9 @@ export class LoginComponent {
 
     const { email, password } = this.loginForm.value;
 
-    // ========================
+    //========================
     // Re direccionamiento después del login
-    // ========================
+    //========================
 
     this.authService.login({ email, password }).subscribe({
       next: (response) => {
