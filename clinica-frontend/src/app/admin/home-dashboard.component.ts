@@ -51,7 +51,7 @@ export class HomeDashboardComponent implements OnInit {
     });
   }
 
-  //Este método es unicamente para manejar la carga de imágenes y ocultar el loading cuando todas las imágenes estén listas.
+  //Estos métodos son unicamente para manejar la carga de imágenes y ocultar el loading cuando todas las imágenes estén listas.
   onImagenCargada(): void {
     this.imagenesCargadas++;
     this.comprobarCargaCompleta();

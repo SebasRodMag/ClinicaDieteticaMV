@@ -132,6 +132,7 @@ button.save-button:hover {
 nav.navbar {
     background-color: var(--color-tema) !important;
     color: white !important;
+    min-height: 56px;
 }
 
 nav.navbar .navbar-brand,

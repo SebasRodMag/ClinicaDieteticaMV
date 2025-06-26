@@ -1,10 +1,10 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
 import { UserService } from '../service/User-Service/user.service';
 import { AuthService } from '../service/Auth-Service/Auth.service';
 import { PacientesCitasComponent } from './pacientes-citas.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Usuario } from '../models/usuario.model';
 
 @Component({
   selector: 'app-paciente-citas',
@@ -14,16 +14,27 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class PacienteDashboardComponent {
 
+  usuario: Usuario | null = null;
+
   constructor(
-    private UserService: UserService,
+    private userService: UserService,
     private authService: AuthService,
     private snackBar: MatSnackBar 
   ) { }
 
-
+  ngOnInit(): void {
+    this.userService.getMe().subscribe({
+      next: (user) => {
+        this.usuario = user;
+      },
+      error: () => {
+        this.usuario = null;
+      },
+    });
+  }
 
   logout(): void {
-    this.UserService.logout().subscribe({
+    this.userService.logout().subscribe({
       next: () => {
         this.authService.logout();
         this.mostrarMensaje('Sesión cerrada correctamente', 'success');

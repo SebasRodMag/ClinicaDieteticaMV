@@ -1,5 +1,5 @@
 <nav class="navbar navbar-expand navbar-light navbar-dinamica px-3">
-    <!-- Marca como texto simple -->
+    <!-- Le quitamos el hipervínculo para que no se active al hacer click ya que en esta vista, no conduce a ningún sitio -->
     <a class="navbar-brand mb-0 h1 text-decoration-none" routerLink="/administrador">Admin Dashboard</a>
 
     <div class="navbar-nav me-auto">
@@ -9,10 +9,21 @@
         <a routerLink="admin/configuracion" routerLinkActive="active" class="nav-link">Configuración</a>
     </div>
 
-    <div class="usuario-navbar d-flex align-items-right">
-        <span *ngIf="usuario" class="me-3">
-            {{ usuario.nombre }} {{ usuario.apellidos }}
+    <!-- Cargamos el nombre y las iniciales del usuario logueado teniendo en cuenta que el usuario tenga o no apellido -->
+    <div class="usuario-navbar d-flex align-items-center justify-content-end">
+        <span *ngIf="usuario" class="me-3 d-flex align-items-center gap-2">
+            <div class="avatar-iniciales">
+                {{
+                usuario.nombre
+                ? (usuario.nombre[0] + (usuario.apellidos ? usuario.apellidos[0] : ''))
+                : ''
+                }}
+            </div>
+            <span class="nombre-usuario">
+                {{ usuario.nombre }} {{ usuario.apellidos || '' }}
+            </span>
         </span>
+
         <button class="btn btn-outline-danger" (click)="logout()">
             <i class="bi bi-box-arrow-right"></i> Logout
         </button>

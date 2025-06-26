@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [RouterModule, CommonModule],
   templateUrl: 'admin-dashboard-component.html',
+  styleUrls: ['admin-dashboard-component.css'],
 
 })
 export class AdminDashboardComponent {

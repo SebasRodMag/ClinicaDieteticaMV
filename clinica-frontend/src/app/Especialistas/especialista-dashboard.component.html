@@ -5,7 +5,20 @@
         <!-- Enlaces -->
     </div>
 
-    <div class="d-flex">
+    <div class="usuario-navbar d-flex align-items-center justify-content-end">
+        <span *ngIf="usuario" class="me-3 d-flex align-items-center gap-2">
+            <div class="avatar-iniciales">
+                {{
+                usuario.nombre
+                ? (usuario.nombre[0] + (usuario.apellidos ? usuario.apellidos[0] : ''))
+                : ''
+                }}
+            </div>
+            <span class="nombre-usuario">
+                {{ usuario.nombre }} {{ usuario.apellidos || '' }}
+            </span>
+        </span>
+
         <button class="btn btn-outline-danger" (click)="logout()">
             <i class="bi bi-box-arrow-right"></i> Logout
         </button>
