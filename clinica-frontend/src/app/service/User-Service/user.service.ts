@@ -8,6 +8,7 @@ import { PacienteNombre } from '../../models/pacientePorNombre.model';
 import { Especialista } from '../../models/especialista.model';
 import { EspecialistaList } from '../../models/especialistaList.model';
 import { UsuarioDisponible } from '../../models/usuarioDisponible.model';
+import { map } from 'rxjs/operators';
 
 
 @Injectable({
@@ -22,8 +23,19 @@ export class UserService {
         return this.http.post(`${this.apiUrl}/logout`, null);
     }
 
-    getUsuarios(): Observable<Usuario[]> {
-        return this.http.get<Usuario[]>(`${this.apiUrl}/usuarios`);
+    getUsuarios(): Observable<{ data: Usuario[] }> {
+        return this.http.get<{ data: Usuario[] }>(`${this.apiUrl}/usuarios`);
+    }
+
+    /**
+ * Obtener el usuario autenticado.
+ * @returns Observable con los datos del usuario autenticado.
+ */
+    getMe(): Observable<Usuario> {
+        return this.http.get<{ user: Usuario }>(`${this.apiUrl}/me`)
+            .pipe(
+                map(response => response.user)
+            );
     }
 
 
@@ -155,6 +167,7 @@ export class UserService {
     updateConfiguracionPorClave(clave: string, data: { valor: any }): Observable<any> {
         return this.http.put<any>(`${this.apiUrl}/cambiarConfiguraciones/${clave}`, data);
     }
+
 
 
 }

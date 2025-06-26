@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('configuracion-general', [CitaController::class, 'configuracion']);
         Route::get('especialidades', [EspecialistaController::class, 'listarEspecialidades']);
         Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
+        
     });
     /**
      * 

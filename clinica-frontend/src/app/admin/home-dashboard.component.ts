@@ -2,38 +2,65 @@ import { Component, OnInit } from '@angular/core';
 import { ConfiguracionService } from '../service/Config-Service/configuracion.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { LucideAngularModule } from 'lucide-angular';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-dashboard-home',
   templateUrl: './home-dashboard.component.html',
   styleUrls: ['./home-dashboard.component.css'],
   standalone: true,
-  imports: [CommonModule, RouterModule, LucideAngularModule],
+  imports: [CommonModule, RouterModule,],
 })
 export class HomeDashboardComponent implements OnInit {
   resumen = [
-  { titulo: 'Total Usuarios', valor: '...', bgColor: 'bg-primary', iconClass: 'bi-people' },
-  { titulo: 'Especialistas activos', valor: '...', bgColor: 'bg-success', iconClass: 'bi-person-check' },
-  { titulo: 'Pacientes activos', valor: '...', bgColor: 'bg-info', iconClass: 'bi-person' },
-  { titulo: 'Citas hoy', valor: '...', bgColor: 'bg-danger', iconClass: 'bi-calendar-day' }
-];
+    { titulo: 'Total Usuarios', valor: '...', icono: 'usuarios', clase: 'resumen-card' },
+    { titulo: 'Especialistas activos', valor: '...', icono: 'especialistas', clase: 'resumen-card' },
+    { titulo: 'Pacientes activos', valor: '...', icono: 'pacientes', clase: 'resumen-card' },
+    { titulo: 'Citas hoy', valor: '...', icono: 'citas', clase: 'resumen-card' },
+  ];
 
   accesos = [
     { titulo: 'Gestión de Usuarios', ruta: '/admin/usuarios' },
     { titulo: 'Gestión de Citas', ruta: '/admin/citas' },
-    { titulo: 'Documentos Subidos', ruta: '/admin/documentos' },
+    { titulo: 'Gestión de Pacientes', ruta: '/admin/pacientes' },
     { titulo: 'Configuración', ruta: '/admin/configuracion' },
   ];
 
-  constructor(private ConfiguracionService: ConfiguracionService) { }
+  loading = true;
+  imagenesCargadas = 0;
+  datosCargados = false;
+
+  constructor(private ConfiguracionService: ConfiguracionService, private http: HttpClient) { }
 
   ngOnInit(): void {
-    this.ConfiguracionService.getResumenDashboard().subscribe(data => {
-      this.resumen[0].valor = `${data.total_usuarios} registrados`;
-      this.resumen[1].valor = `${data.especialistas} activos`;
-      this.resumen[2].valor = `${data.pacientes} activos`;
-      this.resumen[3].valor = `${data.citas_hoy} programadas`;
+    this.ConfiguracionService.getResumenDashboard().subscribe({
+      next: data => {
+        this.resumen[0].valor = `${data.total_usuarios} registrados`;
+        this.resumen[1].valor = `${data.especialistas} activos`;
+        this.resumen[2].valor = `${data.pacientes} activos`;
+        this.resumen[3].valor = `${data.citas_hoy} programadas`;
+
+        this.datosCargados = true;
+        this.comprobarCargaCompleta();
+      },
+      error: () => {
+        console.warn('Error al cargar los datos del resumen.');
+        this.datosCargados = true;
+        this.comprobarCargaCompleta();
+      }
     });
   }
+
+  //Este método es unicamente para manejar la carga de imágenes y ocultar el loading cuando todas las imágenes estén listas.
+  onImagenCargada(): void {
+    this.imagenesCargadas++;
+    this.comprobarCargaCompleta();
+  }
+
+  comprobarCargaCompleta(): void {
+    if (this.datosCargados && this.imagenesCargadas >= this.resumen.length) {
+      this.loading = false;
+    }
+  }
+
 }

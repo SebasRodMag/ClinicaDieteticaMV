@@ -1,0 +1,14 @@
+.navbar-nav a.nav-link {
+    color: white;
+    /* Asegúrate de que el texto sea blanco */
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+    /* Aplica la sombra */
+}
+
+.usuario-navbar {
+    display: flex;
+    align-items: center;
+    color: white;
+    font-weight: 500;
+    margin-right: 1rem;
+}

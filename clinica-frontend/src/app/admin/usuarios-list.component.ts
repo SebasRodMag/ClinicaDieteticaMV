@@ -79,8 +79,8 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     cargarUsuarios() {
         this.loading = true;
         this.userService.getUsuarios().subscribe({
-            next: (data: Usuario[]) => {
-                this.usuarios = data;
+            next: (response: { data: Usuario[] }) => {
+                this.usuarios = response.data;
                 this.filtrarUsuarios();
                 this.loading = false;
                 console.log('Se cargaron los usuarios');
