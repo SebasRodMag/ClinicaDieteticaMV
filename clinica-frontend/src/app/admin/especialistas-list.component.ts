@@ -19,6 +19,7 @@ export class EspecialistasListComponent implements OnInit {
     especialistasFiltrados: EspecialistaList[] = [];
 
     loading: boolean = false;
+    huboError: boolean = false;
 
     filtro: string = '';
     columnaOrden: string = 'nombre';
@@ -58,17 +59,22 @@ export class EspecialistasListComponent implements OnInit {
 
     cargarEspecialistas(): void {
         this.loading = true;
-        this.userService.getListarEspecialistas().pipe(finalize(() => this.loading = false)).subscribe({
-            next: (data) => {
-                console.log('Especialistas recibidos:', data.length);
-                this.especialistas = data;
-                this.filtrarEspecialistas();
-            },
-            error: (err) => {
-                console.error('Error al obtener especialistas:', err);
-                this.snackBar.open('Error al cargar especialistas', 'Cerrar', { duration: 3000 });
-            },
-        });
+        this.huboError = false;
+
+        this.userService.getListarEspecialistas()
+            .pipe(finalize(() => this.loading = false))
+            .subscribe({
+                next: (data) => {
+                    console.log('Especialistas recibidos:', data.length);
+                    this.especialistas = data;
+                    this.filtrarEspecialistas();
+                },
+                error: (err) => {
+                    console.error('Error al obtener especialistas:', err);
+                    this.huboError = true;
+                    this.snackBar.open('Error al cargar especialistas', 'Cerrar', { duration: 3000 });
+                },
+            });
     }
 
     filtrarEspecialistas(): void {

@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
 import { ModalEditUsuarioComponent } from './modal/modal-edit-usuario.component';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { finalize } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 
@@ -19,6 +19,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     usuarios: Usuario[] = [];
     usuariosFiltrados: Usuario[] = [];
     modalVisible: boolean = false;
+    huboError: boolean = false;
     usuarioSeleccionado: Usuario = this.crearUsuarioVacio();
     esNuevoUsuario: boolean = false;
 
@@ -78,16 +79,20 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
 
     cargarUsuarios() {
         this.loading = true;
-        this.userService.getUsuarios().subscribe({
+        this.huboError = false;
+        this.userService.getUsuarios()
+        .pipe(finalize(() => this.loading = false)).subscribe({
             next: (response: { data: Usuario[] }) => {
+                console.log('Usuarios recibidos:', response.data.length);
                 this.usuarios = response.data;
                 this.filtrarUsuarios();
                 this.loading = false;
-                console.log('Se cargaron los usuarios');
             },
-            error: () => {
+            error: (err) => {
+                console.error('Error al obtener especialistas:', err);
                 this.loading = false;
-                console.warn('Error al cargar los usuario');
+                this.huboError = true;
+                this.snackBar.open('Error al cargar especialistas', 'Cerrar', { duration: 3000 });
             }
         });
     }

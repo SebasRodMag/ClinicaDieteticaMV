@@ -9,6 +9,8 @@ import { Especialista } from '../../models/especialista.model';
 import { EspecialistaList } from '../../models/especialistaList.model';
 import { UsuarioDisponible } from '../../models/usuarioDisponible.model';
 import { map } from 'rxjs/operators';
+import { CitaPorPaciente } from '../../models/citasPorPaciente.model';
+import { CitaPorEspecialista } from '../../models/citasPorEspecialista.model';
 
 
 @Injectable({
@@ -85,8 +87,12 @@ export class UserService {
     /**************** Rutas para Dashboard de pacientes ***************************/
     /******************************************************************************/
 
-    obtenerCitasDelUsuarioAutenticado(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.apiUrl}/pacientes/citas/todas`);
+    obtenerCitasDelEspecialistaAutenticado(): Observable<{ citas: CitaPorPaciente[] }> {
+        return this.http.get<{ citas: CitaPorPaciente[] }>(`${this.apiUrl}/pacientes/citas/todas`);
+    }
+
+    obtenerCitasDelPacienteAutenticado(): Observable<{ citas: CitaPorEspecialista[] }> {
+        return this.http.get<{ citas: CitaPorEspecialista[] }>(`${this.apiUrl}/pacientes/citas/todas`);
     }
 
     cancelarCita(idCita: number): Observable<any> {

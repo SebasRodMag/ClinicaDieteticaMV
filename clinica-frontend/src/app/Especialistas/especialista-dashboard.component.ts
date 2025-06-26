@@ -4,6 +4,7 @@ import { UserService } from '../service/User-Service/user.service';
 import { AuthService } from '../service/Auth-Service/Auth.service';
 import { EspecialistaCitasComponent } from './especialista-citas.component';
 import { Usuario } from '../models/usuario.model';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-especialista-dashboard',
@@ -17,7 +18,8 @@ export class EspecialistaDashboardComponent {
 
   constructor(
     private userService: UserService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -33,5 +35,6 @@ export class EspecialistaDashboardComponent {
 
   logout() {
     this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

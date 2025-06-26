@@ -398,7 +398,7 @@ class CitaController extends Controller
                     ->get()
                     ->map(function ($cita) {
                         return [
-                            'id' => $cita->id,
+                            'id' => $cita->id_cita,
                             'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
                             'hora' => $cita->fecha_hora_cita->format('H:i'),
                             'especialidad' => $cita->especialista->especialidad ?? null,
@@ -424,7 +424,7 @@ class CitaController extends Controller
                     ->get()
                     ->map(function ($cita) {
                         return [
-                            'id' => $cita->id,
+                            'id' => $cita->id_cita,
                             'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
                             'hora' => $cita->fecha_hora_cita->format('H:i'),
                             'nombre_paciente' => $cita->paciente->user->nombre . ' ' . $cita->paciente->user->apellidos,

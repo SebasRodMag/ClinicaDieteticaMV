@@ -1,5 +1,4 @@
 import { Component, OnInit, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
-import { Cita } from '../models/cita.model';
 import { UserService } from '../service/User-Service/user.service';
 import { AuthService } from '../service/Auth-Service/Auth.service';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
@@ -8,8 +7,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { CitaPorPaciente } from '../models/citasPorPaciente.model';
 import { FormsModule } from '@angular/forms';
 import { Paciente } from '../models/paciente.model';
-import {ModalNuevaCitaComponent}from './modal/modal-nueva-cita.component';
+import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 import { Especialista } from '../models/especialista.model';
+import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
 
 @Component({
     selector: 'app-pacientes-citas',
@@ -18,13 +18,18 @@ import { Especialista } from '../models/especialista.model';
     templateUrl: './pacientes-citas.component.html',
 })
 export class PacientesCitasComponent implements OnInit, AfterViewInit {
-    citaPorPaciente: CitaPorPaciente[] = [];
-    citasFiltradas: CitaPorPaciente[] = [];
-    modalVisible=false;
-    filtro: string = '';
+    citas: CitaPorEspecialista[] = [];
+    citasFiltradas: CitaPorEspecialista[] = [];
+
+    filtroTexto: string = '';
+    filtroFecha: string = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    modalVisible = false;
     loading: boolean = false;
+    huboError: boolean = false;
+
     paciente!: Paciente;
-    especialista!:any;
+    especialista!: any;
 
     paginaActual = 1;
     itemsPorPagina = 10;
@@ -33,16 +38,13 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
     columnaOrden: string | null = null;
     direccionOrdenAsc: boolean = true;
 
-    especialistas: Especialista[] = [];
-    especialidades: string[] = [];
-
-    columnas = ['id', 'fecha', 'hora', 'estado', 'nombre_especialista', 'accion'];
+    columnas = ['id', 'fecha', 'hora', 'estado', 'nombre_especialista', 'especialidad', 'tipo_cita', 'accion'];
 
     @ViewChild('accionTemplate', { static: true }) accionTemplate!: TemplateRef<any>;
 
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
-    allowCrearCitaPaciente: boolean = false;
+    permitirCrearCitaPaciente: boolean = false;
 
     constructor(private UserService: UserService, private authService: AuthService, private snackBar: MatSnackBar) { }
 
@@ -51,52 +53,57 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         this.cargarConfiguracion();
     }
 
-    cargarConfiguracion(): void {
-        this.UserService.getConfiguracion().subscribe({
-            next: (config: any) => {
-                if (config && config['Crear_cita_paciente'] !== undefined) {
-                    this.allowCrearCitaPaciente = config['Crear_cita_paciente'] === 'true';
-                } else {
-                    this.allowCrearCitaPaciente = false;
-                }
-            },
-            error: () => {
-                this.allowCrearCitaPaciente = false;
-                this.snackBar.open('Error al cargar configuración', 'Cerrar', { duration: 3000 });
-            }
-        });
-    }
-
     ngAfterViewInit(): void {
         this.templatesMap = {
             accion: this.accionTemplate,
         };
     }
 
+    cargarConfiguracion(): void {
+        this.UserService.getConfiguracion().subscribe({
+            next: (config: any) => {
+                this.permitirCrearCitaPaciente = config?.['Crear_cita_paciente'] === 'true';
+            },
+            error: () => {
+                this.permitirCrearCitaPaciente = false;
+                this.snackBar.open('Error al cargar configuración', 'Cerrar', { duration: 3000 });
+            }
+        });
+    }
+
     obtenerCitas(): void {
         this.loading = true;
-        this.UserService.obtenerCitasDelUsuarioAutenticado().subscribe({
+        this.huboError = false;
+        this.UserService.obtenerCitasDelPacienteAutenticado().subscribe({
             next: (data) => {
-                this.citaPorPaciente = data;
+                this.citas = data.citas;
                 this.filtrarCitas();
                 this.loading = false;
             },
             error: () => {
                 this.loading = false;
+                this.huboError = true;
                 this.mostrarMensaje('Error al obtener las citas', 'error');
             },
         });
     }
 
     filtrarCitas(): void {
-        const filtroLower = this.filtro.toLowerCase();
-        this.citasFiltradas = this.citaPorPaciente.filter(cita =>
-            cita.id.toString().includes(filtroLower) ||
-            cita.fecha.toLowerCase().includes(filtroLower) ||
-            cita.hora.toLowerCase().includes(filtroLower) ||
-            cita.estado.toLowerCase().includes(filtroLower) ||
-            cita.nombre_especialista.toLowerCase().includes(filtroLower)
+        const filtroLower = this.filtroTexto.toLowerCase();
+        const fechaSeleccionada = this.filtroFecha;
+
+        this.citasFiltradas = this.citas.filter(cita =>
+            cita.fecha === fechaSeleccionada &&
+            (
+                cita.id.toString().includes(filtroLower) ||
+                cita.hora.toLowerCase().includes(filtroLower) ||
+                cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
+                cita.especialidad.toLowerCase().includes(filtroLower) ||
+                cita.estado.toLowerCase().includes(filtroLower) ||
+                cita.tipo_cita.toLowerCase().includes(filtroLower)
+            )
         );
+
         this.ordenarDatos();
         this.paginaActual = 1;
     }
@@ -128,7 +135,7 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         this.paginaActual = pagina;
     }
 
-    cancelarCita(cita: CitaPorPaciente): void {
+    cancelarCita(cita: CitaPorEspecialista): void {
         const snackRef = this.snackBar.open(
             `¿Cancelar la cita del ${cita.fecha} a las ${cita.hora}?`,
             'Cancelar',
@@ -166,5 +173,19 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         this.modalVisible = true;
     }
 
+    onCambioTexto(): void {
+        this.filtrarCitas();
+    }
+
+    onCambioFecha(): void {
+        this.filtrarCitas();
+    }
+
+    cambiarDia(dias: number): void {
+        const fecha = new Date(this.filtroFecha);
+        fecha.setDate(fecha.getDate() + dias);
+        this.filtroFecha = fecha.toISOString().split('T')[0];
+        this.filtrarCitas();
+    }
 
 }

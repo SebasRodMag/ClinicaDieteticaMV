@@ -1,7 +1,35 @@
 <h2 class="text-2xl font-bold mb-4">Mis Citas</h2>
 
-<app-tabla-datos [datosTotales]="citas" [columnas]="columnas" [templatesMap]="templatesMap" [columnaOrden]="null"
-    [direccionOrdenAsc]="true" [paginaActual]="1" [itemsPorPagina]="10" [maxPaginasVisibles]="5"></app-tabla-datos>
+<div class="d-flex align-items-center gap-2 mb-3">
+    <input type="text" [(ngModel)]="filtroTexto" (ngModelChange)="aplicarFiltros()" class="form-control ms-3"
+        placeholder="Buscar por paciente, DNI, estado, etc." />
+
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(-1)">
+        <i class="bi bi-arrow-left"></i>
+    </button>
+
+    <input type="date" [(ngModel)]="filtroFecha" (change)="aplicarFiltros()" class="form-control w-auto" />
+
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(1)">
+        <i class="bi bi-arrow-right"></i>
+    </button>
+</div>
+
+
+
+<app-tabla-datos [datosTotales]="citasFiltradas" [columnas]="columnas" [templatesMap]="templatesMap"
+    [columnaOrden]="null" [direccionOrdenAsc]="true" [paginaActual]="1" [itemsPorPagina]="10"
+    [maxPaginasVisibles]="5" />
+
+<!-- Mensaje si no hay resultados filtrados -->
+<div *ngIf="!loading && citasFiltradas.length === 0" class="alert alert-info mt-3 text-center">
+    No hay citas programadas para esta fecha o no coinciden con el filtro aplicado.
+</div>
+
+<!-- Mensaje si no se pudieron cargar citas -->
+<div *ngIf="!loading && citas.length === 0 && huboError" class="alert alert-danger mt-3 text-center">
+    Ocurrió un error al cargar las citas. Inténtalo nuevamente más tarde.
+</div>
 
 <ng-template #accionTemplate let-cita>
     <button *ngIf="cita.estado === 'pendiente'" class="btn btn-outline-danger btn-sm" (click)="cancelarCita(cita)">

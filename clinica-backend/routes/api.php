@@ -50,13 +50,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('citas/{id}', [CitaController::class, 'verCita']);
         Route::put('citas/{id}', [CitaController::class, 'actualizarCita']);
         Route::delete('citas/{id}', [CitaController::class, 'eliminarCita']);
-        Route::get('obtenerConfiguraciones', [ConfiguracionController::class, 'obtenerConfiguracionesConMensaje']);
+        
         Route::put('cambiarConfiguraciones/{clave}', [ConfiguracionController::class, 'actualizarPorClave']);
         
 
     });
 
-    Route::middleware('role:paciente|especialista|especialista')->group(function(){
+    Route::middleware('role:paciente|especialista|administrador')->group(function(){
         Route::post('citas', [CitaController::class, 'nuevaCita']);
         Route::get('pacientespornombre', [PacienteController::class, 'listarPacientesPorNombre']);
         Route::get('especialistapornombre',[EspecialistaController::class, 'listarEspecialistasPorNombre']);
@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('configuracion-general', [CitaController::class, 'configuracion']);
         Route::get('especialidades', [EspecialistaController::class, 'listarEspecialidades']);
         Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
+        Route::get('obtenerConfiguraciones', [ConfiguracionController::class, 'obtenerConfiguracionesConMensaje']);
         
     });
     /**
@@ -72,7 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
      */
 
     Route::middleware('role:paciente')->group(function () {
-        Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
+        
         Route::post('pacientes/{id}/citas',[CitaController::class, 'crearNuevaCita']);
         Route::patch('citas/{id}/cancelar',[CitaController::class,'cancelarCita']);
         
@@ -91,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
         // Gestión de citas - especialistas y pacientes (permiso personalizado en controlador)
     // Documentos (acceso controlado internamente por roles)
+    Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
     Route::get('/documentos', [DocumentoController::class, 'listarDocumentos']);
     Route::get('/documentos/{id}', [DocumentoController::class, 'verDocumento']);
     Route::post('/documentos', [DocumentoController::class, 'subirDocumento']);

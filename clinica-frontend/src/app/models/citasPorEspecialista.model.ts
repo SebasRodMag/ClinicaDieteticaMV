@@ -1,10 +1,9 @@
-export interface CitaPorPaciente {
+export interface CitaPorEspecialista {
     id: number;
     fecha: string;
     hora: string;
-    nombre_paciente: string;
-    dni_paciente: string;
+    nombre_especialista: string;
+    especialidad: string;
     estado: 'pendiente' | 'realizada' | 'cancelada';
     tipo_cita: string;
-    es_primera: boolean;
 }

@@ -1,16 +1,34 @@
-<div class="mb-3">
-    <h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
+<h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
 
-
-    <input type="text" [(ngModel)]="filtro" placeholder="Buscar pacientes o especialistas" class="form-control mb-3"
+<div class="d-flex align-items-center gap-2 mb-3">
+    <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por especialistas" class="form-control ms-3"
         (ngModelChange)="filtrarCitas()" />
-</div>
 
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(-1)">
+        <i class="bi bi-arrow-left"></i>
+    </button>
+
+    <input type="date" [(ngModel)]="filtroFecha" (change)="filtrarCitas()" class="form-control w-auto" />
+
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(1)">
+        <i class="bi bi-arrow-right"></i>
+    </button>
+</div>
 
 <app-tabla-datos [datosTotales]="citasFiltradas" [columnas]="columnas" [templatesMap]="templatesMap"
     [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"
     [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
     (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
+
+<!-- Mensaje si no hay resultados filtrados -->
+<div *ngIf="!loading && citasFiltradas.length === 0" class="alert alert-info mt-3 text-center">
+    No hay citas programadas para esta fecha o no coinciden con el filtro aplicado.
+</div>
+
+<!-- Mensaje si no se pudieron cargar citas -->
+<div *ngIf="!loading && citas.length === 0 && huboError" class="alert alert-danger mt-3 text-center">
+    Ocurrió un error al cargar las citas. Inténtalo nuevamente más tarde.
+</div>
 
 <ng-template #accionTemplate let-cita>
     <button *ngIf="cita.estado === 'pendiente'" class="btn btn-outline-danger btn-sm" (click)="cancelarCita(cita)">
@@ -20,9 +38,8 @@
 <button (click)="nuevaCita()" class="btn btn-primary">
     Nueva cita
 </button>
-<app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible"
-    [idEspecialista]="especialista?.id" (cerrado)="modalVisible = false"
-    (creada)="obtenerCitas(); modalVisible = false">
+<app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible" [idEspecialista]="especialista?.id"
+    (cerrado)="modalVisible = false" (creada)="obtenerCitas(); modalVisible = false">
 </app-modal-nueva-cita>
 <div *ngIf="loading" class="spinner mt-3">
     <div class="spinner-border text-primary" role="status">

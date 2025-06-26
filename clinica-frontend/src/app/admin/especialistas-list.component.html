@@ -10,6 +10,22 @@
     [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
     (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
 
+<!-- Mensaje si no hay resultados por filtro -->
+<div *ngIf="!loading && especialistas.length > 0 && especialistasFiltrados.length === 0 && !huboError"
+    class="alert alert-info mt-3 text-center">
+    No hay especialistas que coincidan con el filtro aplicado.
+</div>
+
+<!-- Mensaje si no hay ningún especialista en la base de datos -->
+<div *ngIf="!loading && especialistas.length === 0 && !huboError" class="alert alert-warning mt-3 text-center">
+    No hay especialistas registrados actualmente.
+</div>
+
+<!-- Mensaje si hubo un error al cargar especialistas -->
+<div *ngIf="!loading && huboError" class="alert alert-danger mt-3 text-center">
+    Ocurrió un error al cargar los especialistas. Inténtalo nuevamente más tarde.
+</div>
+
 <div *ngIf="loading" class="text-center my-5">
     <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>

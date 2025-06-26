@@ -2,6 +2,7 @@ import {Component, OnInit,ViewChild,TemplateRef,AfterViewInit,} from '@angular/c
 import { CommonModule } from '@angular/common';
 import { Paciente } from '../models/paciente.model';
 import { UserService } from '../service/User-Service/user.service';
+import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { FormsModule } from '@angular/forms';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
@@ -16,6 +17,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 export class PacientesListComponent implements OnInit, AfterViewInit {
     pacientes: Paciente[] = [];
     loading = true;
+    huboError: boolean = false;
     error = '';
 
     filtro = '';
@@ -64,15 +66,21 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
     cargarPacientes(): void {
         this.loading = true;
         this.error = '';
-        this.userService.pacientesConEspecialista().subscribe({
+        this.huboError = false;
+        this.userService.pacientesConEspecialista()
+        .pipe(finalize(() => this.loading = false))
+        .subscribe({
             next: (data) => {
+                console.log('Pacientes recibidos:', data.length);
                 this.pacientes = data;
                 this.loading = false;
             },
             error: (err) => {
+                console.error('Error al obtener especialistas:', err);
                 this.error = 'Error al cargar pacientes';
                 this.loading = false;
-                console.error(err);
+                this.huboError = true;
+                this.snackBar.open('Error al cargar especialistas', 'Cerrar', { duration: 3000 });
             },
         });
     }
