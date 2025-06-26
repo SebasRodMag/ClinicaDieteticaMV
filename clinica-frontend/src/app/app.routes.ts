@@ -18,7 +18,7 @@ import { AuthGuard } from './auth.guard';
 import { CapaAuthComponent } from './components/capa-auth/capa-auth.component';
 
 export const routes: Routes = [
-    { path: '', component: HomeDashboardComponent },
+    { path: '', component: HomeComponent },
 
     // Login y registro
     {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -10,7 +10,9 @@ import { AuthService } from '../../service/Auth-Service/Auth.service';
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './login.component.html',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
+  @ViewChild('emailInput') emailInput!: ElementRef;
+  @ViewChild('passwordInput') passwordInput!: ElementRef;
   loginForm: FormGroup;
   errorMessage: string = '';
   loading = false;
@@ -24,6 +26,23 @@ export class LoginComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
     });
+  }
+
+  ngOnInit(): void {
+    //Puede que el componente no este preparado cuando se llama a ngOnInit,
+    //por lo que es mejor usar setTimeout para asegurarse de que el elemento esté disponible.
+    setTimeout(() => {
+      if (this.emailInput) {
+        this.emailInput.nativeElement.focus();
+      }
+    }, 0);
+  }
+
+  //Método para enfocar el input en la contraseña al presionar Enter en el input de email
+  focusPasswordInput(): void {
+    if (this.passwordInput) {
+      this.passwordInput.nativeElement.focus();
+    }
   }
 
   onSubmit(): void {
@@ -40,7 +59,7 @@ export class LoginComponent {
 
     this.authService.login({ email, password }).subscribe({
       next: (response) => {
-        // Guarda el usuario y token ya lo hace el AuthService con tap()
+        //Guarda el usuario, el token ya lo hace el AuthService con tap()
 
         this.loading = false;
         const role = response.user?.rol?.toLowerCase() || null;

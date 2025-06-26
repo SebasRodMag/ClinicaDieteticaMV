@@ -3,12 +3,11 @@
 
     <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate class="row g-3">
 
-        <!-- Columna 1 -->
         <div class="col-md-6">
             <label for="nombre" class="form-label">Nombre</label>
             <input id="nombre" type="text" formControlName="nombre" class="form-control"
                 [class.is-invalid]="formulario['nombre'].invalid && formulario['nombre'].touched"
-                placeholder="Tu nombre" />
+                placeholder="Tu nombre" #nombreInput (keydown.enter)="focusCampoSig('apellidos')" />
             <div *ngIf="formulario['nombre'].invalid && formulario['nombre'].touched" class="invalid-feedback">
                 <div *ngIf="formulario['nombre'].errors?.['required']">El nombre es obligatorio.</div>
             </div>
@@ -18,7 +17,7 @@
             <label for="apellidos" class="form-label">Apellidos</label>
             <input id="apellidos" type="text" formControlName="apellidos" class="form-control"
                 [class.is-invalid]="formulario['apellidos'].invalid && formulario['apellidos'].touched"
-                placeholder="Tus apellidos" />
+                placeholder="Tus apellidos" #apellidosInput (keydown.enter)="focusCampoSig('email')" />
             <div *ngIf="formulario['apellidos'].invalid && formulario['apellidos'].touched" class="invalid-feedback">
                 <div *ngIf="formulario['apellidos'].errors?.['required']">Los apellidos son obligatorios.</div>
             </div>
@@ -28,7 +27,7 @@
             <label for="email" class="form-label">Correo electrónico</label>
             <input id="email" type="email" formControlName="email" class="form-control"
                 [class.is-invalid]="formulario['email'].invalid && formulario['email'].touched"
-                placeholder="usuario@ejemplo.com" />
+                placeholder="usuario@ejemplo.com" #emailInput (keydown.enter)="focusCampoSig('dni_usuario')" />
             <div *ngIf="formulario['email'].invalid && formulario['email'].touched" class="invalid-feedback">
                 <div *ngIf="formulario['email'].errors?.['required']">El correo es obligatorio.</div>
             </div>
@@ -38,7 +37,7 @@
             <label for="dni_usuario" class="form-label">DNI</label>
             <input id="dni_usuario" type="text" formControlName="dni_usuario" class="form-control"
                 [class.is-invalid]="formulario['dni_usuario'].invalid && formulario['dni_usuario'].touched"
-                placeholder="12345678Z" />
+                placeholder="12345678Z" #dniInput (keydown.enter)="focusCampoSig('password')" />
             <div *ngIf="formulario['dni_usuario'].invalid && formulario['dni_usuario'].touched"
                 class="invalid-feedback">
                 <div *ngIf="formulario['dni_usuario'].errors?.['required']">El DNI es obligatorio.</div>
@@ -49,7 +48,7 @@
             <label for="password" class="form-label">Contraseña</label>
             <input id="password" type="password" formControlName="password" class="form-control"
                 [class.is-invalid]="formulario['password'].invalid && formulario['password'].touched"
-                placeholder="******" />
+                placeholder="******" #passwordInput (keydown.enter)="focusCampoSig('password_confirmation')" />
             <div *ngIf="formulario['password'].invalid && formulario['password'].touched" class="invalid-feedback">
                 <div *ngIf="formulario['password'].errors?.['required']">La contraseña es obligatoria.</div>
             </div>
@@ -60,7 +59,7 @@
             <input id="password_confirmation" type="password" formControlName="password_confirmation"
                 class="form-control"
                 [class.is-invalid]="formulario['password_confirmation'].touched && (formulario['password_confirmation'].invalid || registerForm.errors?.['notMatching'])"
-                placeholder="******" />
+                placeholder="******" #passwordConfirmationInput (keydown.enter)="onSubmit()" />
             <div *ngIf="formulario['password_confirmation'].touched && (formulario['password_confirmation'].invalid || registerForm.errors?.['notMatching'])"
                 class="invalid-feedback">
                 <div *ngIf="formulario['password_confirmation'].errors?.['required']">Este campo es obligatorio.</div>
@@ -69,8 +68,7 @@
         </div>
 
         <div class="col-12">
-            <!-- errores del backend -->
-            <div *ngIf="isErrorObjectNotEmpty()" class="alert alert-danger small">
+            <div *ngIf="devolverError()" class="alert alert-danger small">
                 <div *ngFor="let msg of errorMessages | keyvalue">
                     <div *ngFor="let m of msg.value">
                         {{ msg.key }}: {{ m }}
@@ -78,7 +76,6 @@
                 </div>
             </div>
 
-            <!-- Botón -->
             <button type="submit" class="btn btn-primary w-100 mt-2" [disabled]="registerForm.invalid || loading">
                 Registrarse
             </button>

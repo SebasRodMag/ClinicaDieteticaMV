@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -24,6 +24,18 @@ interface RegisterFormControls {
   imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule, RouterModule],
 })
 export class RegisterComponent implements OnInit {
+
+  //Se declaran los ViewChild para cada input que quiere enfocar
+  @ViewChild('nombreInput') nombreInput!: ElementRef;
+  @ViewChild('apellidosInput') apellidosInput!: ElementRef;
+  @ViewChild('emailInput') emailInput!: ElementRef;
+  @ViewChild('dniInput') dniInput!: ElementRef;
+  @ViewChild('passwordInput') passwordInput!: ElementRef;
+  @ViewChild('passwordConfirmationInput') passwordConfirmationInput!: ElementRef;
+
+  //Se crea un mapa para asociar los nombres de los campos con sus referencias de ElementRef
+  private mapaCampos: { [key: string]: ElementRef | undefined } = {};
+
   registerForm: FormGroup;
   errorMessages: { [key: string]: string[] } = {};
   loading = false;
@@ -49,6 +61,34 @@ export class RegisterComponent implements OnInit {
     this.registerForm.valueChanges.subscribe(() => {
       this.errorMessages = {};
     });
+
+    //Por las dudas que los inputs no estén cargados al momento de ejecutar ngOnInit,
+    //usamos setTimeout para darle un margen de tiempo hasta que los elementos estén disponibles.
+    setTimeout(() => {
+      if (this.nombreInput) {
+        this.nombreInput.nativeElement.focus();
+      }
+    }, 0);
+  }
+
+  ngAfterViewInit(): void {
+    //Se asignan las referencias al mapa de mapaCampos para acceder a los inputs más fácil
+    this.mapaCampos = {
+      nombre: this.nombreInput,
+      apellidos: this.apellidosInput,
+      email: this.emailInput,
+      dni_usuario: this.dniInput,
+      password: this.passwordInput,
+      password_confirmation: this.passwordConfirmationInput,
+    };
+  }
+
+  //Método para enfocar el campo siguiente
+  focusCampoSig(fieldName: string): void {
+    const nextField = this.mapaCampos[fieldName];
+    if (nextField && nextField.nativeElement) {
+      nextField.nativeElement.focus();
+    }
   }
 
   get formulario(): RegisterFormControls {
@@ -101,7 +141,7 @@ export class RegisterComponent implements OnInit {
       }
     });
   }
-  isErrorObjectNotEmpty(): boolean {
+  devolverError(): boolean {
     return this.errorMessages && Object.keys(this.errorMessages).length > 0;
   }
 }

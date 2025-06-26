@@ -9,6 +9,7 @@
     flex-direction: row;
     background: linear-gradient(to right, var(--color-tema) 0%, #ffffff 100%);
     font-family: 'Segoe UI', sans-serif;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
 }
 
 /* Columna izquierda: imagen + texto */
