@@ -1,0 +1,117 @@
+<div *ngIf="!formularioCargado" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-3">Cargando datos del formulario...</p>
+</div>
+
+<div *ngIf="formularioCargado">
+    <div class="modal-backdrop fade show" *ngIf="visible" style="z-index: 1050;"></div>
+    <div class="modal show d-block" tabindex="-1" *ngIf="visible" style="z-index: 1060;">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Cita</h5>
+                    <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form (ngSubmit)="onSubmit()">
+                        <div class="row">
+                            <!-- Columna izquierda -->
+                            <div class="col-md-6">
+                                <!-- Paciente -->
+                                <div class="mb-3">
+                                    <label class="form-label">Paciente</label>
+                                    <select class="form-select" [(ngModel)]="citaForm.id_paciente" name="id_paciente"
+                                        required [disabled]="citaPasada">
+                                        <option *ngFor="let paciente of pacientes" [ngValue]="paciente.id">
+                                            {{ paciente.user?.nombre }} {{ paciente.user?.apellidos }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <!-- Especialista -->
+                                <div class="mb-3">
+                                    <label class="form-label">Especialista</label>
+                                    <select class="form-select" [(ngModel)]="citaForm.id_especialista"
+                                        name="id_especialista" (change)="alCambiarEspecialista()"
+                                        [disabled]="citaPasada">
+                                        <option *ngFor="let esp of especialistas" [ngValue]="esp.id">
+                                            {{ esp.usuario.nombre }} {{ esp.usuario.apellidos }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <!-- Fecha -->
+                                <div class="mb-3">
+                                    <label class="form-label">Fecha</label>
+                                    <input type="date" class="form-control" [(ngModel)]="citaForm.fecha" name="fecha"
+                                        (change)="alCambiarFecha()" required />
+                                </div>
+
+                                <!-- Hora -->
+                                <div class="mb-3">
+                                    <label class="form-label">Hora</label>
+                                    <select class="form-select" [(ngModel)]="citaForm.hora" name="hora" required>
+                                        <option *ngFor="let hora of horasDisponibles" [value]="hora">{{ hora }}</option>
+                                        <option *ngIf="horasDisponibles.length === 0" disabled>No hay horas disponibles
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Columna derecha -->
+                            <div class="col-md-6">
+                                <!-- Especialidad -->
+                                <div class="mb-3">
+                                    <label class="form-label">Especialidad:</label>
+                                    <select class="form-select mb-2" [(ngModel)]="especialidadSeleccionada"
+                                        name="especialidad" (change)="alCambiarEspecialidad()" required
+                                        [disabled]="citaPasada">
+                                        <option *ngFor="let esp of especialidades" [value]="esp">{{ esp }}</option>
+                                    </select>
+                                </div>
+
+                                <!-- Tipo de cita -->
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo de cita</label>
+                                    <select class="form-select" [(ngModel)]="citaForm.tipo_cita" name="tipo_cita"
+                                        required [disabled]="citaPasada">
+                                        <option value="presencial">Presencial</option>
+                                        <option value="telemática">Online</option>
+                                    </select>
+                                </div>
+
+                                <!-- Estado -->
+                                <div class="mb-3">
+                                    <label class="form-label">Estado</label>
+                                    <select class="form-select" [(ngModel)]="citaForm.estado" name="estado" required>
+                                        <option *ngFor="let estado of tiposEstado" [value]="estado">
+                                            {{ estado | titlecase }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <!-- Comentario -->
+                                <div class="mb-3">
+                                    <label class="form-label">Comentario</label>
+                                    <textarea class="form-control" rows="3" [(ngModel)]="citaForm.comentario"
+                                        name="comentario" placeholder="Observaciones, indicaciones, etc."
+                                        [disabled]="citaPasada"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" (click)="onSubmit()">Guardar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -13,5 +13,4 @@ export interface Cita {
     updated_at: string;
     deleted_at: string | null;
     especialista: Especialista;
-
 }

@@ -28,7 +28,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('admin/resumen-dashboard', [ConfiguracionController::class, 'resumen']);
         Route::get('usuarios', [UserController::class, 'listarTodos']);
         Route::put('usuariosbaja/{id}', [UserController::class, 'cambiarRol']);
-        Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistas']);
         Route::get('pacientes', [PacienteController::class, 'listarPacientes']);
         Route::get('pacienteslistado', [PacienteController::class, 'pacientesConEspecialista']);
         Route::get('usuarios/{id}', [UserController::class, 'verUsuario']);
@@ -48,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('pacientestodos', [PacienteController::class, 'getFullPacientes']);
         Route::get('citas', [CitaController::class, 'listarCitas']);
         Route::get('citas/{id}', [CitaController::class, 'verCita']);
-        Route::put('citas/{id}', [CitaController::class, 'actualizarCita']);
+        
         Route::delete('citas/{id}', [CitaController::class, 'eliminarCita']);
         
         Route::put('cambiarConfiguraciones/{clave}', [ConfiguracionController::class, 'actualizarPorClave']);
@@ -63,8 +62,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('especialistas/{id}/horas-disponibles', [CitaController::class, 'horasDisponibles']);
         Route::get('configuracion-general', [CitaController::class, 'configuracion']);
         Route::get('especialidades', [EspecialistaController::class, 'listarEspecialidades']);
-        Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
+        Route::get('especialistas-por-especialidad', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
         Route::get('obtenerConfiguraciones', [ConfiguracionController::class, 'obtenerConfiguracionesConMensaje']);
+        Route::put('actualizar-citas/{id}', [CitaController::class, 'actualizarCita']);
+        Route::get('estados/estados-cita', [CitaController::class, 'tiposEstadoCita']);
         
     });
     /**

@@ -20,7 +20,7 @@ class CreateCitasTable extends Migration
             $table->foreignId('id_especialista')->constrained('especialistas')->onDelete('cascade');
             $table->dateTime('fecha_hora_cita');
             $table->enum('tipo_cita', ['presencial', 'telemática'])->default('presencial');
-            $table->enum('estado', ['pendiente', 'cancelada', 'realizada'])->default('pendiente');
+            $table->enum('estado', ['pendiente','realizada','cancelada','finalizada','ausente','reasignada'])->default('pendiente');
             $table->boolean('es_primera')->default(false);
             $table->text('comentario')->nullable();
             $table->timestamps();

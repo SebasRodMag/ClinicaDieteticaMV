@@ -13,8 +13,9 @@
     <tbody>
         <tr *ngFor="let fila of datosPaginados">
             <td *ngFor="let col of columnas">
-                <ng-container *ngIf="templatesMap[col]; else textoSimple" [ngTemplateOutlet]="templatesMap[col]"
-                    [ngTemplateOutletContext]="{ $implicit: fila }"></ng-container>
+                <ng-container *ngIf="templatesMap[col]; else textoSimple">
+                    <ng-container *ngTemplateOutlet="templatesMap[col]; context: { $implicit: fila }"></ng-container>
+                </ng-container>
                 <ng-template #textoSimple>{{ fila[col] }}</ng-template>
             </td>
         </tr>

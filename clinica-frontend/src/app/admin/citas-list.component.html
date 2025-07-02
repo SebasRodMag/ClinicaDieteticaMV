@@ -1,0 +1,78 @@
+<h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
+
+<!-- Filtros -->
+<div class="d-flex align-items-center gap-2 mb-3">
+    <input type="text" [(ngModel)]="filtro" placeholder="Buscar citas" class="form-control ms-2"
+        (ngModelChange)="filtrarCitas()" />
+
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(-1)">
+        <i class="bi bi-arrow-left"></i>
+    </button>
+
+    <input type="date" [(ngModel)]="filtroFecha" (change)="aplicarFiltros()" class="form-control w-auto" />
+
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(1)">
+        <i class="bi bi-arrow-right"></i>
+    </button>
+</div>
+
+<!-- Filtrado por especialidad -->
+<!-- <div class="mb-3 d-flex align-items-center gap-2">
+    <label for="selectEspecialidad" class="form-label mb-0">Especialidad:</label>
+    <select id="selectEspecialidad" [(ngModel)]="especialidadSeleccionada" (change)="onEspecialidadSeleccionada()" class="form-select w-auto">
+    <option value="">Todas</option>
+    <option *ngFor="let especialidad of especialidades" [value]="especialidad">{{ especialidad }}</option>
+</select> -->
+
+<!--     <label for="selectEspecialista" class="form-label mb-0">Especialista:</label>
+    <select id="selectEspecialista" [(ngModel)]="filtroEspecialista" (change)="filtrarCitas()" class="form-select w-auto">
+    <option value="">Todos</option>
+    <option *ngFor="let especialista of especialistas" [value]="especialista.id">
+        {{ especialista.usuario.nombre }} {{ especialista.usuario.apellidos }}
+    </option>
+</select>
+</div> -->
+
+<!-- Tabla de citas -->
+<app-tabla-datos *ngIf="!loading && citasFiltradas.length > 0" [columnas]="columnas" [datosTotales]="citasFiltradas"
+    [paginaActual]="paginaActual" [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles"
+    [templatesMap]="templatesMap" (ordenar)="ordenarPor($event)" (cambiarPagina)="cambiarPagina($event)">
+</app-tabla-datos>
+
+<!-- Templates personalizados -->
+<ng-template #fecha let-cita> {{ cita.fecha | date: 'dd/MM/yyyy' }} </ng-template>
+<ng-template #accion let-cita>
+    <button *ngIf="cita.estado != 'realizada'" class="btn btn-outline-primary btn-sm" (click)="editarCita(cita)">
+        Editar
+    </button>
+</ng-template>
+<ng-template #id_cita let-cita>{{ cita.id_cita }}</ng-template>
+<ng-template #hora let-cita>{{ cita.hora }}</ng-template>
+<ng-template #nombre_paciente let-cita>{{ cita.nombre_paciente }}</ng-template>
+<ng-template #nombre_especialista let-cita>{{ cita.nombre_especialista }}</ng-template>
+<ng-template #especialidad let-cita>{{ cita.especialidad }}</ng-template>
+<ng-template #tipo_cita let-cita>{{ cita.tipo_cita }}</ng-template>
+<ng-template #estado let-cita>{{ cita.estado }}</ng-template>
+
+<!-- Sin resultados -->
+<div *ngIf="!loading && citasFiltradas.length === 0 && !huboError" class="alert alert-info mt-3 text-center">
+    No hay citas registradas que coincidan con el filtro.
+</div>
+
+<!-- Error de carga -->
+<div *ngIf="!loading && citas.length === 0 && huboError" class="alert alert-danger mt-3 text-center">
+    Ocurrió un error al cargar las citas. Inténtalo nuevamente más tarde.
+</div>
+
+<!-- Spinner de carga -->
+<div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<!-- Modal de edición de cita -->
+<app-modal-edit-cita *ngIf="modalVisible" [visible]="modalVisible" [cita]="citaSeleccionada" [pacientes]="pacientes"
+    [especialistas]="especialistas" [configuracion]="configuracion" (cerrar)="cerrarModal()"
+    (guardar)="guardarCita($event)">
+</app-modal-edit-cita>

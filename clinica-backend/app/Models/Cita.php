@@ -55,16 +55,6 @@ class Cita extends Model
     {
         return $this->belongsTo(Especialista::class, 'id_especialista');
     }
-    /**
-     * Relación con el modelo User.
-     * Un usuario puede tener muchas citas.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function getEsRealizadaAttribute()
-    {
-        return $this->estado === 'realizada';
-    }
 
     /**
      * Verifica si la cita es telemática.

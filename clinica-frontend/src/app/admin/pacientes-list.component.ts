@@ -87,8 +87,8 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
 
     cambiarRol(paciente: Paciente): void {
 
-        const nombre = paciente.usuario?.nombre ?? 'Usuario';
-        const apellidos = paciente.usuario?.apellidos ?? '';
+        const nombre = paciente.user?.nombre ?? 'Usuario';
+        const apellidos = paciente.user?.apellidos ?? '';
 
         const snackBarRef = this.snackBar.open(
             `¿Estás seguro de que deseas dar de baja a ${nombre} ${apellidos}?`,

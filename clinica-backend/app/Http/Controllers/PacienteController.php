@@ -35,7 +35,26 @@ class PacienteController extends Controller
                 $respuesta = ['message' => 'No hay pacientes disponibles'];
                 $codigo = 404;
             } else {
-                $respuesta = ['pacientes' => $pacientes];
+                $respuesta = [
+                    'pacientes' => $pacientes->map(function ($paciente) {
+                        return [
+                            'id' => $paciente->id,
+                            'user_id' => $paciente->user_id,
+                            'numero_historial' => $paciente->numero_historial,
+                            'fecha_alta' => $paciente->fecha_alta,
+                            'fecha_baja' => $paciente->fecha_baja,
+                            'created_at' => $paciente->created_at,
+                            'updated_at' => $paciente->updated_at,
+                            'deleted_at' => $paciente->deleted_at,
+                            'user' => $paciente->user ? [
+                                'id' => $paciente->user->id,
+                                'nombre' => $paciente->user->nombre,
+                                'apellidos' => $paciente->user->apellidos,
+                                'email' => $paciente->user->email,
+                            ] : null,
+                        ];
+                    }),
+                ];
             }
 
             $this->registrarLog(auth()->id(), 'listar', 'pacientes');
@@ -48,6 +67,7 @@ class PacienteController extends Controller
 
         return response()->json($respuesta, $codigo);
     }
+
 
 
 

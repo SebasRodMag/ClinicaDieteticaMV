@@ -11,6 +11,8 @@ import { UsuarioDisponible } from '../../models/usuarioDisponible.model';
 import { map } from 'rxjs/operators';
 import { CitaPorPaciente } from '../../models/citasPorPaciente.model';
 import { CitaPorEspecialista } from '../../models/citasPorEspecialista.model';
+import { CitaListado } from '../../models/listarCitas.model';
+import { CitaActualizar } from '../../models/citaActualizar.model';
 
 
 @Injectable({
@@ -63,6 +65,29 @@ export class UserService {
         return this.http.put<Paciente>(`${this.apiUrl}/pacientes/${paciente.id}`, paciente);
     }
 
+    /**
+     * Listamos los pacientes registrados en la clínica.
+     * Devuelve un json con un array de pacientes con la siguiente estructura:
+     * {
+     *    "pacientes": [
+     *        {
+     *            "id": 1,
+     *            "user_id": 103,
+     *            "numero_historial": "KR478042TN",
+     *            "fecha_alta": "2024-06-01 07:20:28",
+     *            "fecha_baja": null,
+     *            "created_at": "2025-06-19T20:00:18.000000Z",
+     *            "updated_at": "2025-06-19T20:00:18.000000Z",
+     *            "deleted_at": null
+     *        },
+     *    ]
+     *}
+     * @returns Observable con un array de pacientes.
+     */
+    listarPacientes(): Observable<{ pacientes: Paciente[] }> {
+        return this.http.get<{ pacientes: Paciente[] }>(`${this.apiUrl}/pacientes`);
+    }
+
     crearUsuario(usuario: Usuario): Observable<Usuario> {
         return this.http.post<Usuario>(`${this.apiUrl}/usuarios`, usuario);
     }
@@ -71,6 +96,29 @@ export class UserService {
         return this.http.put<Usuario>(`${this.apiUrl}/usuarios/${usuario.id}`, usuario);
     }
 
+    /**
+     * actualizarCita() actualiza los datos de una cita existente.
+     * @param cita Objeto con los datos de la cita a actualizar.
+     */
+    actualizarCita(cita: CitaActualizar): Observable<any> {
+        return this.http.put(`${this.apiUrl}/actualizar-citas/${cita.id_cita}`, cita);
+    }
+    /**
+     * Método getListarEspecialistas() obtiene la lista de pacientes con sus datos completos.
+     * Devuelve un json con un array de pacientes con la siguiente estructura:
+     * [
+     *   {
+     *      "id_especialista": 1,
+     *      "user_id": 1103,
+     *      "nombre_apellidos": "Nombre y Apellidos concatenados",
+     *      "email": "especialista1@correo.com",
+     *      "telefono": "664590160",
+     *      "especialidad": "Endocrinología",
+     *      "fecha_alta": "2025-06-19"
+     *   },
+     * [
+     * @returns Observable con la lista de pacientes.
+     */
     getListarEspecialistas(): Observable<EspecialistaList[]> {
         return this.http.get<EspecialistaList[]>(`${this.apiUrl}/especialistasfull`);
     }
@@ -81,6 +129,34 @@ export class UserService {
 
     getUsuariosSinRolEspecialistaNiPaciente(): Observable<UsuarioDisponible[]> {
         return this.http.get<UsuarioDisponible[]>(`${this.apiUrl}/usuarios/listar/usuarios`);
+    }
+
+    /**
+     * obtenerTodasLasCitas() obtiene un array de citas con sus datos completos e integrantes.
+     * Devuelve un json con un array de citas con la siguiente estructura:
+     * {
+      * "citas": [
+     *      {
+     *          "id_cita": 1,
+     *          "id_paciente": 321,
+     *          "id_especialista": 11,
+     *          "fecha": "2025-06-23",
+     *          "hora": "14:00",
+     *          "tipo_cita": "presencial",
+     *          "estado": "pendiente",
+     *          "nombre_paciente": "Omar Dueñas",
+     *          "nombre_especialista": "Jorge Pelayo",
+     *          "especialidad": "Endocrinología"
+     *          "comentario": "Cita de control"},
+     *  ]
+     * @returns Observable con un array de citas con sus datos completos he integrantes.
+     */
+    obtenerTodasLasCitas(): Observable<{ citas: CitaListado[] }> {
+        return this.http.get<{ citas: CitaListado[] }>(`${this.apiUrl}/citas`);
+    }
+
+    getTiposEstadoCita(): Observable<{ success: boolean; tipos_estado: string[] }> {
+        return this.http.get<{ success: boolean; tipos_estado: string[] }>(`${this.apiUrl}/estados/estados-cita`);
     }
 
     /******************************************************************************/
@@ -103,10 +179,16 @@ export class UserService {
         return this.http.get(`${this.apiUrl}/pacientes/${id}`);
     }
 
-    getHorasDisponibles(idEspecialista: number, fecha: string): Observable<string[]> {
-        return this.http.get<string[]>(`${this.apiUrl}/especialistas/${idEspecialista}/horas-disponibles`, {
-            params: { fecha }
-        });
+    /**
+     * getHorasDisponibles() obtiene las horas disponibles de un especialista en una fecha específica.
+     * A partir del ID del especialista y la fecha, devuelve un array de horas disponibles en formato 'HH:MM'.
+     * @param idEspecialista El ID del especialista.
+     * @param fecha La fecha en formato 'YYYY-MM-DD'.
+     * @returns Devolución de un Observable con un array de horas disponibles.
+     * Ejemplo de respuesta: ["09:00", "09:30", "10:00", "10:30", ...]
+     */
+    getHorasDisponibles(id: number, fecha: string): Observable<{ horas_disponibles: string[] }> {
+        return this.http.get<{ horas_disponibles: string[] }>(`${this.apiUrl}/especialistas/${id}/horas-disponibles?fecha=${fecha}`);
     }
 
 
@@ -132,21 +214,51 @@ export class UserService {
         return this.http.get<Especialista[]>('/especialistas/listado-minimo');
     }
 
+    /**
+     * getPacientesPorNombre() obtiene un array de pacientes con id de paciente, sus nombres y apellidos.
+     * Muestra un listado de pacientes para poder seleccionar uno al crear una cita.
+     * Cada paciente tiene la siguiente estructura:
+     * {
+     *  "pacientes": [
+     *      {
+     *          "id": 103,
+     *          "nombre": "Margarita Alarcón"
+     *      },
+     *
+     * @returns Observable con un array de pacientes con sus nombres y apellidos.
+     */
     getPacientesPorNombre(): Observable<PacienteNombre[]> {
         return this.http.get<PacienteNombre[]>('/pacientespornombre');
     }
 
     getEspecialistaPorNombre(): Observable<EspecialistaNombre[]> {
-        return this.http.get<EspecialistaNombre[]>('/pacientespornombre');
+        return this.http.get<EspecialistaNombre[]>('/especialistapornombre');
     }
 
+    /**
+     * getEspecialidades() obtiene un array de especialidades disponibles en la clínica
+     * Devuelve un json con un array de especialidades, por ejemplo:
+     * [
+     *      "Endocrinología",
+     *      "Nutrición",
+     *      "Medicina General"
+     * ]
+     * @returns Observable con un array de especialidades.
+     */
     getEspecialidades(): Observable<string[]> {
         return this.http.get<string[]>(`${this.apiUrl}/especialidades`);
     }
 
+    /**
+     * getEspecialistasPorEspecialidad() obtiene un array de especialistas filtrados por una especialidad específica.
+     * Permite buscar especialistas por su especialidad para facilitar la creación de citas.
+     * @param especialidad Nombre de la especialidad para filtrar los especialistas.
+     * @returns 
+     */
     getEspecialistasPorEspecialidad(especialidad: string): Observable<Especialista[]> {
-        return this.http.get<Especialista[]>(`${this.apiUrl}/especialistas?especialidad=${encodeURIComponent(especialidad)}`);
+        return this.http.get<Especialista[]>(`${this.apiUrl}/especialistas-por-especialidad?especialidad=${encodeURIComponent(especialidad)}`);
     }
+
 
 
 
@@ -154,7 +266,11 @@ export class UserService {
     /************************ Rutas para Configuración ****************************/
     /******************************************************************************/
 
-
+    /**
+     * getConfiguracion() Devuelve un json con un objeto que contiene las configuraciones generales de la clínica.
+     * 
+     * @returns Observable con un objeto que contiene las configuraciones generales de la clínica.
+     */
     getConfiguracion(): Observable<{ message: string, configuraciones: Record<string, any> }> {
         return this.http.get<any>(`${this.apiUrl}/obtenerConfiguraciones`);
     }

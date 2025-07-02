@@ -29,21 +29,40 @@ class CitaController extends Controller
     {
         $codigo = 200;
         $respuesta = [];
+        $userId = auth()->id();
 
         try {
-            $citas = Cita::with(['paciente', 'especialista'])->get();
+            $citas = Cita::with(['paciente.user', 'especialista.user'])->get();
 
             if ($citas->isEmpty()) {
                 $respuesta = ['message' => 'No hay citas registradas'];
             } else {
-                $respuesta = ['citas' => $citas];
-                $this->registrarLog(auth()->id(), 'listar_citas', 'citas');
+                $respuesta['citas'] = $citas->map(function ($cita) {
+                    return [
+                        'id_cita' => $cita->id_cita,
+                        'id_paciente' => $cita->id_paciente,
+                        'id_especialista' => $cita->id_especialista,
+                        'fecha' => \Carbon\Carbon::parse($cita->fecha_hora_cita)->format('Y-m-d'),
+                        'hora' => \Carbon\Carbon::parse($cita->fecha_hora_cita)->format('H:i'),
+                        'tipo_cita' => $cita->tipo_cita,
+                        'estado' => $cita->estado,
+                        'nombre_paciente' => optional($cita->paciente->user)->nombre . ' ' . optional($cita->paciente->user)->apellidos,
+                        'nombre_especialista' => optional($cita->especialista->user)->nombre . ' ' . optional($cita->especialista->user)->apellidos,
+                        'especialidad' => $cita->especialista->especialidad ?? null,
+                        'comentario' => $cita->comentario,
+                    ];
+                });
+
+
+                if ($userId) {
+                    $this->registrarLog($userId, 'listar_citas', 'citas');
+                }
             }
 
         } catch (\Exception $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error al obtener las citas'];
-            $this->logError(auth()->id(), 'Error al listar citas', $e->getMessage());
+            $this->logError($userId, 'Error al listar citas', $e->getMessage());
         }
 
         return response()->json($respuesta, $codigo);
@@ -112,7 +131,7 @@ class CitaController extends Controller
                 'especialista_id' => 'sometimes|exists:especialistas,id',
                 'fecha_hora_cita' => 'required|date_format:Y-m-d H:i:s|after:now',
                 'tipo_cita' => 'required|string|max:50',
-                'comentarios' => 'nullable|string',
+                'comentario' => 'nullable|string',
             ], [
                 'fecha_hora_cita.required' => 'La fecha y hora son obligatorias.',
                 'fecha_hora_cita.date_format' => 'El formato debe ser YYYY-MM-DD HH:MM:SS.',
@@ -154,7 +173,7 @@ class CitaController extends Controller
                 'id_especialista' => $validar['especialista_id'],
                 'fecha_hora_cita' => $validar['fecha_hora_cita'],
                 'tipo_cita' => $validar['tipo_cita'],
-                'comentarios' => $validar['comentarios'] ?? null,
+                'comentario' => $validar['comentario'] ?? null,
                 'estado' => 'pendiente',
             ];
 
@@ -201,48 +220,115 @@ class CitaController extends Controller
         $respuesta = [];
 
         try {
+            $usuario = auth()->user();
             $cita = Cita::find($id);
 
             if (!$cita) {
-                $codigo = 404;
-                $respuesta = ['message' => 'Cita no encontrada'];
-            } else {
-                $datos = $solicitud->validate([
-                    'fecha_hora_cita' => 'nullable|date_format:Y-m-d H:i:s|after:now',
-                    'tipo_cita' => 'nullable|string|max:50',
-                    'estado' => 'nullable|string|in:pendiente,confirmada,cancelada,finalizada',
-                    'comentarios' => 'nullable|string',
-                ], [
-                    'fecha_hora_cita.after' => 'La fecha debe ser posterior al momento actual.',
-                    'estado.in' => 'El estado debe ser uno de: pendiente, confirmada, cancelada o finalizada.',
-                ]);
+                return response()->json(['message' => 'Cita no encontrada'], 404);
+            }
 
+            //Si la cita ya fue realizada, no se puede modificar.
+            if ($cita->estado === 'realizada') {
+                return response()->json(['message' => 'No se puede modificar una cita ya realizada.'], 403);
+            }
+
+            Log::info('Datos recibidos para actualizar cita:', $solicitud->all());
+
+            //Forzar los tipos a integer ya que dependiendo de donde obtengo el dato en el frontend puede venir como string.
+            $solicitud->merge([
+                'id_paciente' => $solicitud->has('id_paciente') ? (int) $solicitud->input('id_paciente') : null,
+                'id_especialista' => $solicitud->has('id_especialista') ? (int) $solicitud->input('id_especialista') : null,
+            ]);
+
+            $datos = $solicitud->validate([
+                'id_paciente' => 'nullable|integer|exists:pacientes,id',
+                'id_especialista' => 'nullable|integer|exists:especialistas,id',
+                'fecha_hora_cita' => 'nullable|date_format:Y-m-d H:i:s',
+                'tipo_cita' => 'nullable|string|max:50',
+                'estado' => 'nullable|string|in:pendiente,realizada,cancelada,ausente,reprogramada,reasignada',
+                'comentario' => 'nullable|string',
+            ]);
+
+            $fechaActual = now();
+            $esCitaPasada = $cita->fecha_hora_cita < $fechaActual;
+
+            $esAdmin = $usuario->hasRole('administrador');
+            $esEspecialista = $usuario->hasRole('especialista');
+            $esPaciente = $usuario->hasRole('paciente');
+
+            if ($esPaciente) {
+                $nuevaFecha = isset($datos['fecha_hora_cita']) ? Carbon::createFromFormat('Y-m-d H:i:s', $datos['fecha_hora_cita']) : null;
+                if ($esCitaPasada || !$nuevaFecha || $fechaActual->diffInHours($nuevaFecha, false) < 24) {
+                    return response()->json(['message' => 'No tienes permisos para modificar esta cita.'], 403);
+                }
                 $cita->update($datos);
 
-                $this->registrarLog(auth()->id(), 'actualizar_cita', 'citas', $id);
+            } elseif ($esAdmin || ($esEspecialista && $usuario->id === $cita->id_especialista)) {
+                if ($esCitaPasada) {
+                    $camposPermitidos = ['fecha_hora_cita', 'estado', 'comentario'];
+                    $datosFiltrados = array_filter(
+                        $datos,
+                        fn($key) => in_array($key, $camposPermitidos),
+                        ARRAY_FILTER_USE_KEY
+                    );
+                    $cita->update($datosFiltrados);
 
-                $respuesta = [
-                    'message' => 'Cita actualizada correctamente',
-                    'cita' => $cita,
-                ];
+                } else {
+                    if (isset($datos['fecha_hora_cita'])) {
+                        $nuevaFecha = Carbon::createFromFormat('Y-m-d H:i:s', $datos['fecha_hora_cita']);
+                        if ($nuevaFecha < $fechaActual) {
+                            return response()->json(['message' => 'La nueva fecha debe ser posterior al momento actual.'], 422);
+                        }
+                    }
+                    $cita->update($datos);
+                }
+
+            } else {
+                return response()->json(['message' => 'No tienes permisos para modificar esta cita.'], 403);
             }
+
+            $this->registrarLog(
+                $usuario->id,
+                'actualizar_cita:' .
+                'estado_anterior:' . $cita->getOriginal('estado') .
+                ' estado_nuevo:' . ($datos['estado'] ?? $cita->estado) .
+                ' modificado_por:' . $usuario->getRoleNames()->first(),
+                'citas',
+                $id,
+            );
+
+            return response()->json([
+                'message' => 'Cita actualizada correctamente.',
+                'cita' => $cita,
+            ]);
+
         } catch (\Illuminate\Validation\ValidationException $e) {
-            $codigo = 422;
-            $respuesta = [
+            Log::warning('Validación fallida al actualizar cita:', $e->errors());
+
+            return response()->json([
                 'message' => 'Los datos proporcionados no son válidos.',
                 'errors' => $e->errors(),
-            ];
+            ], 422);
+
         } catch (\Exception $e) {
-            $codigo = 500;
-            $respuesta = ['message' => 'Error interno al actualizar la cita'];
+            Log::error('Excepción al actualizar cita', [
+                'user_id' => auth()->id(),
+                'cita_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
             $this->logError(auth()->id(), 'Error al actualizar cita', [
                 'id_cita' => $id,
                 'error' => $e->getMessage(),
             ]);
-        }
 
-        return response()->json($respuesta, $codigo);
+            return response()->json(['message' => 'Error interno al actualizar la cita.'], 500);
+        }
     }
+
+
+
+
 
 
     /**
@@ -597,7 +683,7 @@ class CitaController extends Controller
             'fecha' => 'required|date_format:Y-m-d',
         ]);
 
-        //Se parsea la fecha al inicio del día para comparaciones
+        //Se formatea la fecha al inicio del día para comparaciones
         $fecha = Carbon::createFromFormat('Y-m-d', $solicitud->input('fecha'))->startOfDay();
 
         // Comprobar si la fecha es fin de semana
@@ -701,6 +787,7 @@ class CitaController extends Controller
 
     /**
      * Verifica si la hora está en bloques de 30 minutos entre 08:00 y 14:30.
+     * Segun la configuración del horario laboral.
      *
      * @param Carbon $fechaHora
      * @return bool
@@ -764,6 +851,37 @@ class CitaController extends Controller
         ]);
     }
 
+    /**
+     * Devuelve los tipos de estado de cita disponibles.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function tiposEstadoCita(): JsonResponse
+    {
+        try {
+            $tiposEstado = [
+                'pendiente',
+                'realizada',
+                'cancelada',
+                'finalizada',
+                'ausente',
+                'reasignada'
+            ];
+
+            return response()->json([
+                'success' => true,
+                'tipos_estado' => $tiposEstado,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('[CONFIG] Error al obtener tipos de estado de cita: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al consultar los tipos de estado de cita.',
+                'tipos_estado' => []
+            ], 500);
+        }
+    }
 
 
 

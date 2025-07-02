@@ -13,5 +13,5 @@ export interface Paciente {
     deleted_at: string | null;
     ultima_cita: Cita | null;
     especialista: Especialista | null;
-    usuario: Usuario | null;
+    user: Usuario | null;
 }

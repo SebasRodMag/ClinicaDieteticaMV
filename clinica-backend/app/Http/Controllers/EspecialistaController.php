@@ -278,10 +278,12 @@ class EspecialistaController extends Controller
             ->get()
             ->map(function ($especialista) {
                 return [
-                    'id_especialista' => $especialista->id,
-                    'nombre' => $especialista->user->nombre,
-                    'apellidos' => $especialista->user->apellidos,
-                    'email' => $especialista->user->email,
+                    'id' => $especialista->id,
+                    'usuario' => [
+                        'nombre' => $especialista->user->nombre,
+                        'apellidos' => $especialista->user->apellidos,
+                        'email' => $especialista->user->email,
+                    ],
                 ];
             });
 

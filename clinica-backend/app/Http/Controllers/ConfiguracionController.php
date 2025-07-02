@@ -170,4 +170,6 @@ class ConfiguracionController extends Controller
             ], 500);
         }
     }
+
+    
 }
