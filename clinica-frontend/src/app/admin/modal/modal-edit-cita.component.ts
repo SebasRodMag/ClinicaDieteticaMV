@@ -52,7 +52,9 @@ export class ModalEditCitaComponent implements OnChanges {
 
                     this.filtrarEspecialistas(() => {
                         if (this.citaForm.id_especialista && this.citaForm.fecha) {
-                            this.calcularHorasDisponibles(() => { this.formularioCargado = true; });
+                            this.calcularHorasDisponibles(() => {
+                                this.formularioCargado = true;
+                            });
                         } else {
                             this.formularioCargado = true;
                         }
@@ -75,13 +77,10 @@ export class ModalEditCitaComponent implements OnChanges {
                 }
             });
 
-            // Comprobar si la cita ya pasó
+            //Cita pasada
             const fechaHoraCita = new Date(`${this.citaForm.fecha}T${this.citaForm.hora}`);
             const ahora = new Date();
             this.citaPasada = fechaHoraCita < ahora;
-
-            this.formularioCargado = true;
-
         }
     }
 
