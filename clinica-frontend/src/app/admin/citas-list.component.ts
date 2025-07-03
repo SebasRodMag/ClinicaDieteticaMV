@@ -9,11 +9,12 @@ import { Paciente } from '../models/paciente.model';
 import { Especialista } from '../models/especialista.model';
 import { CitaActualizar } from '../models/citaActualizar.model';
 import { ModalEditCitaComponent } from './modal/modal-edit-cita.component';
+import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 
 @Component({
     selector: 'app-admin-citas',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatSnackBarModule, TablaDatosComponent, ModalEditCitaComponent],
+    imports: [CommonModule, FormsModule, MatSnackBarModule, TablaDatosComponent, ModalEditCitaComponent, ModalNuevaCitaComponent],
     templateUrl: './citas-list.component.html',
 })
 export class CitasListComponent implements OnInit, AfterViewInit {
@@ -31,6 +32,7 @@ export class CitasListComponent implements OnInit, AfterViewInit {
     loading: boolean = false;
     huboError: boolean = false;
     modalVisible = false;
+    modalNuevaCitaVisible: boolean = false;
 
     columnas: string[] = ['id_cita', 'fecha', 'hora', 'nombre_paciente', 'nombre_especialista', 'especialidad', 'tipo_cita', 'estado', 'accion'];
     templatesMap: { [key: string]: TemplateRef<any> } = {};
@@ -271,5 +273,19 @@ export class CitasListComponent implements OnInit, AfterViewInit {
                 this.snackBar.open(mensaje, 'Cerrar', { duration: 4000 });
             }
         });
+    }
+
+    nuevaCita(): void {
+        this.modalNuevaCitaVisible = true;
+    }
+
+    onCitaCreada(): void {
+        this.modalNuevaCitaVisible = false;
+        this.obtenerCitas();
+        this.snackBar.open('Cita creada correctamente', 'Cerrar', { duration: 3000 });
+    }
+
+    onModalCerrado(): void {
+        this.modalNuevaCitaVisible = false;
     }
 }

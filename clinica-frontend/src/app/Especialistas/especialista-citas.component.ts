@@ -21,6 +21,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
 
     loading: boolean = false;
     huboError: boolean = false;
+    modalNuevaCitaVisible: boolean = false;
 
     columnas = ['id', 'fecha', 'hora', 'nombre_paciente', 'dni_paciente', 'estado', 'tipo_cita', 'accion'];
 
@@ -125,5 +126,9 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         fecha.setDate(fecha.getDate() + dias);
         this.filtroFecha = fecha.toISOString().split('T')[0];
         this.aplicarFiltros();
+    }
+
+    nuevaCita(): void {
+        this.modalNuevaCitaVisible = true;
     }
 }

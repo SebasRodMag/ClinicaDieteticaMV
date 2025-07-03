@@ -54,6 +54,10 @@
 <ng-template #tipo_cita let-cita>{{ cita.tipo_cita }}</ng-template>
 <ng-template #estado let-cita>{{ cita.estado }}</ng-template>
 
+<button (click)="nuevaCita()" class="btn btn-primary">
+    Nueva cita
+</button>
+
 <!-- Sin resultados -->
 <div *ngIf="!loading && citasFiltradas.length === 0 && !huboError" class="alert alert-info mt-3 text-center">
     No hay citas registradas que coincidan con el filtro.
@@ -76,3 +80,12 @@
     [especialistas]="especialistas" [configuracion]="configuracion" (cerrar)="cerrarModal()"
     (guardar)="guardarCita($event)">
 </app-modal-edit-cita>
+
+<!-- Modal de nueva cita -->
+<app-modal-nueva-cita
+    *ngIf="modalNuevaCitaVisible"
+    [modalVisible]="modalNuevaCitaVisible"
+    [todosLosEspecialistas]="especialistas"
+    (creada)="onCitaCreada()"
+    (cerrado)="modalNuevaCitaVisible = false">
+</app-modal-nueva-cita>
