@@ -26,27 +26,70 @@ export class ModalNuevoEspecialistaComponent implements OnInit {
     usuarioBusqueda: string = '';
     usuarioSeleccionado?: Usuario;
 
-    especialidades: string[] = ['Endocrinología', 'Nutrición', 'Medicina General', 'Pediatría'];
+    especialidades: string[] = [];
     especialidadSeleccionada: string | null = null;
 
     mostrarLista: boolean = false;
-    cargando: boolean = false;
+    cargando: boolean = true;
+    guardando: boolean = false;
+    private pendientesPorCargar = 2;
 
     constructor(private userService: UserService, private snackBar: MatSnackBar) { }
 
     ngOnInit(): void {
         this.cargarUsuarios();
+        this.obtenerEspecialidades();
+        this.cargarUsuarios();
+        this.obtenerEspecialidades();
     }
 
     cargarUsuarios(): void {
         this.userService.getUsuariosSinRolEspecialistaNiPaciente().subscribe({
-            next: (data) => {
-                this.usuarios = data
+            next: (response) => {
+                const usuarios = response.data;
+                this.usuarios = usuarios
                     .map((u) => ({ id: u.id, nombre: u.nombre_apellidos }))
                     .sort((a, b) => a.nombre.localeCompare(b.nombre));
                 this.usuariosFiltrados = [...this.usuarios];
+                if (this.usuarios.length === 0) {
+                    console.warn('No hay usuarios disponibles');
+                    this.snackBar.open('No hay usuarios disponibles para crear especialistas', 'Cerrar', {
+                        duration: 3000,
+                    });
+                } else {
+                    console.log('Usuarios cargados:', this.usuarios.length);
+                }
+                this.marcarCargaCompletada();
             },
-            error: () => this.snackBar.open('Error al cargar usuarios', 'Cerrar', { duration: 3000 }),
+            error: () =>{
+                this.snackBar.open('Error al cargar usuarios', 'Cerrar', { duration: 3000 });
+                this.marcarCargaCompletada();
+            }
+                
+                
+        });
+    }
+
+    obtenerEspecialidades(): void {
+        this.userService.getConfiguracion().subscribe({
+            next: (response) => {
+                const especialidades = response.configuraciones?.['Especialidades'];
+
+                if (Array.isArray(especialidades)) {
+                    this.especialidades = especialidades;
+                    console.log('Especialidades cargadas:', this.especialidades.length);
+                } else {
+                    console.warn('No se encontraron especialidades en la configuración');
+                    this.snackBar.open('No se encontraron especialidades en la configuración', 'Cerrar', {
+                        duration: 3000,
+                    });
+                }
+                this.marcarCargaCompletada();
+            },
+            error: () => {
+                this.snackBar.open('Error al obtener especialidades', 'Cerrar', { duration: 3000 });
+                this.marcarCargaCompletada();
+            },
         });
     }
 
@@ -72,7 +115,7 @@ export class ModalNuevoEspecialistaComponent implements OnInit {
             return;
         }
 
-        this.cargando = true;
+        this.guardando = true;
 
         this.userService
             .crearEspecialista({
@@ -88,7 +131,7 @@ export class ModalNuevoEspecialistaComponent implements OnInit {
                 error: () => {
                     this.snackBar.open('Error al crear especialista', 'Cerrar', { duration: 3000 });
                 },
-                complete: () => (this.cargando = false),
+                complete: () => (this.guardando = false),
             });
     }
 
@@ -106,4 +149,13 @@ export class ModalNuevoEspecialistaComponent implements OnInit {
     handleEscapeKey(event: KeyboardEvent) {
         if (this.modalVisible) this.cerrar();
     }
+    //Para mostrar el modal, solo cuando ya se cargaron los datos
+    //mientras tanto, se muestra un spinner.
+    private marcarCargaCompletada(): void {
+        this.pendientesPorCargar--;
+        if (this.pendientesPorCargar <= 0) {
+            this.cargando = false;
+        }
+    }
+
 }

@@ -28,7 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('admin/resumen-dashboard', [ConfiguracionController::class, 'resumen']);
         Route::get('usuarios', [UserController::class, 'listarTodos']);
         Route::put('usuariosbaja/{id}', [UserController::class, 'cambiarRol']);
-        Route::get('pacientes', [PacienteController::class, 'listarPacientes']);
+        
         Route::get('pacienteslistado', [PacienteController::class, 'pacientesConEspecialista']);
         Route::get('usuarios/{id}', [UserController::class, 'verUsuario']);
         Route::post('usuarios', [UserController::class, 'crearUsuario']);
@@ -56,7 +56,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:paciente|especialista|administrador')->group(function(){
+        Route::get('horas-disponibles/{fecha}', [CitaController::class, 'horasDisponibles']);
         Route::post('citas', [CitaController::class, 'nuevaCita']);
+        Route::get('pacientes', [PacienteController::class, 'listarPacientes']);
         Route::get('pacientespornombre', [PacienteController::class, 'listarPacientesPorNombre']);
         Route::get('especialistapornombre',[EspecialistaController::class, 'listarEspecialistasPorNombre']);
         Route::get('especialistas/{id}/horas-disponibles', [CitaController::class, 'horasDisponibles']);
@@ -93,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
         // Gestión de citas - especialistas y pacientes (permiso personalizado en controlador)
     // Documentos (acceso controlado internamente por roles)
+    
     Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
     Route::get('/documentos', [DocumentoController::class, 'listarDocumentos']);
     Route::get('/documentos/{id}', [DocumentoController::class, 'verDocumento']);

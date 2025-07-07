@@ -5,11 +5,12 @@ import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CitaPorPaciente } from '../models/citasPorPaciente.model';
 import { FormsModule } from '@angular/forms';
+import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 
 @Component({
     selector: 'app-especialista-citas',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule],
+    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent],
     templateUrl: './especialista-citas.component.html',
 })
 export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
@@ -130,5 +131,10 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
 
     nuevaCita(): void {
         this.modalNuevaCitaVisible = true;
+    }
+
+    onCitaCreada(): void {
+        this.modalNuevaCitaVisible = false;
+        this.obtenerCitas();
     }
 }

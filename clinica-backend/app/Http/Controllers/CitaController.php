@@ -670,6 +670,7 @@ class CitaController extends Controller
     /**
      * Método para listar las horas disponibles de un especialista para un día determinado.
      * Se valida la fecha recibida y se verifica que no sea fin de semana ni festivo.
+     * Si no se pasa el ID del especialista, se intenta obtener del usuario autenticado.
      * Luego se obtiene el horario laboral configurado y la duración estándar de la cita.
      * Se descartan los horarios ya ocupados por citas pendientes del especialista.
      * 
@@ -677,69 +678,95 @@ class CitaController extends Controller
      * @param int $idEspecialista Identificador del especialista.
      * @return \Illuminate\Http\JsonResponse JSON con las horas disponibles.
      */
-    public function horasDisponibles(Request $solicitud, int $idEspecialista): JsonResponse
+    public function horasDisponibles(Request $request, ?int $idEspecialista = null): JsonResponse
     {
-        $solicitud->validate([
-            'fecha' => 'required|date_format:Y-m-d',
-        ]);
-
-        //Se formatea la fecha al inicio del día para comparaciones
-        $fecha = Carbon::createFromFormat('Y-m-d', $solicitud->input('fecha'))->startOfDay();
-
-        // Comprobar si la fecha es fin de semana
-        if ($fecha->isWeekend()) {
-            return response()->json(['horas_disponibles' => []]);
-        }
-
-        //Se obtienen los días no laborables (festivos) desde configuración en JSON
-        $festivosJson = Configuracion::where('clave', 'dias_no_laborables')->value('valor');
-        $festivos = json_decode($festivosJson, true) ?? [];
-
-        //Se verifica si la fecha está en días no laborables
-        if (in_array($fecha->toDateString(), $festivos)) {
-            return response()->json(['horas_disponibles' => []]);
-        }
-
-        //Se obtiene horario laboral y duración de cita desde configuración
-        $horarioJson = Configuracion::where('clave', 'horario_laboral')->value('valor');
-        $horario = json_decode($horarioJson, true) ?? [];
-
-        if (!isset($horario['apertura'], $horario['cierre'])) {
-            //Si no se encuentra, devuelve un array vacío
-            return response()->json(['horas_disponibles' => []]);
-        }
-
-        //La duración en minutos, valor por defecto 30 si no está configurado o es inválido
-        $duracion = (int) Configuracion::where('clave', 'duracion_cita')->value('valor') ?: 30;
-
-        //Se parcel la hora a un objetos Carbon para inicio y fin de la jornada
-        $horaInicio = Carbon::createFromTimeString($horario['apertura']);
-        $horaFin = Carbon::createFromTimeString($horario['cierre']);
-
-        //Se obtienen las horas ocupadas por citas pendientes del especialista en la fecha indicada
-        $citasOcupadas = Cita::where('id_especialista', $idEspecialista)
-            ->whereDate('fecha_hora_cita', $fecha)
-            ->where('estado', 'pendiente')
-            ->pluck('fecha_hora_cita')
-            ->map(fn($fechaHora) => Carbon::parse($fechaHora)->format('H:i'));
-
-        //Bloques de horarios disponibles
-        $horaActual = $fecha->copy()->setTimeFromTimeString($horaInicio->format('H:i'));
-        $horaLimite = $fecha->copy()->setTimeFromTimeString($horaFin->format('H:i'));
-
+        $error = null;
         $disponibles = [];
 
-        while ($horaActual < $horaLimite) {
-            $horaStr = $horaActual->format('H:i');
-            //Se añade solo si no está ocupada
-            if (!$citasOcupadas->contains($horaStr)) {
-                $disponibles[] = $horaStr;
+        try {
+            // Validar fecha
+            $validated = $request->validate([
+                'fecha' => 'required|date_format:Y-m-d',
+            ]);
+            $fecha = Carbon::createFromFormat('Y-m-d', $validated['fecha'])->startOfDay();
+
+            // Obtener usuario logueado
+            $user = Auth::user();
+
+            // Si no hay idEspecialista y usuario es especialista, obtener idEspecialista del usuario
+            if ($idEspecialista === null && $user->hasRole('especialista')) {
+                $especialista = Especialista::where('user_id', $user->id)->first();
+                if (!$especialista) {
+                    $error = 'Especialista no encontrado para el usuario.';
+                } else {
+                    $idEspecialista = $especialista->id;
+                }
             }
-            $horaActual->addMinutes($duracion);
+
+            // Validar que hay especialista válido
+            if ($idEspecialista === null) {
+                $error = 'ID de especialista es requerido.';
+            }
+
+            // Si no hay error aún, continuar
+            if (!$error) {
+                // Si fecha es fin de semana o festivo, disponibles queda vacío
+                if ($fecha->isWeekend()) {
+                    // $disponibles = [];
+                } else {
+                    // Días no laborables (festivos)
+                    $festivosJson = Configuracion::where('clave', 'dias_no_laborables')->value('valor');
+                    $festivos = json_decode($festivosJson, true) ?? [];
+
+                    if (in_array($fecha->toDateString(), $festivos)) {
+                        // $disponibles = [];
+                    } else {
+                        // Obtener horario laboral y duración de cita
+                        $horarioJson = Configuracion::where('clave', 'horario_laboral')->value('valor');
+                        $horario = json_decode($horarioJson, true) ?? [];
+
+                        if (isset($horario['apertura'], $horario['cierre'])) {
+                            $duracion = (int) Configuracion::where('clave', 'duracion_cita')->value('valor') ?: 30;
+
+                            $horaInicio = Carbon::createFromTimeString($horario['apertura']);
+                            $horaFin = Carbon::createFromTimeString($horario['cierre']);
+
+                            // Obtener citas ocupadas
+                            $citasOcupadas = Cita::where('id_especialista', $idEspecialista)
+                                ->whereDate('fecha_hora_cita', $fecha)
+                                ->where('estado', 'pendiente')
+                                ->pluck('fecha_hora_cita')
+                                ->map(fn($fechaHora) => Carbon::parse($fechaHora)->format('H:i'));
+
+                            $horaActual = $fecha->copy()->setTimeFromTimeString($horaInicio->format('H:i'));
+                            $horaLimite = $fecha->copy()->setTimeFromTimeString($horaFin->format('H:i'));
+
+                            while ($horaActual < $horaLimite) {
+                                $horaStr = $horaActual->format('H:i');
+                                if (!$citasOcupadas->contains($horaStr)) {
+                                    $disponibles[] = $horaStr;
+                                }
+                                $horaActual->addMinutes($duracion);
+                            }
+                        }
+                        // Si no hay horario válido, disponibles queda vacío (ya inicializado)
+                    }
+                }
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $error = 'Fecha inválida o no proporcionada.';
+        } catch (\Exception $e) {
+            $error = 'Error inesperado: ' . $e->getMessage();
         }
 
-        return response()->json(['horas_disponibles' => $disponibles]);
+        // Respuesta final única
+        if ($error) {
+            return response()->json(['error' => $error, 'horas_disponibles' => []], 400);
+        } else {
+            return response()->json(['horas_disponibles' => $disponibles]);
+        }
     }
+
     // --- Funciones auxiliares privadas ---
 
     /**

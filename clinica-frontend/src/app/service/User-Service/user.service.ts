@@ -127,8 +127,22 @@ export class UserService {
         return this.http.post(`${this.apiUrl}/especialistas`, data);
     }
 
-    getUsuariosSinRolEspecialistaNiPaciente(): Observable<UsuarioDisponible[]> {
-        return this.http.get<UsuarioDisponible[]>(`${this.apiUrl}/usuarios/listar/usuarios`);
+    /**
+     * getUsuariosSinRolEspecialistaNiPaciente() obtiene un array de usuarios que no son ni especialistas ni pacientes.
+     * Devuelve un json con un array de usuarios con la siguiente estructura:
+     * {
+     *   "data": [
+     *      {
+     *          "id": 1,
+     *          "nombre_apellidos": "Nombre y Apellidos concatenados"
+     *      },
+     *      ...
+     *   ]
+     * }
+     * @returns Observable con un array de usuarios disponibles.
+     */
+    getUsuariosSinRolEspecialistaNiPaciente(): Observable<{ data: UsuarioDisponible[] }> {
+        return this.http.get<{ data: UsuarioDisponible[] }>(`${this.apiUrl}/usuarios/listar/usuarios`);
     }
 
     /**
@@ -182,14 +196,22 @@ export class UserService {
     /**
      * getHorasDisponibles() obtiene las horas disponibles de un especialista en una fecha específica.
      * A partir del ID del especialista y la fecha, devuelve un array de horas disponibles en formato 'HH:MM'.
+     * si, idEspecialista es null, se omite el parámetro y el backend interpretara que el usuario logueado es el especialista.
      * @param idEspecialista El ID del especialista.
      * @param fecha La fecha en formato 'YYYY-MM-DD'.
      * @returns Devolución de un Observable con un array de horas disponibles.
      * Ejemplo de respuesta: ["09:00", "09:30", "10:00", "10:30", ...]
      */
-    getHorasDisponibles(id: number, fecha: string): Observable<{ horas_disponibles: string[] }> {
-        return this.http.get<{ horas_disponibles: string[] }>(`${this.apiUrl}/especialistas/${id}/horas-disponibles?fecha=${fecha}`);
+    getHorasDisponibles(idEspecialista: number | null, fecha: string): Observable<{ horas_disponibles: string[] }> {
+        let url = `${this.apiUrl}/horas-disponibles`;
+        if (idEspecialista !== null) {
+            url += `/${idEspecialista}`;
+        }
+        url += `?fecha=${fecha}`;
+        return this.http.get<{ horas_disponibles: string[] }>(url);
     }
+
+
 
 
     /******************************************************************************/
@@ -237,6 +259,8 @@ export class UserService {
 
     /**
      * getEspecialidades() obtiene un array de especialidades disponibles en la clínica
+     * Permite listar las especialidades según los especialistas registrados 
+     * para que el usuario pueda seleccionar una al crear una cita.
      * Devuelve un json con un array de especialidades, por ejemplo:
      * [
      *      "Endocrinología",

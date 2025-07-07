@@ -6,8 +6,6 @@ import { UserService } from '../../service/User-Service/user.service';
 import { Paciente } from '../../models/paciente.model';
 import { Especialista } from '../../models/especialista.model';
 
-
-
 @Component({
     selector: 'app-modal-nueva-cita',
     standalone: true,
@@ -32,7 +30,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     especialistasFiltrados: Especialista[] = [];
     fecha: string = '';
     hora: string = '';
-    tipoCita: 'presencial' | 'teleática' = 'presencial';
+    tipoCita: 'presencial' | 'telemática' = 'presencial';
     comentarios: string = '';
     cargando = false;
     dateError: string | null = null;
@@ -48,7 +46,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         this.especialistasFiltrados = [...this.especialistas];
         this.setMinDate();
         this.obtenerPacientes();
-
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -60,9 +57,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     private async inicializarModal(): Promise<void> {
         this.cargando = true;
         this.dateError = null;
-        this.fecha = '';
-        this.hora = '';
-        this.horasDisponibles = [];
+        this.resetFormulario();
 
         try {
             await Promise.all([
@@ -77,11 +72,25 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         }
     }
 
+    private resetFormulario(): void {
+        this.pacienteSeleccionado = null;
+        this.especialidadSeleccionada = null;
+        this.especialistaSeleccionado = null;
+        this.fecha = '';
+        this.hora = '';
+        this.tipoCita = 'presencial';
+        this.comentarios = '';
+        this.dateError = null;
+        this.horasDisponibles = [];
+        this.especialistasFiltrados = [];
+    }
+
     obtenerPacientes(): Promise<void> {
         return new Promise((resolve, reject) => {
             this.UserService.listarPacientes().subscribe({
                 next: (data) => {
                     this.pacientes = data.pacientes || [];
+                    console.log('Pacientes recibidos en modal:', this.pacientes);
                     resolve();
                 },
                 error: () => {
@@ -97,6 +106,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             this.UserService.getEspecialidades().subscribe({
                 next: (data) => {
                     this.especialidades = data;
+                    console.log('Especialidades recibidas:', this.especialidades);
                     resolve();
                 },
                 error: () => {
@@ -184,7 +194,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     }
 
     confirmar(): void {
-        if (!this.especialistaSeleccionado || !this.fecha || !this.hora || !this.tipoCita) {
+        if (!this.pacienteSeleccionado || !this.especialistaSeleccionado || !this.fecha || !this.hora || !this.tipoCita) {
             this.snackBar.open('Complete todos los campos obligatorios', 'Cerrar', { duration: 3000 });
             return;
         }
@@ -196,11 +206,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             this.dateError = null;
         }
 
-        if (!this.pacienteSeleccionado || !this.especialistaSeleccionado || !this.fecha || !this.hora || !this.tipoCita) {
-            this.snackBar.open('Complete todos los campos obligatorios', 'Cerrar', { duration: 3000 });
-            return;
-        }
-
         this.cargando = true;
 
         const fechaHora = `${this.fecha} ${this.hora}:00`;
@@ -210,20 +215,24 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             paciente_id: this.pacienteSeleccionado,
             fecha_hora_cita: fechaHora,
             tipo_cita: this.tipoCita,
+            comentario: this.comentarios || null
         }).subscribe({
             next: () => {
                 this.snackBar.open('Cita creada correctamente', 'Cerrar', { duration: 3000 });
                 this.creada.emit();
-                this.cerrar();
             },
             error: () => {
                 this.snackBar.open('Error al crear la cita', 'Cerrar', { duration: 3000 });
             },
-            complete: () => this.cargando = false
+            complete: () => {
+                this.cargando = false;
+                this.cerrar();
+            }
         });
     }
 
     cerrar(): void {
+        this.resetFormulario();
         this.cerrado.emit();
     }
 
@@ -249,7 +258,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
                 }
             });
         }
-        // Reiniciar el especialista seleccionado
         this.especialistaSeleccionado = null;
     }
 
@@ -264,6 +272,4 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             this.dateError = null;
         }
     }
-
-
 }

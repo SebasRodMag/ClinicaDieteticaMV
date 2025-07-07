@@ -1,68 +1,74 @@
-<div class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nueva Cita</h5>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar" (click)="cerrar()"></button>
-            </div>
+<!-- Spinner con backdrop -->
+<div *ngIf="cargando" class="modal-backdrop fade show"></div>
+<div *ngIf="cargando" class="modal d-block" tabindex="-1" aria-modal="true" role="dialog" style="z-index: 1050;">
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+</div>
 
-            <div class="modal-body">
-                <!-- Especialidades -->
-                <div class="mb-3">
-                    <label for="especialidad" class="form-label">Especialidad</label>
-                    <select id="especialidad" class="form-select" [(ngModel)]="especialidadSeleccionada"
-                        (ngModelChange)="filtrarEspecialistasPorEspecialidad()">
-                        <option [ngValue]="null">Seleccione una especialidad</option>
-                        <option *ngFor="let especialidad of especialidades" [ngValue]="especialidad">
-                            {{ especialidad }}
-                        </option>
-                    </select>
+<!-- Modal propiamente dicho -->
+<div *ngIf="!cargando" class="modal-body">
+    <div class="modal-backdrop fade show" style="z-index: 1050;"></div>
+    <div class="modal fade show d-block" tabindex="-1" style="z-index: 1060;" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva Cita</h5>
+                    <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrar()"></button>
                 </div>
 
-                <!-- Especialistas -->
-                <div class="mb-3">
-                    <label for="especialista" class="form-label">Especialista</label>
-                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado" (ngModelChange)="onEspecialistaChange()">
-                        <option [ngValue]="null">Seleccione un especialista</option>
-                        <option *ngFor="let esp of especialistasFiltrados" [ngValue]="esp.id">
-                            {{ esp.usuario.nombre }} {{ esp.usuario.apellidos }}
-                        </option>
-                    </select>
+                <div class="modal-body">
+                    <!-- Paciente -->
+                    <div class="mb-3">
+                        <label for="paciente" class="form-label">Paciente</label>
+                        <select id="paciente" class="form-select" [(ngModel)]="pacienteSeleccionado" required>
+                            <option [ngValue]="null">Seleccione un paciente</option>
+                            <option *ngFor="let paciente of pacientes" [ngValue]="paciente.id">
+                                {{ paciente.user?.nombre }} {{ paciente.user?.apellidos }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Tipo de cita -->
+                    <div class="mb-3">
+                        <label for="tipo" class="form-label">Tipo de cita</label>
+                        <select id="tipo" class="form-select" [(ngModel)]="tipoCita">
+                            <option value="presencial">Presencial</option>
+                            <option value="telemática">Telemática</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate"
+                            (change)="onFechaChange()" />
+                        <div *ngIf="dateError" class="text-danger mt-1">{{ dateError }}</div>
+                    </div>
+
+                    <!-- Hora -->
+                    <div class="mb-3">
+                        <label for="hora" class="form-label">Hora</label>
+                        <select id="hora" class="form-select" [(ngModel)]="hora"
+                            [disabled]="horasDisponibles.length === 0">
+                            <option [ngValue]="null">Seleccione una hora</option>
+                            <option *ngFor="let horaDisponible of horasDisponibles" [value]="horaDisponible">
+                                {{ horaDisponible }}
+                            </option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Tipo de cita -->
-                <div class="mb-3">
-                    <label for="tipo" class="form-label">Tipo de cita</label>
-                    <select id="tipo" class="form-select" [(ngModel)]="tipoCita">
-                        <option value="presencial">Presencial</option>
-                        <option value="telemática">Telemática</option>
-                    </select>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
+                    <button type="button" class="btn btn-primary"
+                        [disabled]="cargando || !!dateError || !fecha || !hora || pacienteSeleccionado == null"
+                        (click)="confirmar()">
+                        {{ cargando ? 'Guardando...' : 'Crear cita' }}
+                    </button>
                 </div>
-
-                <!-- Fecha -->
-                <div class="mb-3">
-                    <label for="fecha" class="form-label">Fecha</label>
-                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate" (change)="onFechaChange()" />
-                    <div *ngIf="dateError" class="text-danger mt-1">{{ dateError }}</div>
-                </div>
-
-                <!-- Hora -->
-                <div class="mb-3">
-                    <label for="hora" class="form-label">Hora</label>
-                    <select id="hora" class="form-select" [(ngModel)]="hora" [disabled]="horasDisponibles.length === 0">
-                        <option [ngValue]="null">Seleccione una hora</option>
-                        <option *ngFor="let horaDisponible of horasDisponibles" [value]="horaDisponible">
-                            {{ horaDisponible }}
-                        </option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
-                <button type="button" class="btn btn-primary" [disabled]="cargando || !!dateError || !fecha || !hora || especialistaSeleccionado == null" (click)="confirmar()">
-                    {{ cargando ? 'Guardando...' : 'Crear cita' }}
-                </button>
             </div>
         </div>
     </div>

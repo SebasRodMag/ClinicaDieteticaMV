@@ -1,6 +1,6 @@
-<!-- Spinner centralizado con fondo translúcido -->
+<!-- Spinner centralizado con fondo translúcido y backdrop oscuro para mejor visibilidad -->
 <div *ngIf="cargando"
-    class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+    class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50"
     style="z-index: 2000;">
     <div class="text-center">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
@@ -30,10 +30,10 @@
                                 <option [ngValue]="null">Seleccione un paciente</option>
                                 <option *ngFor="let paciente of pacientes" [ngValue]="paciente.id">
                                     {{ paciente.user?.nombre }} {{ paciente.user?.apellidos }}
-                                    <div *ngIf="pacientes.length === 0" class="text-danger">No hay pacientes disponibles
-                                    </div>
                                 </option>
                             </select>
+                            <div *ngIf="pacientes.length === 0" class="text-danger mt-1">No hay pacientes disponibles
+                            </div>
                         </div>
 
                         <!-- Especialidades -->
@@ -88,6 +88,13 @@
                                     {{ horaDisponible }}
                                 </option>
                             </select>
+                        </div>
+
+                        <!-- Comentarios opcionales -->
+                        <div class="col-12 mb-3">
+                            <label for="comentario" class="form-label">Comentarios (opcional)</label>
+                            <textarea id="comentario" class="form-control" [(ngModel)]="comentarios"
+                                rows="2"></textarea>
                         </div>
                     </div>
 
