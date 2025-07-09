@@ -22,6 +22,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     huboError: boolean = false;
     usuarioSeleccionado: Usuario = this.crearUsuarioVacio();
     esNuevoUsuario: boolean = false;
+    erroresModal: { [campo: string]: string[] } = {};
 
     filtro: string = '';
     loading: boolean = false;
@@ -33,7 +34,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     columnaOrden: string | null = null;
     direccionOrdenAsc: boolean = true;
 
-    columnas = ['id', 'nombre', 'apellidos', 'dni_usuario', 'email', 'acciones'];
+    columnas = ['id', 'nombre', 'dni_usuario', 'email', 'acciones'];
 
     crearUsuarioVacio(): Usuario {
         return {
@@ -98,19 +99,25 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     }
 
     filtrarUsuarios() {
-        if (!this.filtro) {
-            this.usuariosFiltrados = [...this.usuarios];
-        } else {
-            const filtroLower = this.filtro.toLowerCase();
-            this.usuariosFiltrados = this.usuarios.filter(u =>
+    if (!this.filtro) {
+        this.usuariosFiltrados = [...this.usuarios];
+    } else {
+        const filtroLower = this.filtro.toLowerCase();
+
+        this.usuariosFiltrados = this.usuarios.filter(u => {
+            const nombreCompleto = `${u.nombre} ${u.apellidos}`.toLowerCase();
+            return (
                 u.nombre.toLowerCase().includes(filtroLower) ||
                 u.apellidos.toLowerCase().includes(filtroLower) ||
+                nombreCompleto.includes(filtroLower) ||
                 u.dni_usuario.toLowerCase().includes(filtroLower) ||
                 u.email.toLowerCase().includes(filtroLower)
             );
-        }
-        this.paginaActual = 1;
+        });
     }
+
+    this.paginaActual = 1;
+}
 
     ordenarPor(columna: string) {
         if (this.columnaOrden === columna) {
@@ -165,6 +172,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     editarUsuario(usuario: Usuario) {
         this.usuarioSeleccionado = { ...usuario };
         this.esNuevoUsuario = false;
+        this.erroresModal = {};
         this.modalVisible = true;
     }
 
@@ -189,6 +197,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     nuevoUsuario() {
         this.usuarioSeleccionado = this.crearUsuarioVacio();
         this.esNuevoUsuario = true;
+        this.erroresModal = {};
         this.modalVisible = true;
     }
     cerrarModal() {
@@ -197,16 +206,22 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     }
 
     guardarUsuario(usuario: Usuario) {
+        this.erroresModal = {};
         if (usuario.id === 0) {
             this.userService.crearUsuario(usuario).subscribe({
                 next: (nuevoUsuario) => {
                     this.cargarUsuarios();
                     this.mostrarMensaje('Usuario creado correctamente.', 'success');
                     console.log('Usuario creado correctamente.');
+                    this.cerrarModal();
                 },
-                error: () => {
-                    this.mostrarMensaje('Error al crear usuario.', 'error');
-                    console.warn('Error al crear usuario.');
+                error: (error) => {
+                    if(error.status === 422) {
+                        this.erroresModal = error.error.errors || {};
+                    }else{
+                        this.mostrarMensaje('Error al crear usuario.', 'error');
+                        console.warn('Error al crear usuario:', error);
+                    }
                 }
             });
         } else {
@@ -215,6 +230,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
                     this.cargarUsuarios();
                     this.mostrarMensaje('Usuario actualizado correctamente.', 'success');
                     console.log('Usuario actualizado correctamente.');
+                    this.cerrarModal();
                 },
                 error: () => {
                     this.mostrarMensaje('Error al actualizar usuario.', 'error');

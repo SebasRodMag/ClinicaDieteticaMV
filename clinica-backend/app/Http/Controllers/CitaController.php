@@ -38,6 +38,14 @@ class CitaController extends Controller
                 $respuesta = ['message' => 'No hay citas registradas'];
             } else {
                 $respuesta['citas'] = $citas->map(function ($cita) {
+                    $nombrePaciente = $cita->paciente && $cita->paciente->user
+                        ? $cita->paciente->user->nombre . ' ' . $cita->paciente->user->apellidos
+                        : 'Paciente no asignado';
+
+                    $nombreEspecialista = $cita->especialista && $cita->especialista->user
+                        ? $cita->especialista->user->nombre . ' ' . $cita->especialista->user->apellidos
+                        : 'Especialista no asignado';
+
                     return [
                         'id_cita' => $cita->id_cita,
                         'id_paciente' => $cita->id_paciente,
@@ -46,17 +54,24 @@ class CitaController extends Controller
                         'hora' => \Carbon\Carbon::parse($cita->fecha_hora_cita)->format('H:i'),
                         'tipo_cita' => $cita->tipo_cita,
                         'estado' => $cita->estado,
-                        'nombre_paciente' => optional($cita->paciente->user)->nombre . ' ' . optional($cita->paciente->user)->apellidos,
-                        'nombre_especialista' => optional($cita->especialista->user)->nombre . ' ' . optional($cita->especialista->user)->apellidos,
-                        'especialidad' => $cita->especialista->especialidad ?? null,
+                        'nombre_paciente' => $nombrePaciente,
+                        'nombre_especialista' => $nombreEspecialista,
+                        'especialidad' => optional($cita->especialista)->especialidad,
                         'comentario' => $cita->comentario,
                     ];
+                    if (!$cita->paciente || !$cita->paciente->user) {
+                        $this->logError('Cita con id ' . $cita->id_cita . ' tiene paciente no válido');
+                    }
+                    if (!$cita->especialista || !$cita->especialista->user) {
+                        $this->logError('Cita con id ' . $cita->id_cita . ' tiene especialista no válido');
+                    }
                 });
 
 
                 if ($userId) {
                     $this->registrarLog($userId, 'listar_citas', 'citas');
                 }
+
             }
 
         } catch (\Exception $e) {

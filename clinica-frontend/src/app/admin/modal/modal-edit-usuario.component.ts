@@ -16,6 +16,7 @@ export class ModalEditUsuarioComponent implements OnChanges {
     @Input() visible: boolean = false;
     @Input() usuario: Usuario = this.nuevoUsuario();
     @Input() esNuevo: boolean = false;
+    @Input() erroresExternos: { [campo: string]: string[] } = {};
 
     @Output() cerrar = new EventEmitter<void>();
     @Output() guardar = new EventEmitter<Usuario>();
@@ -32,6 +33,15 @@ export class ModalEditUsuarioComponent implements OnChanges {
                 ? this.nuevoUsuario()
                 : { ...this.usuario }; //copia del usuario para no modificar el original directamente
             this.errores = {};
+        }
+
+        if (changes['erroresExternos'] && this.erroresExternos) {
+            //Mapear arrays a string único por campo
+            for (const campo in this.erroresExternos) {
+                if (this.erroresExternos[campo]) {
+                    this.errores[campo] = this.erroresExternos[campo].join('. ');
+                }
+            }
         }
     }
 
@@ -130,6 +140,65 @@ export class ModalEditUsuarioComponent implements OnChanges {
     cerrarModal(): void {
         this.cerrar.emit();
         this.errores = {};
+    }
+
+    esFormularioValido(): boolean {
+        const campos: (keyof Usuario)[] = ['nombre', 'apellidos', 'dni_usuario', 'email'];
+        if (this.esNuevo) {
+            campos.push('password', 'password_confirmation');
+        }
+
+        //Verificar campos obligatorios
+        for (const campo of campos) {
+            if (!this.usuarioForm[campo]) return false;
+            if (this.errores[campo]) return false;
+        }
+
+        //Validación de contraseñas
+        if (this.usuarioForm.password !== this.usuarioForm.password_confirmation) return false;
+
+        return true;
+    }
+
+    validarCampo(campo: keyof Usuario): void {
+        const valor = this.usuarioForm[campo];
+        this.errores[campo] = '';
+
+        if (!this.esNuevo && ((campo === 'password' && this.usuarioForm.password && !this.usuarioForm.password_confirmation) ||
+            (campo === 'password_confirmation' && this.usuarioForm.password_confirmation && !this.usuarioForm.password))) {
+            this.errores['password'] = 'Debe rellenar ambos campos de contraseña para cambiarla';
+            return;
+        }
+
+        if (campo === 'dni_usuario' && valor && !/^[0-9]{8}[A-Za-z]$/.test(String(valor))) {
+            this.errores[campo] = 'DNI debe tener 8 dígitos y una letra';
+        }
+
+        if (campo === 'email' && valor && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(valor))) {
+            this.errores[campo] = 'Email no válido';
+        }
+
+        if (campo === 'telefono' && valor && !/^[6789]\d{8}$/.test(String(valor))) {
+            this.errores[campo] = 'Teléfono no válido';
+        }
+
+        if (campo === 'direccion' && valor && /<script.*?>.*?<\/script>/gi.test(String(valor))) {
+            this.errores[campo] = 'Contenido no permitido en dirección';
+        }
+
+        if (campo === 'password' || campo === 'password_confirmation') {
+            const pass = this.usuarioForm.password;
+            const confirm = this.usuarioForm.password_confirmation;
+
+            if (this.esNuevo && (!pass || !confirm)) {
+                this.errores['password'] = 'Debe introducir y confirmar la contraseña';
+                return;
+            }
+
+            if (pass && confirm && pass !== confirm) {
+                this.errores['password_confirmation'] = 'Las contraseñas no coinciden';
+            }
+        }
     }
 
 
