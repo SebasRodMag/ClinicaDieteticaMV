@@ -26,14 +26,10 @@
                         <!-- Pacientes -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Paciente</label>
-                            <select class="form-select" [(ngModel)]="pacienteSeleccionado" name="id_paciente" required>
-                                <option [ngValue]="null">Seleccione un paciente</option>
-                                <option *ngFor="let paciente of pacientes" [ngValue]="paciente.id">
-                                    {{ paciente.user?.nombre }} {{ paciente.user?.apellidos }}
-                                </option>
-                            </select>
-                            <div *ngIf="pacientes.length === 0" class="text-danger mt-1">No hay pacientes disponibles
-                            </div>
+                            <ng-select [items]="pacientesOrdenados" bindLabel="nombreCompleto" bindValue="id"
+                                [(ngModel)]="pacienteSeleccionado" name="id_paciente" [searchable]="true"
+                                [clearable]="false" required>
+                            </ng-select>
                         </div>
 
                         <!-- Especialidades -->
@@ -51,14 +47,15 @@
                         <!-- Especialistas -->
                         <div class="col-md-6 mb-3">
                             <label for="especialista" class="form-label">Especialista</label>
-                            <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado"
-                                (ngModelChange)="onEspecialistaChange()" [disabled]="!especialidadSeleccionada">
-
-                                <option [ngValue]="null">Seleccione un especialista</option>
-                                <option *ngFor="let esp of especialistasFiltrados" [ngValue]="esp.id">
-                                    {{ esp.usuario.nombre }} {{ esp.usuario.apellidos }}
-                                </option>
-                            </select>
+                            <ng-select *ngIf="especialistasFiltrados.length > 0"
+                                [items]="especialistasFiltradosOrdenados" bindLabel="nombreCompleto" bindValue="id"
+                                [(ngModel)]="especialistaSeleccionado" name="id_especialista" [searchable]="true"
+                                [clearable]="false" [disabled]="!especialidadSeleccionada"
+                                (change)="onEspecialistaChange()">
+                            </ng-select>
+                            <div *ngIf="especialistasFiltrados.length === 0" class="form-text text-danger">
+                                No hay especialistas disponibles para esta especialidad.
+                            </div>
                         </div>
 
                         <!-- Tipo de cita -->

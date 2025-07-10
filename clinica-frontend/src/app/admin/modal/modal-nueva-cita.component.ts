@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, Input, OnInit, HostListener, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../service/User-Service/user.service';
 import { Paciente } from '../../models/paciente.model';
@@ -10,7 +11,7 @@ import { Especialista } from '../../models/especialista.model';
     selector: 'app-modal-nueva-cita',
     standalone: true,
     templateUrl: './modal-nueva-cita.component.html',
-    imports: [CommonModule, FormsModule, MatSnackBarModule]
+    imports: [CommonModule, FormsModule, MatSnackBarModule, NgSelectModule]
 })
 export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     @Input() modalVisible!: boolean;
@@ -23,11 +24,13 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
 
     pacientes: Paciente[] = [];
     especialistas: Especialista[] = [];
+    pacientesOrdenados: any[] = [];
+    especialistasFiltrados: Especialista[] = [];
+    especialistasFiltradosOrdenados: any[] = [];
 
     especialistaSeleccionado: number | null = null;
     especialidadSeleccionada: string | null = null;
     pacienteSeleccionado: number | null = null;
-    especialistasFiltrados: Especialista[] = [];
     fecha: string = '';
     hora: string = '';
     tipoCita: 'presencial' | 'telemática' = 'presencial';
@@ -83,6 +86,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         this.dateError = null;
         this.horasDisponibles = [];
         this.especialistasFiltrados = [];
+        this.especialistasFiltradosOrdenados = [];
     }
 
     obtenerPacientes(): Promise<void> {
@@ -90,7 +94,12 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             this.UserService.listarPacientes().subscribe({
                 next: (data) => {
                     this.pacientes = data.pacientes || [];
-                    console.log('Pacientes recibidos en modal:', this.pacientes);
+                    this.pacientesOrdenados = this.pacientes
+                        .map(p => ({
+                            ...p,
+                            nombreCompleto: `${p.user?.nombre ?? ''} ${p.user?.apellidos ?? ''}`.trim()
+                        }))
+                        .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
                     resolve();
                 },
                 error: () => {
@@ -106,7 +115,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             this.UserService.getEspecialidades().subscribe({
                 next: (data) => {
                     this.especialidades = data;
-                    console.log('Especialidades recibidas:', this.especialidades);
                     resolve();
                 },
                 error: () => {
@@ -131,6 +139,31 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
                 }
             });
         });
+    }
+
+    filtrarEspecialistasPorEspecialidad(): void {
+        if (!this.especialidadSeleccionada) {
+            this.especialistasFiltrados = [];
+            this.especialistasFiltradosOrdenados = [];
+        } else {
+            this.UserService.getEspecialistasPorEspecialidad(this.especialidadSeleccionada).subscribe({
+                next: (data) => {
+                    this.especialistasFiltrados = data;
+                    this.especialistasFiltradosOrdenados = this.especialistasFiltrados
+                        .map(e => ({
+                            ...e,
+                            nombreCompleto: `${e.usuario?.nombre ?? ''} ${e.usuario?.apellidos ?? ''}`.trim()
+                        }))
+                        .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
+                },
+                error: () => {
+                    this.snackBar.open('Error al cargar especialistas por especialidad', 'Cerrar', { duration: 3000 });
+                    this.especialistasFiltrados = [];
+                    this.especialistasFiltradosOrdenados = [];
+                }
+            });
+        }
+        this.especialistaSeleccionado = null;
     }
 
     onEspecialistaChange(): void {
@@ -164,35 +197,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         });
     }
 
-    private setMinDate(): void {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = (today.getMonth() + 1).toString().padStart(2, '0');
-        const dd = today.getDate().toString().padStart(2, '0');
-        this.minDate = `${yyyy}-${mm}-${dd}`;
-    }
-
-    private isWeekend(date: Date): boolean {
-        const day = date.getDay();
-        return day === 0 || day === 6; // Sunday = 0, Saturday = 6
-    }
-
-    private isHoliday(date: Date): boolean {
-        const dateStr = date.toISOString().split('T')[0];
-        return this.diasNoLaborables.includes(dateStr);
-    }
-
-    private isDateValid(dateStr: string): boolean {
-        const date = new Date(dateStr);
-        if (this.isWeekend(date)) {
-            return false;
-        }
-        if (this.isHoliday(date)) {
-            return false;
-        }
-        return true;
-    }
-
     confirmar(): void {
         if (!this.pacienteSeleccionado || !this.especialistaSeleccionado || !this.fecha || !this.hora || !this.tipoCita) {
             this.snackBar.open('Complete todos los campos obligatorios', 'Cerrar', { duration: 3000 });
@@ -207,7 +211,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         }
 
         this.cargando = true;
-
         const fechaHora = `${this.fecha} ${this.hora}:00`;
 
         this.UserService.crearCita({
@@ -236,31 +239,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         this.cerrado.emit();
     }
 
-    @HostListener('document:keydown.escape', ['$event'])
-    handleEscapeKey(event: KeyboardEvent) {
-        if (this.modalVisible) this.cerrar();
-    }
-
-    filtrarEspecialistasPorEspecialidad(): void {
-        if (!this.especialidadSeleccionada) {
-            this.especialistasFiltrados = [];
-        } else {
-            console.log('Fetching especialistas for especialidad:', this.especialidadSeleccionada);
-            this.UserService.getEspecialistasPorEspecialidad(this.especialidadSeleccionada).subscribe({
-                next: (data) => {
-                    console.log('Received especialistas:', data);
-                    this.especialistasFiltrados = data;
-                },
-                error: (err) => {
-                    console.error('Error fetching especialistas:', err);
-                    this.especialistasFiltrados = [];
-                    this.snackBar.open('Error al cargar especialistas por especialidad', 'Cerrar', { duration: 3000 });
-                }
-            });
-        }
-        this.especialistaSeleccionado = null;
-    }
-
     validateDate(): void {
         if (!this.fecha) {
             this.dateError = 'La fecha es obligatoria.';
@@ -271,5 +249,36 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         } else {
             this.dateError = null;
         }
+    }
+
+    private setMinDate(): void {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = (today.getMonth() + 1).toString().padStart(2, '0');
+        const dd = today.getDate().toString().padStart(2, '0');
+        this.minDate = `${yyyy}-${mm}-${dd}`;
+    }
+
+    private isWeekend(date: Date): boolean {
+        const day = date.getDay();
+        return day === 0 || day === 6;
+    }
+
+    private isHoliday(date: Date): boolean {
+        const dateStr = date.toISOString().split('T')[0];
+        return this.diasNoLaborables.includes(dateStr);
+    }
+
+    private isDateValid(dateStr: string): boolean {
+        const date = new Date(dateStr);
+        if (this.isWeekend(date) || this.isHoliday(date)) {
+            return false;
+        }
+        return true;
+    }
+
+    @HostListener('document:keydown.escape', ['$event'])
+    handleEscapeKey(event: KeyboardEvent) {
+        if (this.modalVisible) this.cerrar();
     }
 }

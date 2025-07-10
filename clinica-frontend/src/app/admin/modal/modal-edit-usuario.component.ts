@@ -31,7 +31,7 @@ export class ModalEditUsuarioComponent implements OnChanges {
         if (changes['usuario'] || changes['esNuevo']) {
             this.usuarioForm = this.esNuevo
                 ? this.nuevoUsuario()
-                : { ...this.usuario }; //copia del usuario para no modificar el original directamente
+                : { ...this.usuario, password: undefined, password_confirmation: undefined };
             this.errores = {};
         }
 
@@ -115,6 +115,12 @@ export class ModalEditUsuarioComponent implements OnChanges {
             return;
         }
 
+        const datosAGuardar = { ...this.usuarioForm };
+        if (!this.esNuevo && !this.usuarioForm.password) {
+            delete datosAGuardar.password;
+            delete datosAGuardar.password_confirmation;
+        }
+
         this.guardar.emit({ ...this.usuarioForm });
     }
 
@@ -128,8 +134,8 @@ export class ModalEditUsuarioComponent implements OnChanges {
             direccion: '',
             fecha_nacimiento: '',
             telefono: '',
-            password: '',
-            password_confirmation: '',
+            password: undefined,
+            password_confirmation: undefined,
             email_verified_at: null,
             created_at: null,
             updated_at: null,
@@ -144,18 +150,24 @@ export class ModalEditUsuarioComponent implements OnChanges {
 
     esFormularioValido(): boolean {
         const campos: (keyof Usuario)[] = ['nombre', 'apellidos', 'dni_usuario', 'email'];
+
+        //La contraseña es obligatoria solo en creación
         if (this.esNuevo) {
             campos.push('password', 'password_confirmation');
         }
 
-        //Verificar campos obligatorios
         for (const campo of campos) {
             if (!this.usuarioForm[campo]) return false;
             if (this.errores[campo]) return false;
         }
 
-        //Validación de contraseñas
-        if (this.usuarioForm.password !== this.usuarioForm.password_confirmation) return false;
+        //Si se está editando, solo validamos contraseña si se ha introducido
+        if (!this.esNuevo) {
+            const pass = this.usuarioForm.password;
+            const confirm = this.usuarioForm.password_confirmation;
+
+            if ((pass || confirm) && pass !== confirm) return false;
+        }
 
         return true;
     }
@@ -164,9 +176,11 @@ export class ModalEditUsuarioComponent implements OnChanges {
         const valor = this.usuarioForm[campo];
         this.errores[campo] = '';
 
-        if (!this.esNuevo && ((campo === 'password' && this.usuarioForm.password && !this.usuarioForm.password_confirmation) ||
-            (campo === 'password_confirmation' && this.usuarioForm.password_confirmation && !this.usuarioForm.password))) {
-            this.errores['password'] = 'Debe rellenar ambos campos de contraseña para cambiarla';
+        const scriptRegex = /<script.*?>.*?<\/script>/gi;
+
+        //Validación de campos
+        if (typeof valor === 'string' && scriptRegex.test(valor)) {
+            this.errores[campo] = 'Contenido no permitido';
             return;
         }
 
@@ -182,21 +196,15 @@ export class ModalEditUsuarioComponent implements OnChanges {
             this.errores[campo] = 'Teléfono no válido';
         }
 
-        if (campo === 'direccion' && valor && /<script.*?>.*?<\/script>/gi.test(String(valor))) {
-            this.errores[campo] = 'Contenido no permitido en dirección';
-        }
+        //Validar contraseñas
+        const pass = this.usuarioForm.password;
+        const confirm = this.usuarioForm.password_confirmation;
 
         if (campo === 'password' || campo === 'password_confirmation') {
-            const pass = this.usuarioForm.password;
-            const confirm = this.usuarioForm.password_confirmation;
-
-            if (this.esNuevo && (!pass || !confirm)) {
-                this.errores['password'] = 'Debe introducir y confirmar la contraseña';
-                return;
-            }
-
             if (pass && confirm && pass !== confirm) {
                 this.errores['password_confirmation'] = 'Las contraseñas no coinciden';
+            } else {
+                this.errores['password_confirmation'] = '';
             }
         }
     }

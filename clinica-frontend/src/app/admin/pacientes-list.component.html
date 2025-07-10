@@ -35,6 +35,10 @@
     {{ paciente.usuario?.nombre }} {{ paciente.usuario?.apellidos }}
 </ng-template>
 
+<ng-template #fechaAltaTemplate let-paciente>
+    {{ paciente.fecha_alta ? formatearFecha(paciente.fecha_alta) : 'Sin fecha' }}
+</ng-template>
+
 <ng-template #estadoCitaTemplate let-paciente>
     {{ paciente.ultima_cita?.estado ?? 'Sin cita' }}
 </ng-template>

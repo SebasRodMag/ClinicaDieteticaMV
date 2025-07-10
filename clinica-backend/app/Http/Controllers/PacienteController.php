@@ -329,7 +329,6 @@ class PacienteController extends Controller
     public function pacientesConEspecialista(): JsonResponse
     {
         $userId = auth()->id();
-        $respuesta = [];
         $codigo = 200;
 
         try {
@@ -348,32 +347,32 @@ class PacienteController extends Controller
                     'id' => $paciente->id,
                     'user_id' => $paciente->user_id,
                     'numero_historial' => $paciente->numero_historial,
-                    'fecha_alta' => optional($paciente->fecha_alta)?->format('Y-m-d'),
-                    'fecha_baja' => optional($paciente->fecha_baja)?->format('Y-m-d'),
-                    'created_at' => optional($paciente->created_at)?->format('Y-m-d H:i:s'),
-                    'updated_at' => optional($paciente->updated_at)?->format('Y-m-d H:i:s'),
-                    'deleted_at' => optional($paciente->deleted_at)?->format('Y-m-d H:i:s'),
+                    'fecha_alta' => $paciente->fecha_alta instanceof \Carbon\Carbon ? $paciente->fecha_alta->format('Y-m-d') : ($paciente->fecha_alta ?? null),
+                    'fecha_baja' => $paciente->fecha_baja instanceof \Carbon\Carbon ? $paciente->fecha_baja->format('Y-m-d') : ($paciente->fecha_baja ?? null),
+                    'created_at' => $paciente->created_at instanceof \Carbon\Carbon ? $paciente->created_at->format('Y-m-d H:i:s') : ($paciente->created_at ?? null),
+                    'updated_at' => $paciente->updated_at instanceof \Carbon\Carbon ? $paciente->updated_at->format('Y-m-d H:i:s') : ($paciente->updated_at ?? null),
+                    'deleted_at' => $paciente->deleted_at instanceof \Carbon\Carbon ? $paciente->deleted_at->format('Y-m-d H:i:s') : ($paciente->deleted_at ?? null),
 
                     'ultima_cita' => $ultimaCita ? [
                         'id_cita' => $ultimaCita->id_cita,
                         'id_paciente' => $ultimaCita->id_paciente,
                         'id_especialista' => $ultimaCita->id_especialista,
-                        'fecha_hora_cita' => optional($ultimaCita->fecha_hora_cita)?->format('Y-m-d H:i:s'),
+                        'fecha_hora_cita' => $ultimaCita->fecha_hora_cita instanceof \Carbon\Carbon ? $ultimaCita->fecha_hora_cita->format('Y-m-d H:i:s') : ($ultimaCita->fecha_hora_cita ?? null),
                         'tipo_cita' => $ultimaCita->tipo_cita,
                         'estado' => $ultimaCita->estado,
                         'es_primera' => $ultimaCita->es_primera,
                         'comentario' => $ultimaCita->comentario,
-                        'created_at' => optional($ultimaCita->created_at)?->format('Y-m-d H:i:s'),
-                        'updated_at' => optional($ultimaCita->updated_at)?->format('Y-m-d H:i:s'),
-                        'deleted_at' => optional($ultimaCita->deleted_at)?->format('Y-m-d H:i:s'),
+                        'created_at' => $ultimaCita->created_at instanceof \Carbon\Carbon ? $ultimaCita->created_at->format('Y-m-d H:i:s') : ($ultimaCita->created_at ?? null),
+                        'updated_at' => $ultimaCita->updated_at instanceof \Carbon\Carbon ? $ultimaCita->updated_at->format('Y-m-d H:i:s') : ($ultimaCita->updated_at ?? null),
+                        'deleted_at' => $ultimaCita->deleted_at instanceof \Carbon\Carbon ? $ultimaCita->deleted_at->format('Y-m-d H:i:s') : ($ultimaCita->deleted_at ?? null),
 
                         'especialista' => $especialista ? [
                             'id' => $especialista->id,
                             'user_id' => $especialista->user_id,
                             'especialidad' => $especialista->especialidad,
-                            'created_at' => optional($especialista->created_at)?->format('Y-m-d H:i:s'),
-                            'updated_at' => optional($especialista->updated_at)?->format('Y-m-d H:i:s'),
-                            'deleted_at' => optional($especialista->deleted_at)?->format('Y-m-d H:i:s'),
+                            'created_at' => $especialista->created_at instanceof \Carbon\Carbon ? $especialista->created_at->format('Y-m-d H:i:s') : ($especialista->created_at ?? null),
+                            'updated_at' => $especialista->updated_at instanceof \Carbon\Carbon ? $especialista->updated_at->format('Y-m-d H:i:s') : ($especialista->updated_at ?? null),
+                            'deleted_at' => $especialista->deleted_at instanceof \Carbon\Carbon ? $especialista->deleted_at->format('Y-m-d H:i:s') : ($especialista->deleted_at ?? null),
 
                             'usuario' => $usuarioEspecialista ? [
                                 'id' => $usuarioEspecialista->id,
@@ -381,13 +380,13 @@ class PacienteController extends Controller
                                 'apellidos' => $usuarioEspecialista->apellidos,
                                 'dni_usuario' => $usuarioEspecialista->dni_usuario,
                                 'email' => $usuarioEspecialista->email,
-                                'email_verified_at' => optional($usuarioEspecialista->email_verified_at)?->format('Y-m-d H:i:s'),
+                                'email_verified_at' => $usuarioEspecialista->email_verified_at instanceof \Carbon\Carbon ? $usuarioEspecialista->email_verified_at->format('Y-m-d H:i:s') : ($ultimaCita->deleted_at ?? null),
                                 'direccion' => $usuarioEspecialista->direccion,
-                                'fecha_nacimiento' => optional($usuarioEspecialista->fecha_nacimiento)?->format('Y-m-d'),
+                                'fecha_nacimiento' => $usuarioEspecialista->fecha_nacimiento instanceof \Carbon\Carbon ? $usuarioEspecialista->fecha_nacimiento->format('Y-m-d') : ($ultimaCita->deleted_at ?? null),
                                 'telefono' => $usuarioEspecialista->telefono,
-                                'created_at' => optional($usuarioEspecialista->created_at)?->format('Y-m-d H:i:s'),
-                                'updated_at' => optional($usuarioEspecialista->updated_at)?->format('Y-m-d H:i:s'),
-                                'deleted_at' => optional($usuarioEspecialista->deleted_at)?->format('Y-m-d H:i:s'),
+                                'created_at' => $usuarioEspecialista->created_at instanceof \Carbon\Carbon ? $usuarioEspecialista->created_at->format('Y-m-d H:i:s') : ($usuarioEspecialista->created_at ?? null),
+                                'updated_at' => $usuarioEspecialista->updated_at instanceof \Carbon\Carbon ? $usuarioEspecialista->updated_at->format('Y-m-d H:i:s') : ($usuarioEspecialista->updated_at ?? null),
+                                'deleted_at' => $usuarioEspecialista->deleted_at instanceof \Carbon\Carbon ? $usuarioEspecialista->deleted_at->format('Y-m-d H:i:s') : ($usuarioEspecialista->deleted_at ?? null),
                             ] : null,
                         ] : null,
                     ] : null,
@@ -398,27 +397,24 @@ class PacienteController extends Controller
                         'apellidos' => $paciente->user->apellidos,
                         'dni_usuario' => $paciente->user->dni_usuario,
                         'email' => $paciente->user->email,
-                        'email_verified_at' => optional($paciente->user->email_verified_at)?->format('Y-m-d H:i:s'),
+                        'email_verified_at' => $paciente->user->email_verified_at instanceof \Carbon\Carbon ? $paciente->user->email_verified_at->format('Y-m-d H:i:s') : ($paciente->user->email_verified_at ?? null),
                         'direccion' => $paciente->user->direccion,
-                        'fecha_nacimiento' => optional($paciente->user->fecha_nacimiento)?->format('Y-m-d'),
+                        'fecha_nacimiento' => $paciente->user->fecha_nacimiento instanceof \Carbon\Carbon ? $paciente->user->fecha_nacimiento->format('Y-m-d') : ($paciente->user->fecha_nacimiento ?? null),
                         'telefono' => $paciente->user->telefono,
-                        'created_at' => optional($paciente->user->created_at)?->format('Y-m-d H:i:s'),
-                        'updated_at' => optional($paciente->user->updated_at)?->format('Y-m-d H:i:s'),
-                        'deleted_at' => optional($paciente->user->deleted_at)?->format('Y-m-d H:i:s'),
+                        'created_at' => $paciente->user->created_at instanceof \Carbon\Carbon ? $paciente->user->created_at->format('Y-m-d H:i:s') : ($paciente->user->created_at ?? null),
+                        'updated_at' => $paciente->user->updated_at instanceof \Carbon\Carbon ? $paciente->user->updated_at->format('Y-m-d H:i:s') : ($paciente->user->updated_at ?? null),
+                        'deleted_at' => $paciente->user->deleted_at instanceof \Carbon\Carbon ? $paciente->user->deleted_at->format('Y-m-d H:i:s') : ($paciente->user->deleted_at ?? null),
                     ] : null,
                 ];
             });
 
-            $respuesta = $resultado;
             $this->registrarLog($userId, 'listar_pacientes_con_especialista', 'paciente', null);
+            return response()->json($resultado, $codigo);
 
         } catch (\Throwable $e) {
             $this->logError($userId, 'Error al obtener pacientes con especialista: ' . $e->getMessage(), null);
-            $respuesta = ['message' => 'Error interno al obtener pacientes con especialista'];
-            $codigo = 500;
+            return response()->json(['message' => 'Error interno al obtener pacientes con especialista'], 500);
         }
-
-        return response()->json($respuesta, $codigo ?? 200);
     }
 
 
