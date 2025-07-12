@@ -13,6 +13,8 @@ import { CitaPorPaciente } from '../../models/citasPorPaciente.model';
 import { CitaPorEspecialista } from '../../models/citasPorEspecialista.model';
 import { CitaListado } from '../../models/listarCitas.model';
 import { CitaActualizar } from '../../models/citaActualizar.model';
+import { Log } from '../../models/log.model';
+import { Historial } from '../../models/historial.model';
 
 
 @Injectable({
@@ -314,6 +316,15 @@ export class UserService {
         return this.http.put<any>(`${this.apiUrl}/cambiarConfiguraciones/${clave}`, data);
     }
 
+    /******************************************************************************/
+    /******************* Rutas para Dashboard de Logs *****************************/
+    /******************************************************************************/
+
+    obtenerLogs(): Observable<Log[]> {
+        return this.http.get<{ data: Log[] }>(`${this.apiUrl}/logs`).pipe(
+            map(response => response.data)
+        );
+    }
 
 
 }

@@ -5,100 +5,108 @@ namespace App\Http\Controllers;
 use App\Models\Historial;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Models\Log;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\Auth;
-
 
 class HistorialController extends Controller
 {
     use Loggable;
 
     /**
-     * Listar todos los historiales médicos.
-     * Este método obtiene todos los historiales médicos de la base de datos.
-     * @throws \Throwable la excepción se lanza si hay un error al listar los historiales.
-     * @return JsonResponse devolverá una respuesta JSON con el estado de la operación.
+     * Constructor con middleware de autenticación y control de roles.
+     */
+    public function __construct()
+    {
+        $this->middleware(['auth:sanctum']);
+    }
+
+    /**
+     * Listar entradas del historial de un especialista logueado.
+     * Devuelve todas las entradas de historiales de los pacientes del especialista.
+     * @return JsonResponse
      */
     public function listarHistoriales(): JsonResponse
     {
-        // Obtener el ID del usuario autenticado
         $userId = Auth::id();
-        $respuesta = [];
         $codigo = 200;
 
         try {
-            $historiales = Historial::all();
+            $especialistaId = Auth::user()->especialista->id ?? null;
 
-            if ($historiales->isEmpty()) {
-                $this->registrarLog($userId, 'No hay historiales disponibles', null, $historiales->id);
-                $codigo = 404;
-                $respuesta = ['message' => 'No hay historiales disponibles'];
-            } else {
-                $this->registrarLog($userId, 'Listado de historiales', null, $historiales->id);
-                $respuesta = $historiales;
+            if (!$especialistaId) {
+                $this->registrarLog($userId, 'listar_historiales', 'historiales', null);
+                $respuesta = ['message' => 'No autorizado como especialista.'];
+                $codigo = 403;
+                return response()->json($respuesta, $codigo);
             }
+
+            $historiales = Historial::with(['paciente.user', 'cita'])
+                ->where('id_especialista', $especialistaId)
+                ->orderBy('fecha', 'desc')
+                ->get();
+
+            $this->registrarLog($userId, 'listar_historiales', 'historiales', null);
+            $respuesta = ['message' => 'Historiales obtenidos correctamente', 'data' => $historiales];
         } catch (\Throwable $e) {
             $codigo = 500;
-            $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog($userId, 'index', null, 'Error al listar historiales: ' . $e->getMessage());
-        }
-
-        return response()->json($respuesta, $codigo);
-    }
-
-
-    /**
-     * Ver un historial médico por ID.
-     * Este método busca un historial médico por su ID y devuelve los detalles.
-     * @throws \Throwable la excepción se lanza si hay un error al consultar el historial.
-     * @param int $id el ID del historial médico a consultar.
-     * @return JsonResponse devolverá una respuesta JSON con el estado de la operación.
-     */
-    public function verHistorial(int $id): JsonResponse
-    {
-        $userId = Auth::id();
-        $codigo = 200;
-        $respuesta = [];
-
-        try {
-            $historial = Historial::find($id);
-
-            if (!$historial) {
-                $this->registrarLog($userId, 'show -> Historial no encontrado', $id, $historial->id);
-                $codigo = 404;
-                $respuesta = ['message' => 'Historial no encontrado'];
-            } else {
-                $this->registrarLog($userId, 'show -> Historial consultado', $id, $historial->id);
-                $respuesta = $historial;
-            }
-        } catch (\Throwable $e) {
-            $codigo = 500;
-            $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog($userId, 'show', $id, 'Error al consultar historial: ' . $e->getMessage());
+            $respuesta = ['message' => 'Error al obtener los historiales.'];
+            $this->logError($userId, 'Error al listar historiales: ' . $e->getMessage(), $e->getTrace());
         }
 
         return response()->json($respuesta, $codigo);
     }
 
     /**
-     * Crear un nuevo historial médico.
-     * Este método recibe los datos del historial a crear y los valida.
-     * @throws \Illuminate\Validation\ValidationException
-     * @throws \Throwable la excepción se lanza si hay un error al crear el historial.
-     * @param Request $solicitud esta solicitud contiene los datos del historial médico.
-     * @return JsonResponse devolverá una respuesta JSON con el estado de la operación.
+     * Listar entradas del historial de un paciente logueado.
+     * @return JsonResponse
      */
-    public function nuevoHistorial(Request $solicitud): JsonResponse
+    public function historialesPorPaciente(): JsonResponse
     {
         $userId = Auth::id();
         $codigo = 200;
-        $respuesta = [];
 
         try {
-            $solicitud->validate([
-                'paciente_id' => 'required|exists:pacientes,id',
-                'especialista_id' => 'required|exists:especialistas,id',
+            $pacienteId = Auth::user()->paciente->id ?? null;
+
+            if (!$pacienteId) {
+                $this->registrarLog($userId, 'listar_historiales_paciente', 'historiales', null);
+                $respuesta = ['message' => 'No autorizado como paciente.'];
+                $codigo = 403;
+                return response()->json($respuesta, $codigo);
+            }
+
+            $historiales = Historial::with(['especialista.user', 'cita'])
+                ->where('id_paciente', $pacienteId)
+                ->orderBy('fecha', 'desc')
+                ->get();
+
+            $this->registrarLog($userId, 'listar_historiales_paciente', 'historiales', null);
+            $respuesta = ['message' => 'Historiales del paciente obtenidos correctamente', 'data' => $historiales];
+        } catch (\Throwable $e) {
+            $codigo = 500;
+            $respuesta = ['message' => 'Error al obtener los historiales del paciente.'];
+            $this->logError($userId, 'Error al listar historiales de paciente: ' . $e->getMessage(), $e->getTrace());
+        }
+
+        return response()->json($respuesta, $codigo);
+    }
+
+    /**
+     * Crear una nueva entrada en el historial médico.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function nuevaEntrada(Request $request): JsonResponse
+    {
+        $userId = Auth::id();
+        $codigo = 200;
+
+        try {
+            $validated = $request->validate([
+                'id_paciente' => 'required|exists:pacientes,id',
+                'id_especialista' => 'required|exists:especialistas,id',
+                'id_cita' => 'nullable|exists:citas,id',
+                'fecha' => 'required|date',
                 'comentarios_paciente' => 'nullable|string',
                 'observaciones_especialista' => 'nullable|string',
                 'recomendaciones' => 'nullable|string',
@@ -106,115 +114,99 @@ class HistorialController extends Controller
                 'lista_compra' => 'nullable|string',
             ]);
 
-            $historial = Historial::create($solicitud->all());
+            $historial = Historial::create($validated);
 
-            $this->registrarLog($userId, 'store->Historial creado', 'Historial', $historial->id);
-
-            $respuesta = $historial;
-
+            $this->registrarLog($userId, 'crear_historial', 'historiales', $historial->id);
+            $respuesta = ['message' => 'Historial creado correctamente', 'data' => $historial];
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
             $respuesta = ['message' => 'Error de validación', 'errors' => $e->errors()];
-            $this->registrarLog($userId, 'store', null, 'Error de validación: ' . json_encode($e->errors()));
-
+            $this->logError($userId, 'Error de validación al crear historial', $e->errors());
         } catch (\Throwable $e) {
             $codigo = 500;
-            $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog($userId, 'store->Error al crear historial: ' . $e->getMessage(), 'Historial', );
+            $respuesta = ['message' => 'Error al crear el historial.'];
+            $this->logError($userId, 'Error al crear historial: ' . $e->getMessage(), $e->getTrace());
         }
 
         return response()->json($respuesta, $codigo);
     }
 
-
     /**
-     * 
-     * Actualizar un historial médico.
-     * Este método recibe los datos del historial a actualizar y los valida.
-     * @throws \Illuminate\Validation\ValidationException
-     * @throws \Throwable la excepción se lanza si hay un error al actualizar el historial.
-     * @param Request $solicitud esta solicitud contiene los datos del historial médico a actualizar.
-     * @param int $id el id del historial a actualizar.
-     * @return JsonResponse devolverá una respuesta JSON con el estado de la operación.
+     * Actualizar una entrada de historial existente.
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
      */
-    public function actualizarHistorial(Request $solicitud, int $id): JsonResponse
+    public function actualizarEntrada(Request $request, int $id): JsonResponse
     {
         $userId = Auth::id();
         $codigo = 200;
-        $respuesta = [];
 
         try {
             $historial = Historial::find($id);
 
             if (!$historial) {
                 $codigo = 404;
-                $respuesta = ['message' => 'Historial no encontrado'];
-                $this->registrarLog($userId, 'update->Historial no encontrado', 'Historial', $historial->id);
-            } else {
-                $solicitud->validate([
-                    'comentarios_paciente' => 'nullable|string',
-                    'observaciones_especialista' => 'nullable|string',
-                    'recomendaciones' => 'nullable|string',
-                    'dieta' => 'nullable|string',
-                    'lista_compra' => 'nullable|string',
-                ]);
-
-                $historial->update($solicitud->all());
-
-                $this->registrarLog($userId, 'update->Historial actualizado', 'Historial', $historial->id);
-
-                $respuesta = [
-                    'message' => 'Historial actualizado correctamente',
-                    'historial' => $historial,
-                ];
+                $respuesta = ['message' => 'Historial no encontrado.'];
+                $this->registrarLog($userId, 'actualizar_historial_no_encontrado', 'historiales', $id);
+                return response()->json($respuesta, $codigo);
             }
+
+            $validated = $request->validate([
+                'comentarios_paciente' => 'nullable|string',
+                'observaciones_especialista' => 'nullable|string',
+                'recomendaciones' => 'nullable|string',
+                'dieta' => 'nullable|string',
+                'lista_compra' => 'nullable|string',
+            ]);
+
+            $historial->update($validated);
+
+            $this->registrarLog($userId, 'actualizar_historial', 'historiales', $id);
+            $respuesta = ['message' => 'Historial actualizado correctamente', 'data' => $historial];
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
             $respuesta = ['message' => 'Error de validación', 'errors' => $e->errors()];
-            $this->registrarLog($userId, 'update -> Error de validación: ' . json_encode($e->errors()), 'Historial', $historial->id);
+            $this->logError($userId, 'Error de validación al actualizar historial', $e->errors());
         } catch (\Throwable $e) {
             $codigo = 500;
-            $respuesta = ['message' => 'Error interno del servidor'];
-            $this->registrarLog($userId, 'update->Error al actualizar historial '. $e->getMessage(), 'Historial', $historial->id );
+            $respuesta = ['message' => 'Error al actualizar el historial.'];
+            $this->logError($userId, 'Error al actualizar historial: ' . $e->getMessage(), $e->getTrace());
         }
 
         return response()->json($respuesta, $codigo);
     }
 
-
     /**
-     * Eliminar un historial médico.
-     * Este método elimina un historial médico por su ID.
-     * @throws \Throwable la excepción se lanza si hay un error al eliminar el historial.
-     * @param int $id el ID del historial médico a eliminar.
-     * @return JsonResponse devolverá una respuesta JSON con el estado de la operación.
+     * Eliminar una entrada de historial.
+     * @param int $id
+     * @return JsonResponse
      */
-    public function borrarHistorial(int $id): JsonResponse
+    public function eliminarEntrada(int $id): JsonResponse
     {
         $userId = Auth::id();
         $codigo = 200;
-        $respuesta = [];
 
         try {
             $historial = Historial::find($id);
 
             if (!$historial) {
                 $codigo = 404;
-                $respuesta = ['message' => 'Historial no encontrado'];
-                $this->registrarLog($userId, 'destroy -> Historial no encontrado', $id, $historial->id);
-            } else {
-                $historial->delete();
-                $this->registrarLog($userId, 'destroy -> Historial eliminado', $id, $historial->id);
-
-                $respuesta = ['message' => 'Historial eliminado correctamente'];
+                $respuesta = ['message' => 'Historial no encontrado.'];
+                $this->registrarLog($userId, 'eliminar_historial_no_encontrado', 'historiales', $id);
+                return response()->json($respuesta, $codigo);
             }
+
+            $historial->delete();
+
+            $this->registrarLog($userId, 'eliminar_historial', 'historiales', $id);
+            $respuesta = ['message' => 'Historial eliminado correctamente'];
         } catch (\Throwable $e) {
             $codigo = 500;
-            $respuesta = ['message' => 'Error interno al eliminar el historial'];
-            $this->registrarLog($userId, 'destroy -> Error al eliminar historial: ' . $e->getMessage(), 'Historial', $historial->id);
+            $respuesta = ['message' => 'Error al eliminar el historial.'];
+            $this->logError($userId, 'Error al eliminar historial: ' . $e->getMessage(), $e->getTrace());
         }
 
         return response()->json($respuesta, $codigo);
     }
-
 }

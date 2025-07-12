@@ -75,4 +75,3 @@ export function validarDniNie(identificador: string): boolean {
 
     return esValido;
 }
-

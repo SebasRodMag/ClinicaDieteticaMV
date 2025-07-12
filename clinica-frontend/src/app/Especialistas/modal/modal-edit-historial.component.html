@@ -1,0 +1,50 @@
+
+<div class="modal fade" [ngClass]="{ 'show d-block': visible }" [attr.aria-hidden]="!visible">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form (ngSubmit)="onSubmit()">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ esNuevo ? 'Nuevo Historial' : 'Editar Historial' }}</h5>
+                    <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fecha:</label>
+                        <input type="date" [(ngModel)]="historial.fecha" name="fecha" class="form-control"
+                            (blur)="validarCampo('fecha')">
+                        <div *ngIf="errores['fecha']" class="text-danger small">{{ errores['fecha'] }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones del Especialista:</label>
+                        <textarea [(ngModel)]="historial.observaciones_especialista" name="observaciones_especialista"
+                            class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Recomendaciones:</label>
+                        <textarea [(ngModel)]="historial.recomendaciones" name="recomendaciones" class="form-control"
+                            rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Dieta:</label>
+                        <textarea [(ngModel)]="historial.dieta" name="dieta" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Lista de Compra:</label>
+                        <textarea [(ngModel)]="historial.lista_compra" name="lista_compra" class="form-control"
+                            rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

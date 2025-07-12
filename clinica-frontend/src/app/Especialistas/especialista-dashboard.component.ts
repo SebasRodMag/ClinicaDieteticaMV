@@ -5,11 +5,13 @@ import { AuthService } from '../service/Auth-Service/Auth.service';
 import { EspecialistaCitasComponent } from './especialista-citas.component';
 import { Usuario } from '../models/usuario.model';
 import { Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { HistorialListComponent } from './historial-list.component';
 
 @Component({
   selector: 'app-especialista-dashboard',
   standalone: true,
-  imports: [CommonModule, EspecialistaCitasComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './especialista-dashboard.component.html'
 })
 export class EspecialistaDashboardComponent {

@@ -1,0 +1,75 @@
+<div class="container my-4">
+
+    <h2 class="mb-4 text-center">Historiales de Pacientes</h2>
+
+    <!-- Filtros -->
+    <div class="row g-2 align-items-end mb-3">
+        <div class="col-md-4">
+            <input type="text" [(ngModel)]="filtro" class="form-control" placeholder="Buscar por nombre, dieta, observaciones..." />
+        </div>
+        <div class="col-md-2">
+            <input type="date" [(ngModel)]="filtroFechaInicio" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <input type="date" [(ngModel)]="filtroFechaFin" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <select [(ngModel)]="pacienteSeleccionadoId" class="form-select">
+                <option [ngValue]="null">Todos los pacientes</option>
+                <option *ngFor="let paciente of pacientesUnicos" [ngValue]="paciente.id">{{ paciente.nombre }}</option>
+            </select>
+        </div>
+        <div class="col-md-1 d-grid">
+            <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+                Limpiar
+            </button>
+        </div>
+    </div>
+
+    <!-- Botones de acciones -->
+    <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+        <button class="btn btn-primary" (click)="abrirModalNuevo()">
+            <i class="bi bi-plus-circle"></i> Nuevo Historial
+        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-success" (click)="exportarCSV()">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+            </button>
+            <button class="btn btn-outline-danger" (click)="exportarPDF()">
+                <i class="bi bi-filetype-pdf"></i> Exportar PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabla de datos -->
+    <app-tabla-historial
+        [historiales]="historialesFiltrados"
+        (editar)="abrirModalEditar($event)"
+        (eliminar)="eliminarHistorial($event)">
+    </app-tabla-historial>
+
+    <!-- Mensajes -->
+    <div *ngIf="!loading && historiales.length === 0 && !huboError" class="alert alert-warning text-center mt-3">
+        No hay historiales registrados actualmente.
+    </div>
+    <div *ngIf="!loading && historiales.length > 0 && historialesFiltrados.length === 0 && !huboError" class="alert alert-info text-center mt-3">
+        No hay historiales que coincidan con los filtros aplicados.
+    </div>
+    <div *ngIf="!loading && huboError" class="alert alert-danger text-center mt-3">
+        Error al cargar los historiales. Intenta nuevamente más tarde.
+    </div>
+
+    <!-- Spinner de carga -->
+    <div *ngIf="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <!-- Modal de edición/creación -->
+    <app-modal-edit-historial
+        [visible]="modalVisible"
+        [historial]="historialSeleccionado"
+        [esNuevo]="esNuevo"
+        (cerrar)="cerrarModal()"
+        (guardar)="guardarHistorial($event)">
+    </app-modal-edit-historial>
+</div>

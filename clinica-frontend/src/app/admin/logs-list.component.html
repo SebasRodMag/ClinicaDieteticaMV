@@ -1,0 +1,67 @@
+<h2 class="text-2xl font-bold mb-4">Listado de Logs</h2>
+<!-- Filtros -->
+<div class="d-flex align-items-center gap-2 mb-3">
+    <input type="text" [(ngModel)]="filtro" placeholder="Buscar por usuario, email, acción o tabla"
+        class="form-control" />
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(-1)">
+        <i class="bi bi-arrow-left"></i>
+    </button>
+
+    <input type="date" [(ngModel)]="filtroFecha" (change)="aplicarFiltros()" class="form-control w-auto" />
+
+    <button class="btn btn-outline-secondary" (click)="cambiarDia(1)">
+        <i class="bi bi-arrow-right"></i>
+    </button>
+</div>
+
+
+<app-tabla-datos [datosTotales]="logsFiltrados" [columnas]="columnas" [templatesMap]="templatesMap"
+    [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"
+    [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
+    (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
+
+<!-- Mensajes de estado -->
+<div *ngIf="!loading && logs.length === 0 && !huboError" class="alert alert-warning mt-3 text-center">
+    No hay logs registrados actualmente.
+</div>
+
+<div *ngIf="!loading && logs.length > 0 && logsFiltrados.length === 0 && !huboError"
+    class="alert alert-info mt-3 text-center">
+    No hay logs que coincidan con el filtro aplicado.
+</div>
+
+<div *ngIf="!loading && huboError" class="alert alert-danger mt-3 text-center">
+    Ocurrió un error al cargar los logs. Inténtalo nuevamente más tarde.
+</div>
+
+<!-- Spinner de carga -->
+<div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<!-- Templates -->
+<ng-template #usuarioTemplate let-log>
+    {{ log.user?.nombre ?? 'Desconocido' }} {{ log.user?.apellidos ?? '' }}
+</ng-template>
+
+<ng-template #emailTemplate let-log>
+    {{ log.user?.email ?? 'Sin email' }}
+</ng-template>
+
+<ng-template #accionTemplate let-log>
+    {{ log.accion }}
+</ng-template>
+
+<ng-template #tablaTemplate let-log>
+    {{ log.tabla_afectada }}
+</ng-template>
+
+<ng-template #registroTemplate let-log>
+    {{ log.registro_id }}
+</ng-template>
+
+<ng-template #fechaTemplate let-log>
+    {{ formatearFechaHora(log.created_at) }}
+</ng-template>

@@ -10,6 +10,9 @@ import { EspecialistasListComponent } from './admin/especialistas-list.component
 import { UsuariosListComponent } from './admin/usuarios-list.component';
 import { ConfiguracionComponent } from './admin/configuracion/configuracion.component';
 import { CitasListComponent } from './admin/citas-list.component';
+import { LogsListComponent } from './admin/logs-list.component';
+import { HistorialListComponent } from './Especialistas/historial-list.component';
+import { EspecialistaCitasComponent } from './Especialistas/especialista-citas.component';
 
 import { PacienteDashboardComponent } from './Pacientes/paciente-dashboard.component';
 import { EspecialistaDashboardComponent } from './Especialistas/especialista-dashboard.component';
@@ -45,6 +48,7 @@ export const routes: Routes = [
             { path: 'usuarios', component: UsuariosListComponent },
             { path: 'citas', component: CitasListComponent },
             { path: 'admin/configuracion', component: ConfiguracionComponent },
+            { path: 'logs', component: LogsListComponent },
         ],
     },
 
@@ -69,8 +73,10 @@ export const routes: Routes = [
         canActivateChild: [AuthGuard],
         data: { roles: ['especialista'] },
         children: [
-            { path: 'citas', component: EspecialistaDashboardComponent },
+            { path: 'citas', component: EspecialistaCitasComponent },
+            { path: 'historiales', component: HistorialListComponent },
             { path: '', redirectTo: 'citas', pathMatch: 'full' },
+
         ],
     },
 
