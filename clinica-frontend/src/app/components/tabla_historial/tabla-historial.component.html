@@ -9,40 +9,45 @@
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let historial of historialesPaginados">
+            <tr *ngFor="let historial of historialesPaginados"
+                [class.seleccionado]="historial.id === historialSeleccionadoId" (click)="seleccionar.emit(historial)">
                 <td>{{ formatearFecha(historial.fecha || '') }}</td>
                 <td>{{ historial.paciente?.user?.nombre }} {{ historial.paciente?.user?.apellidos }}</td>
                 <td>
-                    {{ historial.observaciones_especialista ? (historial.observaciones_especialista | slice:0:40) + '...' : 'Sin observaciones' }}
+                    {{ historial.observaciones_especialista ? (historial.observaciones_especialista | slice:0:40) +
+                    '...' : 'Sin observaciones' }}
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-primary me-1" (click)="editar.emit(historial)">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" (click)="eliminar.emit(historial)">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-outline-primary btn-sm"
+                            (click)="editar.emit(historial); $event.stopPropagation()">
+                            Editar
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm"
+                            (click)="eliminar.emit(historial); $event.stopPropagation()">
+                            Eliminar
+                        </button>
+                    </div>
                 </td>
             </tr>
         </tbody>
     </table>
 </div>
 
-<!-- Paginación simple -->
+<!-- Paginación -->
 <nav *ngIf="totalPaginas() > 1" class="d-flex justify-content-center mt-2">
     <ul class="pagination pagination-sm">
         <li class="page-item" [class.disabled]="paginaActual === 1">
-            <button class="page-link" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">&laquo;</button>
+            <button class="page-link" (click)="cambiarPagina(paginaActual - 1)"
+                [disabled]="paginaActual === 1">&laquo;</button>
         </li>
-        <li
-            class="page-item"
-            *ngFor="let page of [].constructor(totalPaginas()); let idx = index"
-            [class.active]="paginaActual === idx + 1"
-        >
+        <li class="page-item" *ngFor="let page of [].constructor(totalPaginas()); let idx = index"
+            [class.active]="paginaActual === idx + 1">
             <button class="page-link" (click)="cambiarPagina(idx + 1)">{{ idx + 1 }}</button>
         </li>
         <li class="page-item" [class.disabled]="paginaActual === totalPaginas()">
-            <button class="page-link" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas()">&raquo;</button>
+            <button class="page-link" (click)="cambiarPagina(paginaActual + 1)"
+                [disabled]="paginaActual === totalPaginas()">&raquo;</button>
         </li>
     </ul>
 </nav>

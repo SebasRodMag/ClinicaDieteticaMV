@@ -18,7 +18,7 @@ class Paciente extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $hidden = ['user'];
+    //protected $hidden = ['user'];
 
     protected $table = 'pacientes';
 

@@ -625,4 +625,61 @@ class PacienteController extends Controller
         return response()->json($respuesta, $codigo);
     }
 
+    /**
+     * Obtener los pacientes activos del especialista autenticado.
+     *
+     * Devuelve los pacientes activos (sin baja actual) que han tenido citas con el especialista logueado.
+     * Devuelve solo los campos necesarios del paciente y su usuario.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function listarPacientesDelEspecialista(): JsonResponse
+    {
+        $userId = Auth::id();
+        $codigo = 200;
+        $respuesta = [];
+
+        try {
+            $especialista = Auth::user()->especialista ?? null;
+
+            if (!$especialista) {
+                $codigo = 403;
+                $respuesta = ['message' => 'No autorizado como especialista'];
+            } else {
+                $pacientes = Paciente::where(function ($query) {
+                    $query->whereNull('fecha_baja')
+                        ->orWhereColumn('fecha_baja', '<', 'updated_at');
+                })
+                    ->whereHas('citas', function ($query) use ($especialista) {
+                        $query->where('id_especialista', $especialista->id);
+                    })
+                    ->with('user')
+                    ->get();
+
+                // Transformar para enviar solo los datos necesarios
+                $datosFiltrados = $pacientes->map(function ($paciente) {
+                    return [
+                        'id' => $paciente->id,
+                        'user_id' => $paciente->user_id,
+                        'numero_historial' => $paciente->numero_historial,
+                        'nombre' => $paciente->user->nombre ?? '',
+                        'apellidos' => $paciente->user->apellidos ?? '',
+                    ];
+                });
+
+                $respuesta = [
+                    'message' => 'Pacientes obtenidos correctamente',
+                    'data' => $datosFiltrados
+                ];
+            }
+
+            $this->registrarLog($userId, 'listar_pacientes_especialista', 'pacientes', null);
+        } catch (\Throwable $e) {
+            $codigo = 500;
+            $respuesta = ['message' => 'Error al obtener los pacientes del especialista.'];
+            $this->logError($userId, 'Error al listar pacientes del especialista: ' . $e->getMessage(), $e->getTrace());
+        }
+
+        return response()->json($respuesta, $codigo);
+    }
 }

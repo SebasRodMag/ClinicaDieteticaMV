@@ -99,6 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
         //Route::get('mis-historiales', [HistorialController::class, 'historialesPorPaciente']); ya esta aplicada unicamente para pacientes
         Route::put('historial/{id}', [HistorialController::class, 'actualizarEntrada']);
         Route::delete('historial/{id}', [HistorialController::class, 'eliminarEntrada']);
+        Route::get('paciente-por-especialista', [PacienteController::class,'listarPacientesDelEspecialista']);
 
         Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
         Route::get('/documentos', [DocumentoController::class, 'listarDocumentos']);

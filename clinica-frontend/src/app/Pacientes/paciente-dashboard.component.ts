@@ -10,7 +10,8 @@ import { Usuario } from '../models/usuario.model';
   selector: 'app-paciente-citas',
   standalone: true,
   imports: [CommonModule, PacientesCitasComponent],
-  templateUrl: './paciente-dashboard.component.html'
+  templateUrl: './paciente-dashboard.component.html',
+  styleUrls: ['./paciente-dashboard.component.css'],
 })
 export class PacienteDashboardComponent {
 

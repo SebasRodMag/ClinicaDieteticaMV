@@ -8,18 +8,22 @@ import { formatearFecha } from '../utilidades/sanitizar.utils';
     standalone: true,
     imports: [CommonModule],
     templateUrl: './tabla-historial.component.html',
+    styleUrls: ['./tabla-historial.component.css'],
 })
 export class TablaHistorialComponent implements OnChanges {
     @Input() historiales: Historial[] = [];
+    @Input() historialSeleccionadoId: number | null = null;
+
     @Output() editar = new EventEmitter<Historial>();
     @Output() eliminar = new EventEmitter<Historial>();
+    @Output() seleccionar = new EventEmitter<Historial>();
 
     paginaActual: number = 1;
     itemsPorPagina: number = 10;
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['historiales']) {
-            this.paginaActual = 1; // Reiniciar paginación al actualizar
+            this.paginaActual = 1;
         }
     }
 

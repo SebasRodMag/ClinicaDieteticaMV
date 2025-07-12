@@ -12,7 +12,8 @@ import { HistorialListComponent } from './historial-list.component';
   selector: 'app-especialista-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './especialista-dashboard.component.html'
+  templateUrl: './especialista-dashboard.component.html',
+  styleUrls: ['./especialista-dashboard.component.css'],
 })
 export class EspecialistaDashboardComponent {
 

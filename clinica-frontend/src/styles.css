@@ -2,6 +2,13 @@ svg[viewBox*="%"] {
     display: none !important;
 }
 
+/*Habilitar eventos en los botones de descarga deshabilitados*/
+.btn-falsa-disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
+
 .spinner {
     margin-top: 20px;
     font-weight: bold;

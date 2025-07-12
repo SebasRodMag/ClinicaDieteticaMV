@@ -1,50 +1,65 @@
+<div class="modal fade show d-block" tabindex="-1" role="dialog" *ngIf="visible">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content p-3">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {{ esNuevo ? 'Crear nuevo historial' : 'Editar historial' }}
+                </h5>
+                <button type="button" class="btn-close" (click)="cerrar.emit()"></button>
+            </div>
 
-<div class="modal fade" [ngClass]="{ 'show d-block': visible }" [attr.aria-hidden]="!visible">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form (ngSubmit)="onSubmit()">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ esNuevo ? 'Nuevo Historial' : 'Editar Historial' }}</h5>
-                    <button type="button" class="btn-close" (click)="cerrarModal()"></button>
-                </div>
-
-                <div class="modal-body">
+            <div class="modal-body">
+                <form>
+                    <!-- Selección de paciente -->
                     <div class="mb-3">
-                        <label class="form-label">Fecha:</label>
-                        <input type="date" [(ngModel)]="historial.fecha" name="fecha" class="form-control"
-                            (blur)="validarCampo('fecha')">
-                        <div *ngIf="errores['fecha']" class="text-danger small">{{ errores['fecha'] }}</div>
+                        <label for="paciente">Paciente</label>
+                        <ng-select [items]="pacientes" bindLabel="nombreCompleto" bindValue="id"
+                            placeholder="Seleccione un paciente" [(ngModel)]="historial.id_paciente" name="id_paciente"
+                            [searchable]="true" [clearable]="false" [disabled]="!esNuevo" required></ng-select>
                     </div>
 
+                    <!-- Fecha -->
                     <div class="mb-3">
-                        <label class="form-label">Observaciones del Especialista:</label>
-                        <textarea [(ngModel)]="historial.observaciones_especialista" name="observaciones_especialista"
-                            class="form-control" rows="3"></textarea>
+                        <label for="fecha">Fecha</label>
+                        <input type="date" class="form-control" [(ngModel)]="historial.fecha" name="fecha"
+                            [min]="fechaActual" required />
                     </div>
 
+                    <!-- Observaciones -->
                     <div class="mb-3">
-                        <label class="form-label">Recomendaciones:</label>
-                        <textarea [(ngModel)]="historial.recomendaciones" name="recomendaciones" class="form-control"
-                            rows="3"></textarea>
+                        <label for="observaciones">Observaciones</label>
+                        <textarea class="form-control" rows="3" [(ngModel)]="historial.observaciones_especialista"
+                            name="observaciones_especialista"></textarea>
                     </div>
 
+                    <!-- Recomendaciones -->
                     <div class="mb-3">
-                        <label class="form-label">Dieta:</label>
-                        <textarea [(ngModel)]="historial.dieta" name="dieta" class="form-control" rows="3"></textarea>
+                        <label for="recomendaciones">Recomendaciones</label>
+                        <textarea class="form-control" rows="2" [(ngModel)]="historial.recomendaciones"
+                            name="recomendaciones"></textarea>
                     </div>
 
+                    <!-- Dieta -->
                     <div class="mb-3">
-                        <label class="form-label">Lista de Compra:</label>
-                        <textarea [(ngModel)]="historial.lista_compra" name="lista_compra" class="form-control"
-                            rows="3"></textarea>
+                        <label for="dieta">Dieta</label>
+                        <textarea class="form-control" rows="2" [(ngModel)]="historial.dieta" name="dieta"></textarea>
                     </div>
-                </div>
 
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                    <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-                </div>
-            </form>
+                    <!-- Lista de compra -->
+                    <div class="mb-3">
+                        <label for="listaCompra">Lista de Compra</label>
+                        <textarea class="form-control" rows="2" [(ngModel)]="historial.lista_compra"
+                            name="lista_compra"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="cerrar.emit()">Cancelar</button>
+                <button class="btn btn-primary" [disabled]="!esFormularioValido()" (click)="guardar.emit(historial)">
+                    Guardar
+                </button>
+            </div>
         </div>
     </div>
 </div>

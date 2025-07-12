@@ -1,17 +1,16 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HistorialService } from '../service/Historial-Service/historial.service';
 import { Historial } from '../models/historial.model';
-import { TablaHistorialComponent } from '../components/tabla_historial/tabla-datos.component';
+import { TablaHistorialComponent } from '../components/tabla_historial/tabla-historial.component';
 import { ModalEditHistorialComponent } from './modal/modal-edit-historial.component';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { formatearFecha, formatearHora } from '../components/utilidades/sanitizar.utils';
+import { formatearFecha } from '../components/utilidades/sanitizar.utils';
 import * as Papa from 'papaparse';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
 
 @Component({
     selector: 'app-historial-list',
@@ -32,9 +31,9 @@ export class HistorialListComponent implements OnInit {
     filtro = '';
     modalVisible = false;
     historialSeleccionado: Partial<Historial> = {};
+    historialSeleccionadoId: number | null = null;
     esNuevo = true;
-    filtroFechaInicio: string = '';
-    filtroFechaFin: string = '';
+    filtroFecha: string = '';
     pacientesUnicos: { id: number, nombre: string }[] = [];
     pacienteSeleccionadoId: number | null = null;
 
@@ -71,26 +70,36 @@ export class HistorialListComponent implements OnInit {
 
     abrirModalNuevo() {
         this.historialSeleccionado = {};
+        this.historialSeleccionadoId = null;
         this.esNuevo = true;
         this.modalVisible = true;
     }
 
     abrirModalEditar(historial: Historial) {
         this.historialSeleccionado = { ...historial };
+        this.historialSeleccionadoId = historial.id!;
         this.esNuevo = false;
         this.modalVisible = true;
     }
 
     cerrarModal() {
         this.modalVisible = false;
+        this.historialSeleccionado = {};
+        this.historialSeleccionadoId = null;
     }
 
     guardarHistorial(historial: Partial<Historial>) {
+        const callback = () => {
+            this.cargarHistoriales();
+            this.limpiarFiltros();
+            this.cerrarModal();
+        };
+
         if (this.esNuevo) {
             this.historialService.crearHistorial(historial).subscribe({
                 next: () => {
                     this.snackBar.open('Historial creado correctamente', 'Cerrar', { duration: 3000 });
-                    this.cargarHistoriales();
+                    callback();
                 },
                 error: (err) => {
                     console.error('Error al crear historial', err);
@@ -101,7 +110,7 @@ export class HistorialListComponent implements OnInit {
             this.historialService.actualizarHistorial(historial.id, historial).subscribe({
                 next: () => {
                     this.snackBar.open('Historial actualizado correctamente', 'Cerrar', { duration: 3000 });
-                    this.cargarHistoriales();
+                    callback();
                 },
                 error: (err) => {
                     console.error('Error al actualizar historial', err);
@@ -109,62 +118,94 @@ export class HistorialListComponent implements OnInit {
                 }
             });
         }
-        this.limpiarFiltros();
-        this.cerrarModal();
     }
 
     eliminarHistorial(historial: Historial) {
-        if (confirm('¿Estás seguro de que deseas eliminar esta entrada del historial?')) {
+        this.snackBar.open('¿Eliminar este historial?', 'Confirmar', {
+            duration: 4000,
+        }).onAction().subscribe(() => {
             this.historialService.eliminarHistorial(historial.id!).subscribe({
                 next: () => {
                     this.snackBar.open('Historial eliminado correctamente', 'Cerrar', { duration: 3000 });
                     this.cargarHistoriales();
+                    this.historialSeleccionado = {};
+                    this.historialSeleccionadoId = null;
                 },
                 error: (err) => {
                     console.error('Error al eliminar historial', err);
                     this.snackBar.open('Error al eliminar historial', 'Cerrar', { duration: 3000 });
                 }
             });
-        }
-        this.limpiarFiltros();
+        });
     }
 
     limpiarFiltros() {
         this.filtro = '';
-        this.filtroFechaInicio = '';
-        this.filtroFechaFin = '';
+        this.filtroFecha = '';
+        this.pacienteSeleccionadoId = null;
+    }
+
+    seleccionarHistorial(historial: Historial) {
+        if (this.historialSeleccionadoId === historial.id) {
+            this.historialSeleccionado = {};
+            this.historialSeleccionadoId = null;
+        } else {
+            this.historialSeleccionado = { ...historial };
+            this.historialSeleccionadoId = historial.id!;
+            const nombre = `${historial.paciente?.user?.nombre ?? ''} ${historial.paciente?.user?.apellidos ?? ''}`.trim();
+            this.snackBar.open(`Historial seleccionado: ${nombre || 'Sin nombre'}`, '', {
+                duration: 3000,
+                verticalPosition: 'top'
+            });
+        }
+    }
+
+    intentarExportar(formato: 'csv' | 'pdf') {
+        if (!this.historialSeleccionado?.id) {
+            this.snackBar.open('Para exportar un historial, debe seleccionarlo primero', 'Cerrar', {
+                duration: 3000,
+                verticalPosition: 'top'
+            });
+            return;
+        }
+
+        if (formato === 'csv') {
+            this.exportarCSV();
+        } else {
+            this.exportarPDF();
+        }
     }
 
     exportarCSV() {
-        if (confirm('¿Deseas exportar el historial a CSV?')) {
-            const datos = this.historialesFiltrados.map(h => ({
+        const h = this.historialSeleccionado;
+        const datos = [{
             Fecha: h.fecha,
             Paciente: `${h.paciente?.user?.nombre ?? ''} ${h.paciente?.user?.apellidos ?? ''}`,
             Observaciones: h.observaciones_especialista ?? '',
             Recomendaciones: h.recomendaciones ?? '',
             Dieta: h.dieta ?? '',
             ListaCompra: h.lista_compra ?? ''
-        }));
+        }];
 
         const csv = Papa.unparse(datos);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        saveAs(blob, `Historiales_${new Date().toISOString().slice(0, 10)}.csv`);
-        }
-        
+        saveAs(blob, `Historial_${h.paciente?.user?.nombre ?? 'paciente'}_${new Date().toISOString().slice(0, 10)}.csv`);
+        this.historialSeleccionado = {};
+        this.historialSeleccionadoId = null;
     }
 
     exportarPDF() {
-        if (confirm('¿Deseas exportar el historial a PDF')) {
-            const doc = new jsPDF();
-        doc.text('Historiales', 14, 16);
+        const h = this.historialSeleccionado;
+        const doc = new jsPDF();
+        doc.text('Historial del paciente', 14, 16);
 
-        const datos = this.historialesFiltrados.map(h => [
+        const datos = [[
             h.fecha ?? '',
             `${h.paciente?.user?.nombre ?? ''} ${h.paciente?.user?.apellidos ?? ''}`,
             h.observaciones_especialista ?? '',
             h.recomendaciones ?? '',
             h.dieta ?? ''
-        ]);
+        ]];
 
         autoTable(doc, {
             head: [['Fecha', 'Paciente', 'Observaciones', 'Recomendaciones', 'Dieta']],
@@ -173,9 +214,9 @@ export class HistorialListComponent implements OnInit {
             styles: { fontSize: 8 },
         });
 
-        doc.save(`Historiales_${new Date().toISOString().slice(0, 10)}.pdf`);
-        }
-        
+        doc.save(`Historial_${h.paciente?.user?.nombre ?? 'paciente'}_${new Date().toISOString().slice(0, 10)}.pdf`);
+        this.historialSeleccionado = {};
+        this.historialSeleccionadoId = null;
     }
 
     private procesarPacientesUnicos() {
@@ -201,10 +242,6 @@ export class HistorialListComponent implements OnInit {
             const dieta = historial.dieta?.toLowerCase() ?? '';
             const coincidePaciente = !this.pacienteSeleccionadoId || historial.paciente?.id === this.pacienteSeleccionadoId;
 
-            const fechaHistorial = historial.fecha ?? '';
-            const fechaInicio = this.filtroFechaInicio;
-            const fechaFin = this.filtroFechaFin;
-
             const coincideFiltroTexto =
                 nombrePaciente.includes(filtroLower) ||
                 apellidosPaciente.includes(filtroLower) ||
@@ -212,10 +249,9 @@ export class HistorialListComponent implements OnInit {
                 recomendaciones.includes(filtroLower) ||
                 dieta.includes(filtroLower);
 
-            const dentroDeRango = (!fechaInicio || fechaHistorial >= fechaInicio) &&
-                (!fechaFin || fechaHistorial <= fechaFin);
+            const coincideFecha = !this.filtroFecha || historial.fecha === this.filtroFecha;
 
-            return coincideFiltroTexto && dentroDeRango && coincidePaciente;
+            return coincideFiltroTexto && coincideFecha && coincidePaciente;
         });
     }
 }

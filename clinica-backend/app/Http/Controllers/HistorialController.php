@@ -99,23 +99,27 @@ class HistorialController extends Controller
     public function nuevaEntrada(Request $request): JsonResponse
     {
         $userId = Auth::id();
-        $codigo = 200;
+        $codigo = 201;
 
         try {
+
+            $especialista = Auth::user()->especialista;
+
+            if (!$especialista) {
+                return response()->json(['message' => 'No autorizado como especialista'], 403);
+            }
+
             $validated = $request->validate([
                 'id_paciente' => 'required|exists:pacientes,id',
-                'id_especialista' => 'required|exists:especialistas,id',
-                'id_cita' => 'nullable|exists:citas,id',
                 'fecha' => 'required|date',
-                'comentarios_paciente' => 'nullable|string',
                 'observaciones_especialista' => 'nullable|string',
                 'recomendaciones' => 'nullable|string',
                 'dieta' => 'nullable|string',
                 'lista_compra' => 'nullable|string',
             ]);
 
-            $historial = Historial::create($validated);
-
+            $historial = Historial::create([ ...$validated, 'id_especialista' => $especialista->id ]);
+            
             $this->registrarLog($userId, 'crear_historial', 'historiales', $historial->id);
             $respuesta = ['message' => 'Historial creado correctamente', 'data' => $historial];
         } catch (\Illuminate\Validation\ValidationException $e) {

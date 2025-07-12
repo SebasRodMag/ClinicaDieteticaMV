@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { Historial } from '../../models/historial.model';
+import { Paciente } from '../../models/paciente.model';
 
 @Injectable({
     providedIn: 'root'
@@ -51,4 +52,13 @@ export class HistorialService {
     eliminarHistorial(id: number): Observable<any> {
         return this.http.delete(`${this.apiUrl}/historial/${id}`);
     }
+
+    /**
+     * Obtener la lista de pacientes de un especialista logueado
+     */
+    obtenerPacientesEspecialista(): Observable<Paciente[]> {
+        return this.http.get<{ data: Paciente[] }>(`${this.apiUrl}/paciente-por-especialista/`)
+            .pipe(map(response => response.data));
+    }
+
 }

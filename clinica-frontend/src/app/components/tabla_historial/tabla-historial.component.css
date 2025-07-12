@@ -1,0 +1,10 @@
+/*Se sobre escriben las clases de bootstrap para remarcar la linea seleccionada*/
+tr.seleccionado {
+    background-color: #d0ebff !important; /* azul claro */
+    font-weight: 500;
+    border-left: 4px solid #228be6;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1f3f5;
+}
