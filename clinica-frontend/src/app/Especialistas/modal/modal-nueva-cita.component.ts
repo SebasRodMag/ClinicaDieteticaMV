@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../service/User-Service/user.service';
 import { Paciente } from '../../models/paciente.model';
+import { ConfiguracionService } from '../../service/Config-Service/configuracion.service';
 
 @Component({
     selector: 'app-modal-nueva-cita',
@@ -24,6 +25,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     hora: string = '';
     tipoCita: 'presencial' | 'telemática' = 'presencial';
     cargando = false;
+    colorSistema: string = '#28a745';
     dateError: string | null = null;
     horasDisponibles: string[] = [];
 
@@ -31,10 +33,13 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     horarioLaboral: any = null;
     minDate: string = '';
 
-    constructor(private UserService: UserService, private snackBar: MatSnackBar) { }
+    constructor(private UserService: UserService, private snackBar: MatSnackBar, private ConfiguracionService: ConfiguracionService) { }
 
     ngOnInit(): void {
         this.limiteCalendario();
+        this.ConfiguracionService.colorTema$.subscribe(color => {
+        this.colorSistema = color || '#28a745';
+    });
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -89,7 +94,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
 
     private cargarHorasDisponibles(): void {
         if (!this.fecha) return;
-        // Pasamos null para que el backend use el usuario autenticado como especialista
+        //Pasamos null para que el backend use el usuario autenticado como especialista
         this.UserService.getHorasDisponibles(null, this.fecha).subscribe({
             next: (response: any) => {
                 this.horasDisponibles = response.horas_disponibles || [];
@@ -157,7 +162,6 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
 
         const fechaHora = `${this.fecha} ${this.hora}:00`;
 
-        // NOTA: No enviamos especialista_id porque backend lo infiere del usuario autenticado
         this.UserService.crearCita({
             paciente_id: this.pacienteSeleccionado,
             fecha_hora_cita: fechaHora,

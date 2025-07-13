@@ -38,7 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('usuarios/{id}', [UserController::class, 'borrarUsuario']);
         Route::get('usuarios/listar/usuarios', [UserController::class, 'getUsuariosSinRolEspecialistaNiPaciente']);
         Route::get('/especialistasfull', [EspecialistaController::class, 'listarEspecialistasFull']);
-        Route::get('especialistas/{id}', [EspecialistaController::class, 'verEspecialista']);
+        
         Route::post('especialistas', [EspecialistaController::class, 'nuevoEspecialista']);
         Route::put('especialistas/{id}', [EspecialistaController::class, 'actualizarEspecialista']);
         Route::delete('especialistas/{id}', [EspecialistaController::class, 'eliminarEspecialista']);
@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('actualizar-citas/{id}', [CitaController::class, 'actualizarCita']);
         Route::get('estados/estados-cita', [CitaController::class, 'tiposEstadoCita']);
         Route::get('historiales/pacientes/', [HistorialController::class, 'listarHistorialesPacientes']);
+        Route::get('especialistas/{id}', [EspecialistaController::class, 'verEspecialista']);
 
     });
     /**

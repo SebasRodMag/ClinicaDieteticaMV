@@ -13,6 +13,7 @@ export class ConfiguracionService {
         document.documentElement.style.setProperty('--color-tema', color);
     }
 
+    //Exponemos el color como observable. Se establece un color como predefinido, por si el backend falla.
     private colorTemaSubject = new BehaviorSubject<string>('#28a745');
     colorTema$ = this.colorTemaSubject.asObservable();
 

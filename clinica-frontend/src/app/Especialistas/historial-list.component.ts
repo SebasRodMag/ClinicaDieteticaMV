@@ -6,11 +6,9 @@ import { TablaHistorialComponent } from '../components/tabla_historial/tabla-his
 import { ModalEditHistorialComponent } from './modal/modal-edit-historial.component';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { formatearFecha } from '../components/utilidades/sanitizar.utils';
-import * as Papa from 'papaparse';
-import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { ConfiguracionService } from '../service/Config-Service/configuracion.service';
+import { ExportadorHistorialService } from '../service/Historial-Service/exportar-historial.service';
+import { ModalVerHistorialComponent } from './modal/modal-ver-historial.component';
 
 @Component({
     selector: 'app-historial-list',
@@ -20,7 +18,8 @@ import autoTable from 'jspdf-autotable';
         FormsModule,
         ModalEditHistorialComponent,
         TablaHistorialComponent,
-        MatSnackBarModule
+        MatSnackBarModule,
+        ModalVerHistorialComponent
     ],
     templateUrl: './historial-list.component.html',
 })
@@ -30,23 +29,33 @@ export class HistorialListComponent implements OnInit {
     huboError = false;
     filtro = '';
     modalVisible = false;
+    modalVerVisible = false;
     historialSeleccionado: Partial<Historial> = {};
     historialSeleccionadoId: number | null = null;
     esNuevo = true;
     filtroFecha: string = '';
     pacientesUnicos: { id: number, nombre: string }[] = [];
     pacienteSeleccionadoId: number | null = null;
+    public colorSistema: string = '#28a745';
 
     columnas = ['fecha', 'paciente', 'observaciones', 'acciones'];
     templatesMap: { [key: string]: any } = {};
 
+
+
     constructor(
         private historialService: HistorialService,
+        private ConfiguracionService: ConfiguracionService,
+        private exportadorHistorialService: ExportadorHistorialService,
         private snackBar: MatSnackBar
     ) { }
 
     ngOnInit(): void {
         this.cargarHistoriales();
+        this.ConfiguracionService.cargarColorTemaPublico();
+        this.ConfiguracionService.colorTema$.subscribe(color => {
+            this.colorSistema = color;
+        });
     }
 
     cargarHistoriales() {
@@ -75,6 +84,13 @@ export class HistorialListComponent implements OnInit {
         this.modalVisible = true;
     }
 
+    abrirModalVer(historial: Historial) {
+        this.historialSeleccionado = { ...historial };
+        this.historialSeleccionadoId = historial.id!;
+        this.modalVerVisible = true;
+        console.log('Abriendo modal con historial:', historial);
+    }
+
     abrirModalEditar(historial: Historial) {
         this.historialSeleccionado = { ...historial };
         this.historialSeleccionadoId = historial.id!;
@@ -84,6 +100,12 @@ export class HistorialListComponent implements OnInit {
 
     cerrarModal() {
         this.modalVisible = false;
+        this.historialSeleccionado = {};
+        this.historialSeleccionadoId = null;
+    }
+
+    cerrarModalVer() {
+        this.modalVerVisible = false;
         this.historialSeleccionado = {};
         this.historialSeleccionadoId = null;
     }
@@ -158,65 +180,35 @@ export class HistorialListComponent implements OnInit {
                 verticalPosition: 'top'
             });
         }
+        console.log('Historial exportado:', this.historialSeleccionado);
     }
 
     intentarExportar(formato: 'csv' | 'pdf') {
-        if (!this.historialSeleccionado?.id) {
-            this.snackBar.open('Para exportar un historial, debe seleccionarlo primero', 'Cerrar', {
+        if (!this.esHistorialValido(this.historialSeleccionado)) {
+            this.snackBar.open('El historial seleccionado no está completo para exportar', 'Cerrar', {
                 duration: 3000,
                 verticalPosition: 'top'
             });
             return;
         }
 
+        const historial = this.historialSeleccionado;
+        const especialistaId = historial.id_especialista;
+
         if (formato === 'csv') {
-            this.exportarCSV();
+            this.exportadorHistorialService.exportarCSV(historial);
         } else {
-            this.exportarPDF();
+            this.exportadorHistorialService.exportarPDF(historial, especialistaId);
         }
     }
 
-    exportarCSV() {
-        const h = this.historialSeleccionado;
-        const datos = [{
-            Fecha: h.fecha,
-            Paciente: `${h.paciente?.user?.nombre ?? ''} ${h.paciente?.user?.apellidos ?? ''}`,
-            Observaciones: h.observaciones_especialista ?? '',
-            Recomendaciones: h.recomendaciones ?? '',
-            Dieta: h.dieta ?? '',
-            ListaCompra: h.lista_compra ?? ''
-        }];
-
-        const csv = Papa.unparse(datos);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        saveAs(blob, `Historial_${h.paciente?.user?.nombre ?? 'paciente'}_${new Date().toISOString().slice(0, 10)}.csv`);
-        this.historialSeleccionado = {};
-        this.historialSeleccionadoId = null;
-    }
-
-    exportarPDF() {
-        const h = this.historialSeleccionado;
-        const doc = new jsPDF();
-        doc.text('Historial del paciente', 14, 16);
-
-        const datos = [[
-            h.fecha ?? '',
-            `${h.paciente?.user?.nombre ?? ''} ${h.paciente?.user?.apellidos ?? ''}`,
-            h.observaciones_especialista ?? '',
-            h.recomendaciones ?? '',
-            h.dieta ?? ''
-        ]];
-
-        autoTable(doc, {
-            head: [['Fecha', 'Paciente', 'Observaciones', 'Recomendaciones', 'Dieta']],
-            body: datos,
-            startY: 20,
-            styles: { fontSize: 8 },
-        });
-
-        doc.save(`Historial_${h.paciente?.user?.nombre ?? 'paciente'}_${new Date().toISOString().slice(0, 10)}.pdf`);
-        this.historialSeleccionado = {};
-        this.historialSeleccionadoId = null;
+    public esHistorialValido(historial: Partial<Historial>): historial is Historial {
+        return !!(
+            historial.id &&
+            historial.fecha &&
+            historial.paciente &&
+            historial.id_especialista
+        );
     }
 
     private procesarPacientesUnicos() {

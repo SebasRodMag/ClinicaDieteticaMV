@@ -1,0 +1,41 @@
+<div class="modal-backdrop fade show"></div>
+<div class="modal fade show d-block" tabindex="-1" style="z-index: 1055;">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header text-white" [ngStyle]="{ 'background-color': color }">
+                <h5 class="modal-title">
+                    Historial de: {{ nombrePaciente || 'Paciente desconocido' }}
+                </h5>
+                <button type="button" class="btn-close" (click)="cerrar.emit()"></button>
+            </div>
+
+            <div class="modal-body" *ngIf="!cargando; else cargandoTemplate">
+                <div *ngFor="let campo of campos" class="mb-4">
+                    <div class="fw-bold bg-light px-2 py-1 border">{{ campo.label }}</div>
+                    <div class="mt-2 px-2">{{ campo.valor }}</div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <div class="border-top pt-2">
+                        <div *ngIf="especialistaNombre" class="fw-bold">{{ especialistaNombre }}</div>
+                        <div *ngIf="especialistaEspecialidad">{{ especialistaEspecialidad }}</div>
+                        <div class="fst-italic">Firma del especialista</div>
+                    </div>
+                </div>
+            </div>
+
+            <ng-template #cargandoTemplate>
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando historial...</p>
+                </div>
+            </ng-template>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="cerrar.emit()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>

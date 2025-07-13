@@ -196,6 +196,16 @@ export class UserService {
     }
 
     /**
+     * Función para buscar un especialista por su id, devolviendo su nombre, especialidad, id de especialista y id de usuario
+     * @param id id del especialista que estamos buscando
+     * @returns devuelve un json con el especialista
+     */
+    verEspecialista(id: number): Observable<Especialista> {
+        return this.http.get<{ especialista: Especialista }>(`${this.apiUrl}/especialistas/${id}`)
+            .pipe(map(res => res.especialista));
+    }
+
+    /**
      * getHorasDisponibles() obtiene las horas disponibles de un especialista en una fecha específica.
      * A partir del ID del especialista y la fecha, devuelve un array de horas disponibles en formato 'HH:MM'.
      * si, idEspecialista es null, se omite el parámetro y el backend interpretara que el usuario logueado es el especialista.
@@ -211,6 +221,13 @@ export class UserService {
         }
         url += `?fecha=${fecha}`;
         return this.http.get<{ horas_disponibles: string[] }>(url);
+    }
+
+    /**
+     * obtener el especialista por el id
+     */
+    obtenerEspecialistaPorId(id: number): Observable<any> {
+        return this.http.get(`${this.apiUrl}/especialistas/${id}`);
     }
 
 

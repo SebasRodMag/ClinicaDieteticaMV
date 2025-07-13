@@ -52,7 +52,7 @@ class EspecialistaController extends Controller
      */
     public function verEspecialista(int $id): JsonResponse
     {
-        $especialista = Especialista::find($id);
+        $especialista = Especialista::with('user')->find($id);
 
         if (!$especialista) {
             $this->registrarLog(auth()->id(), 'mostrar_especialista_fallido', 'especialistas', $id);

@@ -16,6 +16,7 @@ export class ModalEditHistorialComponent implements OnInit, OnChanges {
     @Input() visible: boolean = false;
     @Input() esNuevo: boolean = false;
     @Input() historial: Partial<Historial> = {};
+    @Input() color: string = '#28a745';
     @Output() cerrar = new EventEmitter<void>();
     @Output() guardar = new EventEmitter<Partial<Historial>>();
 

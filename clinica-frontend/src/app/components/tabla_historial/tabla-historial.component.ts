@@ -17,6 +17,7 @@ export class TablaHistorialComponent implements OnChanges {
     @Output() editar = new EventEmitter<Historial>();
     @Output() eliminar = new EventEmitter<Historial>();
     @Output() seleccionar = new EventEmitter<Historial>();
+    @Output() ver = new EventEmitter<Historial>();
 
     paginaActual: number = 1;
     itemsPorPagina: number = 10;
