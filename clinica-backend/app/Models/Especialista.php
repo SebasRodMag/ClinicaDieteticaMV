@@ -21,7 +21,7 @@ class Especialista extends Model
 
     protected $table = 'especialistas';
 
-    protected $hidden = ['user'];
+    //protected $hidden = ['user'];
 
     protected $fillable = [
         'user_id',

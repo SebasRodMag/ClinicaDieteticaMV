@@ -126,7 +126,7 @@ export class ModalEditCitaComponent implements OnChanges {
             next: (res) => {
                 const lista = res.map(e => ({
                     ...e,
-                    nombreCompleto: `${e.usuario?.nombre ?? ''} ${e.usuario?.apellidos ?? ''}`.trim()
+                    nombreCompleto: `${e.user?.nombre ?? ''} ${e.user?.apellidos ?? ''}`.trim()
                 }));
 
                 const actualId = this.citaForm?.id_especialista;
@@ -137,7 +137,7 @@ export class ModalEditCitaComponent implements OnChanges {
                     if (actual) {
                         lista.unshift({
                             ...actual,
-                            nombreCompleto: `${actual.usuario?.nombre ?? ''} ${actual.usuario?.apellidos ?? ''}`.trim()
+                            nombreCompleto: `${actual.user?.nombre ?? ''} ${actual.user?.apellidos ?? ''}`.trim()
                         });
                     }
                 }

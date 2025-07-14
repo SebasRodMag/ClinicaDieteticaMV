@@ -16,6 +16,7 @@ export class ModalVerHistorialComponent {
     @Output() cerrar = new EventEmitter<void>();
 
     get cargando(): boolean {
+        console.log(this.historial)
         return !this.historial?.id || !this.historial?.fecha || !this.historial?.paciente || !this.historial?.id_especialista;
     }
 
@@ -28,10 +29,11 @@ export class ModalVerHistorialComponent {
             { label: 'Dieta', valor: this.historial?.dieta ?? '' },
             { label: 'Lista de la compra', valor: this.historial?.lista_compra ?? '' },
         ];
+        
     }
 
     get especialistaNombre(): string {
-        return `${this.historial?.especialista?.usuario?.nombre ?? ''} ${this.historial?.especialista?.usuario?.apellidos ?? ''}`.trim();
+        return `${this.historial?.especialista?.user.nombre?? ''} ${this.historial?.especialista?.user?.apellidos ?? ''}`.trim();
     }
 
     get especialistaEspecialidad(): string {

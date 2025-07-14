@@ -152,7 +152,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
                     this.especialistasFiltradosOrdenados = this.especialistasFiltrados
                         .map(e => ({
                             ...e,
-                            nombreCompleto: `${e.usuario?.nombre ?? ''} ${e.usuario?.apellidos ?? ''}`.trim()
+                            nombreCompleto: `${e.user?.nombre ?? ''} ${e.user?.apellidos ?? ''}`.trim()
                         }))
                         .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
                 },

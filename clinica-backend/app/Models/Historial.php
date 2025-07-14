@@ -43,4 +43,8 @@ class Historial extends Model
     {
         return $this->hasMany(Documento::class, 'historial_id');
     }
+
+    public function user(){
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

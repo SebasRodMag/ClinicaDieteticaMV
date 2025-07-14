@@ -91,7 +91,7 @@ export class CitasListComponent implements OnInit, AfterViewInit {
             next: (res) => {
                 // Orden alfabético
                 this.especialistas = res.sort((a, b) =>
-                    (a.usuario.nombre + a.usuario.apellidos).localeCompare(b.usuario.nombre + b.usuario.apellidos)
+                    (a.user.nombre + a.user.apellidos).localeCompare(b.user.nombre + b.user.apellidos)
                 );
             },
             error: () => {

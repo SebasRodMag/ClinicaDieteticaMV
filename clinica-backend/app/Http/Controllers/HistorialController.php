@@ -40,7 +40,7 @@ class HistorialController extends Controller
                 return response()->json($respuesta, $codigo);
             }
 
-            $historiales = Historial::with(['paciente.user', 'cita'])
+            $historiales = Historial::with(['paciente.user', 'cita', 'especialista.user'])
                 ->where('id_especialista', $especialistaId)
                 ->orderBy('fecha', 'desc')
                 ->get();

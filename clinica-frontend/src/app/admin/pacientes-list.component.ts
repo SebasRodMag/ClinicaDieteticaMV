@@ -130,8 +130,8 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
     get pacientesFiltrados(): Paciente[] {
         const filtroLower = this.filtro.toLowerCase();
         let filtrados = this.pacientes.filter(p => {
-            const nombreEspecialista = p.especialista?.usuario?.nombre.toLowerCase() ?? '';
-            const apellidosEspecialista = p.especialista?.usuario?.apellidos.toLowerCase() ?? '';
+            const nombreEspecialista = p.especialista?.user?.nombre.toLowerCase() ?? '';
+            const apellidosEspecialista = p.especialista?.user?.apellidos.toLowerCase() ?? '';
             return (
                 nombreEspecialista.includes(filtroLower) ||
                 apellidosEspecialista.includes(filtroLower) ||

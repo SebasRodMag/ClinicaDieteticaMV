@@ -99,8 +99,8 @@ export class ExportadorHistorialService {
 
         // Firma
         const firmaY = 250;
-        const nombreEspecialista = `${especialista.user?.nombre ?? ''} ${especialista.user?.apellidos ?? ''}`.trim();
-        const especialidad = especialista.especialidad ?? '';
+        const nombreEspecialista = `${historial.especialista?.user.nombre ?? ''} ${historial.especialista?.user.apellidos ?? ''}`.trim();
+        const especialidad = historial.especialista?.especialidad ?? '';
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
