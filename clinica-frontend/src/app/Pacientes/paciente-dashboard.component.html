@@ -2,7 +2,8 @@
     <span class="navbar-brand mb-0 h1">Pacientes Dashboard</span>
 
     <div class="navbar-nav me-auto">
-        <!-- Enlaces  -->
+        <a routerLink="citas" routerLinkActive="active" class="nav-link">Citas</a>
+        <a routerLink="historiales" routerLinkActive="active" class="nav-link">Historiales</a>
     </div>
 
     <div class="usuario-navbar d-flex align-items-center justify-content-end">
@@ -27,5 +28,5 @@
 
 <div class="p-3">
     <!-- Muestras el contenido principal -->
-    <app-pacientes-citas></app-pacientes-citas>
+    <router-outlet></router-outlet>
 </div>

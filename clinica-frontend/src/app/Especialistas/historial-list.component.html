@@ -48,7 +48,7 @@
 <!-- Tabla -->
 <app-tabla-historial [historiales]="historialesFiltrados" [historialSeleccionadoId]="historialSeleccionadoId"
     (editar)="abrirModalEditar($event)" (eliminar)="eliminarHistorial($event)" (ver)="abrirModalVer($event)"
-    (seleccionar)="seleccionarHistorial($event)" >
+    (seleccionar)="seleccionarHistorial($event)">
 </app-tabla-historial>
 
 <app-modal-edit-historial *ngIf="modalVisible" [visible]="modalVisible" [historial]="historialSeleccionado"

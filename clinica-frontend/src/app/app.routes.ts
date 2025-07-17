@@ -13,6 +13,8 @@ import { CitasListComponent } from './admin/citas-list.component';
 import { LogsListComponent } from './admin/logs-list.component';
 import { HistorialListComponent } from './Especialistas/historial-list.component';
 import { EspecialistaCitasComponent } from './Especialistas/especialista-citas.component';
+import { PacienteHistorialListComponent } from './Pacientes/paciente-historial-list.component';
+import { PacientesCitasComponent } from './Pacientes/pacientes-citas.component';
 
 import { PacienteDashboardComponent } from './Pacientes/paciente-dashboard.component';
 import { EspecialistaDashboardComponent } from './Especialistas/especialista-dashboard.component';
@@ -60,7 +62,8 @@ export const routes: Routes = [
         canActivateChild: [AuthGuard],
         data: { roles: ['paciente'] },
         children: [
-            { path: 'citas', component: PacienteDashboardComponent },
+            { path: 'citas', component: PacientesCitasComponent },
+            { path: 'historiales', component: PacienteHistorialListComponent },
             { path: '', redirectTo: 'citas', pathMatch: 'full' },
         ],
     },

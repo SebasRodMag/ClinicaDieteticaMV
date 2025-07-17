@@ -4,8 +4,7 @@ import { UserService } from '../service/User-Service/user.service';
 import { AuthService } from '../service/Auth-Service/Auth.service';
 import { EspecialistaCitasComponent } from './especialista-citas.component';
 import { Usuario } from '../models/usuario.model';
-import { Router } from '@angular/router';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { HistorialListComponent } from './historial-list.component';
 
 @Component({

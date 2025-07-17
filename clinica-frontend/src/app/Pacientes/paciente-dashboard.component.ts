@@ -5,11 +5,12 @@ import { AuthService } from '../service/Auth-Service/Auth.service';
 import { PacientesCitasComponent } from './pacientes-citas.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Usuario } from '../models/usuario.model';
+import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-paciente-citas',
   standalone: true,
-  imports: [CommonModule, PacientesCitasComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './paciente-dashboard.component.html',
   styleUrls: ['./paciente-dashboard.component.css'],
 })
@@ -20,7 +21,8 @@ export class PacienteDashboardComponent {
   constructor(
     private userService: UserService,
     private authService: AuthService,
-    private snackBar: MatSnackBar 
+    private snackBar: MatSnackBar,
+    private router: Router
   ) { }
 
   ngOnInit(): void {

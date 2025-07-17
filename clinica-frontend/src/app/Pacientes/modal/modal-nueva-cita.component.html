@@ -25,7 +25,7 @@
                     <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado" (ngModelChange)="onEspecialistaChange()">
                         <option [ngValue]="null">Seleccione un especialista</option>
                         <option *ngFor="let esp of especialistasFiltrados" [ngValue]="esp.id">
-                            {{ esp.usuario.nombre }} {{ esp.usuario.apellidos }}
+                            {{ esp.user.nombre }} {{ esp.user.apellidos }}
                         </option>
                     </select>
                 </div>
