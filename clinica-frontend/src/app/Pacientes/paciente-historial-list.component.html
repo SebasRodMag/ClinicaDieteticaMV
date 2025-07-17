@@ -38,9 +38,9 @@
 </div>
 
 
-<app-modal-ver-historial *ngIf="modalVisible && historialSeleccionado" [visible]="modalVisible"
+<app-modal-ver-historial-paciente *ngIf="modalVisible && historialSeleccionado" [visible]="modalVisible"
     [historial]="historialSeleccionado" [color]="colorSistema" (cerrar)="cerrarModal()">
-</app-modal-ver-historial>
+</app-modal-ver-historial-paciente>
 
 <ng-template #especialistaTemplate let-h>
     {{ h.especialista?.user?.nombre }} {{ h.especialista?.user?.apellidos }}
@@ -54,7 +54,7 @@
 <ng-template #accionesTemplate let-h>
     <div class="btn-group btn-group-sm">
         <button class="btn btn-outline-primary" (click)="verHistorial(h)">Ver</button>
-        <button class="btn btn-outline-secondary" (click)="exportarPDF(h)">PDF</button>
-        <button class="btn btn-outline-secondary" (click)="exportarCSV(h)">CSV</button>
+        <button class="btn btn-outline-danger" (click)="exportarPDF(h)">PDF</button>
+        <button class="btn btn-outline-success" (click)="exportarCSV(h)">CSV</button>
     </div>
 </ng-template>

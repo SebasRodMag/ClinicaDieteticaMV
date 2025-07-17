@@ -2,9 +2,10 @@ import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Historial } from '../models/historial.model';
 import { HistorialService } from '../service/Historial-Service/historial.service';
-import { ModalVerHistorialComponent } from '../Especialistas/modal/modal-ver-historial.component';//Por probar, utilizo el mismo modal de especialista
+import { ModalVerHistorialPacienteComponent } from './modal/modal-ver-historial-paciente.component';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
 import { ExportadorHistorialService } from '../service/Historial-Service/exportar-historial.service';
+import { ConfiguracionService } from '../service/Config-Service/configuracion.service';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -16,10 +17,10 @@ import { Router, RouterModule } from '@angular/router';
     imports: [
         CommonModule,
         FormsModule,
-        ModalVerHistorialComponent,
+        ModalVerHistorialPacienteComponent,
         TablaDatosComponent,
         MatSnackBarModule,
-        RouterModule
+        RouterModule,
     ],
     templateUrl: './paciente-historial-list.component.html',
 })
@@ -46,11 +47,16 @@ export class PacienteHistorialListComponent implements OnInit {
         private historialService: HistorialService,
         private exportadorService: ExportadorHistorialService,
         private snackBar: MatSnackBar,
-        private router: Router
+        private router: Router,
+        private ConfiguracionService: ConfiguracionService
     ) { }
 
     ngOnInit(): void {
         this.cargarHistoriales();
+        this.ConfiguracionService.cargarColorTemaPublico();
+        this.ConfiguracionService.colorTema$.subscribe(color => {
+            this.colorSistema = color;
+        });
     }
 
     cargarHistoriales(): void {

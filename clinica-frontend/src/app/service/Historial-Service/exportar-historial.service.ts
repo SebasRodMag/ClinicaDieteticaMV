@@ -39,6 +39,7 @@ export class ExportadorHistorialService {
 
     exportarCSV(historial: Historial | Historial[]): void {
         const historiales = Array.isArray(historial) ? historial : [historial];
+        
 
         const encabezado = ['Fecha', 'Paciente', 'Especialista', 'Especialidad', 'Observaciones', 'Recomendaciones', 'Dieta', 'Lista de compra'];
         const filas = historiales.map(h => [
@@ -66,7 +67,7 @@ export class ExportadorHistorialService {
     private async generarPDF(historiales: Historial[], colorHex: string): Promise<void> {
         const doc = new jsPDF();
         const colorRGB = this.hexToRgb(colorHex);
-
+        
         const logoBase64 = await this.convertirImagenABase64('assets/images/Imagen1.png');
         let pagina = 1;
 
@@ -83,11 +84,14 @@ export class ExportadorHistorialService {
             doc.setFont('times', 'bold');
             doc.setFontSize(16);
             doc.text('Clínica Dietética - Historial del Paciente', 105, 20, { align: 'center' });
+            doc.setFont('times', 'normal');
+            doc.setFontSize(13);
+            doc.text(`Paciente: ${historial.paciente?.user?.nombre ?? ''} ${historial.paciente?.user?.apellidos ?? ''}`.trim(), 105, 27, { align: 'center' });
 
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             const fechaExport = new Date();
-            doc.text(`Fecha de exportación: ${formatearFecha(fechaExport.toISOString())}`, 180, 30, { align: 'right' });
+            doc.text(`Fecha de exportación: ${formatearFecha(fechaExport.toISOString())}`, 190, 40, { align: 'right' });
 
             const campos = [
                 { label: 'Fecha', valor: formatearFecha(historial.fecha ?? '') },
