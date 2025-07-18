@@ -279,7 +279,7 @@ class EspecialistaController extends Controller
             ->map(function ($especialista) {
                 return [
                     'id' => $especialista->id,
-                    'usuario' => [
+                    'user' => [
                         'nombre' => $especialista->user->nombre,
                         'apellidos' => $especialista->user->apellidos,
                         'email' => $especialista->user->email,

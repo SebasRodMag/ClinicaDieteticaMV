@@ -1,5 +1,9 @@
 <h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
 
+<app-calendario-citas [citas]="citas"
+    (citaCancelada)="cancelarCitaDesdeCalendario($event)">
+</app-calendario-citas>
+
 <div class="d-flex align-items-center gap-2 mb-3">
     <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por especialistas" class="form-control ms-3"
         (ngModelChange)="filtrarCitas()" />

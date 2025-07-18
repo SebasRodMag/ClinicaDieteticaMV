@@ -1,0 +1,14 @@
+<div class="mb-3 d-flex justify-content-start">
+    <button class="btn btn-outline-primary me-2" (click)="calendarOptions.initialView = 'dayGridMonth'">Mes</button>
+</div>
+<div class="calendario-wrapper">
+    <full-calendar [options]="calendarOptions" class="border rounded shadow-sm p-2"></full-calendar>
+</div>
+
+
+<app-modal-info-cita
+    *ngIf="citaSeleccionada"
+    [citaSeleccionada]="citaSeleccionada"
+    [colorSistema]="colorSistema"
+    (cerrado)="cerrarModal()">
+</app-modal-info-cita>

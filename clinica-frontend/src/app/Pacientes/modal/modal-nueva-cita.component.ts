@@ -77,7 +77,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         });
     }
 
-    onEspecialistaChange(): void {
+    onCambioEspecialista(): void {
         this.hora = '';
         this.horasDisponibles = [];
         if (this.especialistaSeleccionado && this.fecha) {
@@ -85,10 +85,10 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         }
     }
 
-    onFechaChange(): void {
+    onCambioFecha(): void {
         this.hora = '';
         this.horasDisponibles = [];
-        this.validateDate();
+        this.diaValido();
         if (this.especialistaSeleccionado && this.fecha && !this.dateError) {
             this.cargarHorasDisponibles();
         }
@@ -116,22 +116,22 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         this.minDate = `${yyyy}-${mm}-${dd}`;
     }
 
-    private isWeekend(date: Date): boolean {
+    private esFinDeSemana(date: Date): boolean {
         const day = date.getDay();
         return day === 0 || day === 6; // Sunday = 0, Saturday = 6
     }
 
-    private isHoliday(date: Date): boolean {
+    private esFestivo(date: Date): boolean {
         const dateStr = date.toISOString().split('T')[0];
         return this.diasNoLaborables.includes(dateStr);
     }
 
-    private isDateValid(dateStr: string): boolean {
+    private esDiaValido(dateStr: string): boolean {
         const date = new Date(dateStr);
-        if (this.isWeekend(date)) {
+        if (this.esFinDeSemana(date)) {
             return false;
         }
-        if (this.isHoliday(date)) {
+        if (this.esFestivo(date)) {
             return false;
         }
         return true;
@@ -143,7 +143,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             return;
         }
 
-        if (!this.isDateValid(this.fecha)) {
+        if (!this.esDiaValido(this.fecha)) {
             this.dateError = 'La fecha seleccionada no es válida. No se permiten fines de semana ni días festivos.';
             return;
         } else {
@@ -184,14 +184,14 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         if (!this.especialidadSeleccionada) {
             this.especialistasFiltrados = [];
         } else {
-            console.log('Fetching especialistas for especialidad:', this.especialidadSeleccionada);
+            console.log('Listando especialistas for especialidad:', this.especialidadSeleccionada);
             this.UserService.getEspecialistasPorEspecialidad(this.especialidadSeleccionada).subscribe({
-                next: (data) => {
-                    console.log('Received especialistas:', data);
-                    this.especialistasFiltrados = data;
+                next: (datos) => {
+                    console.log('Especialistas recibidos:', datos);
+                    this.especialistasFiltrados = datos;
                 },
-                error: (err) => {
-                    console.error('Error fetching especialistas:', err);
+                error: (error) => {
+                    console.error('Error especialistas:', error);
                     this.especialistasFiltrados = [];
                     this.snackBar.open('Error al cargar especialistas por especialidad', 'Cerrar', { duration: 3000 });
                 }
@@ -201,12 +201,12 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         this.especialistaSeleccionado = null;
     }
 
-    validateDate(): void {
+    diaValido(): void {
         if (!this.fecha) {
             this.dateError = 'La fecha es obligatoria.';
             return;
         }
-        if (!this.isDateValid(this.fecha)) {
+        if (!this.esDiaValido(this.fecha)) {
             this.dateError = 'La fecha seleccionada no es válida. No se permiten fines de semana ni días festivos.';
         } else {
             this.dateError = null;

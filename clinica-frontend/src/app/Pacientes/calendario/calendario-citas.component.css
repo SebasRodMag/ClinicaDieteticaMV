@@ -1,0 +1,6 @@
+.calendario-wrapper {
+    max-width: 40%;
+    margin: 0 auto;
+}
+
+/*No me gusta como se esta ajustando el css para redimensionar el calendario y hay que darle una vuelta a esto*/

@@ -22,7 +22,7 @@
                 <!-- Especialistas -->
                 <div class="mb-3">
                     <label for="especialista" class="form-label">Especialista</label>
-                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado" (ngModelChange)="onEspecialistaChange()">
+                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado" (ngModelChange)="onCambioEspecialista()">
                         <option [ngValue]="null">Seleccione un especialista</option>
                         <option *ngFor="let esp of especialistasFiltrados" [ngValue]="esp.id">
                             {{ esp.user.nombre }} {{ esp.user.apellidos }}
@@ -42,7 +42,7 @@
                 <!-- Fecha -->
                 <div class="mb-3">
                     <label for="fecha" class="form-label">Fecha</label>
-                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate" (change)="onFechaChange()" />
+                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate" (change)="onCambioFecha()" />
                     <div *ngIf="dateError" class="text-danger mt-1">{{ dateError }}</div>
                 </div>
 

@@ -10,11 +10,14 @@ import { Paciente } from '../models/paciente.model';
 import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 import { Especialista } from '../models/especialista.model';
 import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
+import { CalendarioCitasComponent } from './calendario/calendario-citas.component';
+
+
 
 @Component({
     selector: 'app-pacientes-citas',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent],
+    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent],
     templateUrl: './pacientes-citas.component.html',
 })
 export class PacientesCitasComponent implements OnInit, AfterViewInit {
@@ -87,6 +90,7 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
             },
         });
     }
+
 
     filtrarCitas(): void {
         const filtroLower = this.filtroTexto.toLowerCase();
@@ -186,6 +190,36 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         fecha.setDate(fecha.getDate() + dias);
         this.filtroFecha = fecha.toISOString().split('T')[0];
         this.filtrarCitas();
+    }
+
+    cancelarCitaDesdeCalendario(idCita: number): void {
+        const cita = this.citas.find(c => c.id === idCita);
+        if (!cita) return;
+
+        const snackRef = this.snackBar.open(
+            `¿Cancelar la cita del ${cita.fecha} a las ${cita.hora}?`,
+            'Cancelar',
+            {
+                duration: 5000,
+                panelClass: ['snackbar-delete'],
+                horizontalPosition: 'center',
+                verticalPosition: 'top',
+            }
+        );
+
+        snackRef.onAction().subscribe(() => {
+            this.loading = true;
+            this.UserService.cancelarCita(cita.id).subscribe({
+                next: () => {
+                    this.obtenerCitas();
+                    this.mostrarMensaje('Cita cancelada correctamente.', 'success');
+                },
+                error: () => {
+                    this.loading = false;
+                    this.mostrarMensaje('Error al cancelar la cita.', 'error');
+                },
+            });
+        });
     }
 
 }

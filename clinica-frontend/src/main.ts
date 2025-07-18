@@ -8,10 +8,13 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
 import { ToastrModule } from 'ngx-toastr';
 import { AuthInterceptor } from './app/interceptor/auth.interceptor';
+import { CalendarModule, DateAdapter } from 'angular-calendar';
+import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 
 bootstrapApplication(AppComponent, {
   providers: [
-    importProvidersFrom(FormsModule),
+    
+    importProvidersFrom(CalendarModule, FormsModule),
     provideRouter(routes),
     importProvidersFrom(
       BrowserAnimationsModule,
@@ -27,5 +30,10 @@ bootstrapApplication(AppComponent, {
       useClass: AuthInterceptor,
       multi: true,
     },
+    {
+      provide: DateAdapter,
+      useFactory: adapterFactory
+    }
   ],
+  
 });
