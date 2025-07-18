@@ -25,7 +25,6 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
     citasFiltradas: CitaPorEspecialista[] = [];
 
     filtroTexto: string = '';
-    filtroFecha: string = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     modalVisible = false;
     loading: boolean = false;
@@ -94,18 +93,11 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
 
     filtrarCitas(): void {
         const filtroLower = this.filtroTexto.toLowerCase();
-        const fechaSeleccionada = this.filtroFecha;
 
         this.citasFiltradas = this.citas.filter(cita =>
-            cita.fecha === fechaSeleccionada &&
-            (
-                cita.id.toString().includes(filtroLower) ||
-                cita.hora.toLowerCase().includes(filtroLower) ||
-                cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
-                cita.especialidad.toLowerCase().includes(filtroLower) ||
-                cita.estado.toLowerCase().includes(filtroLower) ||
-                cita.tipo_cita.toLowerCase().includes(filtroLower)
-            )
+            cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
+            cita.especialidad.toLowerCase().includes(filtroLower) ||
+            cita.estado.toLowerCase().includes(filtroLower)
         );
 
         this.ordenarDatos();
@@ -185,12 +177,6 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         this.filtrarCitas();
     }
 
-    cambiarDia(dias: number): void {
-        const fecha = new Date(this.filtroFecha);
-        fecha.setDate(fecha.getDate() + dias);
-        this.filtroFecha = fecha.toISOString().split('T')[0];
-        this.filtrarCitas();
-    }
 
     cancelarCitaDesdeCalendario(idCita: number): void {
         const cita = this.citas.find(c => c.id === idCita);

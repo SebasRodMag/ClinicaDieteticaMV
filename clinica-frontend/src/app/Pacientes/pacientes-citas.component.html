@@ -1,22 +1,19 @@
-<h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
 
-<app-calendario-citas [citas]="citas"
-    (citaCancelada)="cancelarCitaDesdeCalendario($event)">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-2xl font-bold mb-4">Vista mensual de las citas</h2>
+    <button (click)="nuevaCita()" class="btn btn-primary">
+        Nueva cita
+    </button>
+</div>
+
+
+<app-calendario-citas [citas]="citas" (citaCancelada)="cancelarCitaDesdeCalendario($event)">
 </app-calendario-citas>
+<h2 class="text-2xl font-bold mb-4">Listado de todas las citas</h2>
 
 <div class="d-flex align-items-center gap-2 mb-3">
     <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por especialistas" class="form-control ms-3"
         (ngModelChange)="filtrarCitas()" />
-
-    <button class="btn btn-outline-secondary" (click)="cambiarDia(-1)">
-        <i class="bi bi-arrow-left"></i>
-    </button>
-
-    <input type="date" [(ngModel)]="filtroFecha" (change)="filtrarCitas()" class="form-control w-auto" />
-
-    <button class="btn btn-outline-secondary" (click)="cambiarDia(1)">
-        <i class="bi bi-arrow-right"></i>
-    </button>
 </div>
 
 <app-tabla-datos [datosTotales]="citasFiltradas" [columnas]="columnas" [templatesMap]="templatesMap"
@@ -39,9 +36,7 @@
         Cancelar
     </button>
 </ng-template>
-<button (click)="nuevaCita()" class="btn btn-primary">
-    Nueva cita
-</button>
+
 <app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible" [idEspecialista]="especialista?.id"
     (cerrado)="modalVisible = false" (creada)="obtenerCitas(); modalVisible = false">
 </app-modal-nueva-cita>

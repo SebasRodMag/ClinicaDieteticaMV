@@ -30,12 +30,19 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth',
+            right: '',
+        },
+        buttonText: {
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana',
+            day: 'Día',
+            list: 'Agenda',
         },
         height: 'auto',
     };
 
-    constructor(private configService: ConfiguracionService) {}
+    constructor(private configService: ConfiguracionService) { }
 
     ngOnInit(): void {
         this.configService.colorTema$.subscribe(color => {

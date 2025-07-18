@@ -1,6 +1,27 @@
-.calendario-wrapper {
-    max-width: 40%;
-    margin: 0 auto;
+.calendario-reducido .fc {
+    font-size: 0.85rem;
+    /* texto más pequeño */
 }
 
-/*No me gusta como se esta ajustando el css para redimensionar el calendario y hay que darle una vuelta a esto*/
+/*Espacio de la celda*/
+.calendario-reducido .fc-daygrid-day-frame {
+    padding: 2px 4px;
+}
+
+/*Tamaño del titulo*/
+.calendario-reducido .fc-toolbar-title {
+    font-size: 1rem;
+}
+
+.calendario-reducido .fc-toolbar {
+    margin-bottom: 0.25rem;
+    /* espacio inferior */
+    padding-top: 0.15rem;
+    padding-bottom: 0.25rem;
+}
+
+.calendario-reducido .fc-scroller-liquid-absolute {
+    max-height: 300px;
+    /* ajusta según el espacio deseado */
+    overflow-y: auto;
+}
