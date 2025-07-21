@@ -1,0 +1,36 @@
+<table class="table table-sm table-hover" *ngIf="documentos.length > 0">
+    <thead class="table-light">
+        <tr>
+            <th *ngFor="let col of columnas">{{ etiquetasColumnas[col] || col | titlecase }}</th>
+            <th *ngIf="mostrarDescargar || mostrarEliminar">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let doc of documentos">
+            <td *ngFor="let col of columnas">
+                <ng-container [ngSwitch]="col">
+                    <ng-container *ngSwitchCase="'tamano'">
+                        {{ (doc[col] / 1024) | number:'1.0-0' }} KB
+                    </ng-container>
+                    <ng-container *ngSwitchDefault>
+                        {{ col.includes('created_at') || col.includes('updated_at') ? formatearFecha(doc[col]) :
+                        doc[col] }}
+                    </ng-container>
+                </ng-container>
+            </td>
+            <td *ngIf="mostrarDescargar || mostrarEliminar">
+                <button *ngIf="mostrarDescargar" class="btn btn-sm btn-outline-primary me-1"
+                    (click)="descargar.emit(doc)" title="Descargar documento">
+                    <i class="bi bi-download"></i>
+                </button>
+                <button *ngIf="mostrarEliminar" class="btn btn-sm btn-outline-danger" (click)="eliminar.emit(doc)" title="Eliminar documento">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div *ngIf="documentos.length === 0" class="text-muted">
+    No hay documentos disponibles.
+</div>

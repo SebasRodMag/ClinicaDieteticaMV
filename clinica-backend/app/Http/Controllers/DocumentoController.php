@@ -33,12 +33,12 @@ class DocumentoController extends Controller
             $documentos = Documento::with('historial.paciente')->get();
         } elseif ($user->hasRole('especialista')) {
             //Documentos asociados a pacientes del especialista
-            $documentos = Documento::whereHas('historial.paciente.citas', function($query) use ($user) {
+            $documentos = Documento::whereHas('historial.paciente.citas', function ($query) use ($user) {
                 $query->where('especialista_id', $user->especialista->id);
             })->with('historial.paciente')->get();
         } else {
             //El paciente solo ve sus documentos
-            $documentos = Documento::whereHas('historial', function($q) use ($user) {
+            $documentos = Documento::whereHas('historial', function ($q) use ($user) {
                 $q->where('paciente_id', $user->paciente->id);
             })->get();
         }
@@ -86,8 +86,10 @@ class DocumentoController extends Controller
             } elseif ($user->hasRole('especialista')) {
                 //Un especialista puede ver documentos de sus pacientes
                 $especialistaId = $user->especialista->id ?? null;
-                if ($documento->historial && $documento->historial->paciente->citas()
-                    ->where('especialista_id', $especialistaId)->exists()) {
+                if (
+                    $documento->historial && $documento->historial->paciente->citas()
+                        ->where('especialista_id', $especialistaId)->exists()
+                ) {
                     $acceso = true;
                 }
             } else {
@@ -172,31 +174,34 @@ class DocumentoController extends Controller
      */
     public function listarMisDocumentos(): JsonResponse
     {
-        $respuesta = [];
-        $codigo = 200;
-
         $usuario = auth()->user();
+        $documentos = collect();
 
         if ($usuario->hasRole('paciente')) {
             $documentos = Documento::where('user_id', $usuario->id)->get();
+
         } elseif ($usuario->hasRole('especialista')) {
             $pacientesIds = $usuario->especialista->pacientes()->pluck('users.id');
             $documentos = Documento::whereIn('user_id', $pacientesIds)->get();
+
+        } elseif ($usuario->hasRole('administrador')) {
+            $documentos = Documento::all();
+
         } else {
-            $this->registrarLog(auth()->id(), 'listar_documentos_denegado', 'Rol no autorizado');
+            $this->registrarLog($usuario->id, 'listar_documentos_denegado', 'Rol no autorizado');
             return response()->json(['message' => 'Acceso no autorizado'], 403);
         }
 
         if ($documentos->isEmpty()) {
-            $this->registrarLog(auth()->id(), 'listar_documentos', 'No hay documentos');
-            $respuesta = ['message' => 'No se encontraron documentos'];
-            $codigo = 404;
-        } else {
-            $this->registrarLog(auth()->id(), 'listar_documentos', 'Listado de documentos consultado');
-            $respuesta = ['documentos' => $documentos];
+            $this->registrarLog($usuario->id, 'listar_documentos', 'No hay documentos para mostrar');
+            return response()->json([
+                'message' => 'No se encontraron documentos',
+                'documentos' => [],
+            ], 200);
         }
 
-        return response()->json($respuesta, $codigo);
+        $this->registrarLog($usuario->id, 'listar_documentos', 'Listado de documentos consultado');
+        return response()->json(['documentos' => $documentos], 200);
     }
 
 
@@ -219,10 +224,14 @@ class DocumentoController extends Controller
         $codigo = 201;
 
         $validar = Validator::make($solicitud->all(), [
-            'nombre'       => 'required|string|max:255',
-            'descripcion'  => 'nullable|string',
-            'archivo'      => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB máx
+            'nombre' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
+            'archivo' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120', //5MB máx
             'historial_id' => 'nullable|exists:historials,id',
+        ]);
+        \Log::info('Usuario autenticado', [
+            'id' => auth()->id(),
+            'roles' => auth()->user()->getRoleNames()
         ]);
 
         if ($validar->fails()) {
@@ -234,25 +243,36 @@ class DocumentoController extends Controller
                 $ruta = $archivo->store('documentos', 'public');
 
                 $documento = Documento::create([
-                    'user_id'     => auth()->id(),
-                    'historial_id'=> $solicitud->historial_id,
-                    'nombre'      => $solicitud->nombre,
+                    'user_id' => auth()->id(),
+                    'historial_id' => $solicitud->historial_id,
+                    'nombre' => $solicitud->nombre,
                     'descripcion' => $solicitud->descripcion,
-                    'archivo'     => $ruta,
-                    'tipo'        => $archivo->getClientMimeType(),
-                    'tamano'      => $archivo->getSize(),
+                    'archivo' => $ruta,
+                    'tipo' => $archivo->getClientMimeType(),
+                    'tamano' => $archivo->getSize(),
                 ]);
 
                 $this->registrarLog(auth()->id(), 'subir_documento', "Documento ID {$documento->id} subido");
 
                 $respuesta = [
-                    'message'  => 'Documento subido correctamente',
+                    'message' => 'Documento subido correctamente',
                     'documento' => $documento,
                 ];
             } catch (\Exception $e) {
                 $this->registrarLog(auth()->id(), 'subir_documento_error', "Error al subir documento: {$e->getMessage()}");
                 $respuesta = ['message' => 'Error al subir el documento'];
                 $codigo = 500;
+                $this->logError(
+                    auth()->id(),
+                    'Error al subir documento',
+                    [
+                        'mensaje' => $e->getMessage(),
+                        'archivo' => $e->getFile(),
+                        'linea' => $e->getLine(),
+                        'traza' => $e->getTraceAsString(),
+                        'input' => $solicitud->all(),
+                    ]
+                );
             }
         }
 
@@ -273,49 +293,40 @@ class DocumentoController extends Controller
      */
     public function descargarDocumento(int $id): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $respuesta = null;
-        $codigo = 200;
-
         $documento = Documento::find($id);
 
         if (!$documento) {
             $this->registrarLog(auth()->id(), 'descargar_documento_fallido', "Documento ID $id no encontrado");
-            $respuesta = response()->json(['message' => 'Documento no encontrado'], 404);
-            $codigo = null;
+            return response()->json(['message' => 'Documento no encontrado'], 404);
         }
 
         $usuario = auth()->user();
-        $esPropietario = $documento?->user_id === $usuario->id;
+        $esPropietario = $documento->user_id === $usuario->id;
         $esEspecialistaRelacionado = false;
 
-        if ($usuario->hasRole('especialista') && $documento) {
+        if ($usuario->hasRole('especialista')) {
             $especialista = $usuario->especialista;
-            $pacienteId = $documento->user_id;
-
-            $esEspecialistaRelacionado = $especialista->citas()
-                ->where('paciente_id', $pacienteId)
-                ->whereIn('estado', ['pendiente', 'confirmada', 'finalizada'])
-                ->exists();
+            if ($especialista) {
+                $esEspecialistaRelacionado = $especialista->citas()
+                    ->where('paciente_id', $documento->user_id)
+                    ->whereIn('estado', ['pendiente', 'confirmada', 'finalizada'])
+                    ->exists();
+            }
         }
 
-        if ($documento && !$esPropietario && !$esEspecialistaRelacionado) {
+        if (!$esPropietario && !$esEspecialistaRelacionado) {
             $this->registrarLog($usuario->id, 'descargar_documento_denegado', "Acceso denegado a documento ID $id");
-            $respuesta = response()->json(['message' => 'No tienes permiso para descargar este documento'], 403);
-            $codigo = null;
+            return response()->json(['message' => 'No tienes permiso para descargar este documento'], 403);
         }
 
-        if ($documento && !$respuesta && !Storage::disk('public')->exists($documento->archivo)) {
+        if (!Storage::disk('public')->exists($documento->archivo)) {
             $this->registrarLog($usuario->id, 'descargar_documento_fallido', "Archivo físico no encontrado para documento ID $id");
-            $respuesta = response()->json(['message' => 'Archivo no encontrado en el servidor'], 404);
-            $codigo = null;
+            return response()->json(['message' => 'Archivo no encontrado en el servidor'], 404);
         }
 
-        if ($documento && !$respuesta) {
-            $this->registrarLog($usuario->id, 'descargar_documento', "Descarga del documento ID $id");
-            $respuesta = Storage::disk('public')->download($documento->archivo, $documento->nombre);
-        }
+        $this->registrarLog($usuario->id, 'descargar_documento', "Descarga del documento ID $id");
 
-        return $codigo ? response($respuesta, $codigo) : $respuesta;
+        return Storage::disk('public')->download($documento->archivo, $documento->nombre);
     }
 
 

@@ -16,11 +16,12 @@ class CreateDocumentosTable extends Migration
     {
         Schema::create('documentos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('historial_id')->constrained('historiales')->onDelete('cascade');
+            $table->foreignId('historial_id')->nullable()->constrained('historial')->onDelete('set null');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade')->index();
             $table->string('nombre');
-            $table->string('archivo'); // ruta o nombre archivo
+            $table->string('archivo');
             $table->string('tipo');
+            $table->boolean('visible_para_especialista')->default(true);//si más adelante decido dar al paciente control sobre qué archivos comparte
             $table->unsignedBigInteger('tamano')->nullable();
             $table->text('descripcion')->nullable();
             $table->timestamps();

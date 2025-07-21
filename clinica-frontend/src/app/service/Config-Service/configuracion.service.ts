@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { UserService } from '../User-Service/user.service';
 import { Observable } from 'rxjs';
+import { urlApiServicio } from '../../components/utilidades/variable-entorno';
 
 @Injectable({
     providedIn: 'root',
@@ -38,7 +39,7 @@ export class ConfiguracionService {
     }
 
     cargarColorTemaPublico(): void {
-        this.http.get<{ color_tema: string }>('http://localhost:8000/api/color-tema')
+        this.http.get<{ color_tema: string }>(`${urlApiServicio.apiUrl}/color-tema`)
             .subscribe({
                 next: (respuesta) => {
                     const color = respuesta.color_tema || '#28a745';
@@ -52,6 +53,6 @@ export class ConfiguracionService {
     }
 
     getResumenDashboard(): Observable<any> {
-        return this.http.get(`http://localhost:8000/api/admin/resumen-dashboard`);
+        return this.http.get(`${urlApiServicio.apiUrl}/admin/resumen-dashboard`);
     }
 }

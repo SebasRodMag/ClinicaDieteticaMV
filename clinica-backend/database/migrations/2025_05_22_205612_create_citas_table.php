@@ -23,6 +23,7 @@ class CreateCitasTable extends Migration
             $table->enum('estado', ['pendiente','realizada','cancelada','finalizada','ausente','reasignada'])->default('pendiente');
             $table->boolean('es_primera')->default(false);
             $table->text('comentario')->nullable();
+            $table->string('nombre_sala')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

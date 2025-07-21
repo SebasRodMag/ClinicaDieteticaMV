@@ -24,7 +24,7 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
     calendarOptions: CalendarOptions = {
         plugins: [dayGridPlugin],
         initialView: 'dayGridMonth',
-        events: [], // Se cargan dinámicamente en ngOnChanges
+        events: [],
         eventClick: this.onCitaClick.bind(this),
         locale: 'es',
         headerToolbar: {

@@ -6,4 +6,5 @@ export interface CitaPorEspecialista {
     especialidad: string;
     estado: 'pendiente' | 'realizada' | 'cancelada';
     tipo_cita: string;
+    nombre_sala: string;
 }

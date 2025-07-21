@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'defaults' => [
+        'guard' => 'sanctum',
+    ],
 
     'models' => [
 

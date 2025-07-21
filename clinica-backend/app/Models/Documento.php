@@ -59,4 +59,13 @@ class Documento extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    /**
+     * Relación con el modelo Paciente.
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Paciente, Documento>
+     */
+    public function paciente()
+    {
+        return $this->belongsTo(Paciente::class, 'user_id', 'user_id');
+    }
 }

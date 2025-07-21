@@ -36,11 +36,16 @@
     <button *ngIf="cita.estado === 'pendiente'" class="btn btn-outline-danger btn-sm" (click)="cancelarCita(cita)">
         Cancelar
     </button>
+    <button *ngIf="mostrarBotonVideollamada(cita)" class="btn btn-sm btn-outline-success"
+        (click)="unirseAVideollamada(cita)">
+        <i class="bi bi-camera-video"></i> Unirse
+    </button>
 </ng-template>
 
 <button (click)="nuevaCita()" class="btn btn-primary">
     Nueva cita
 </button>
+
 
 <app-modal-nueva-cita *ngIf="modalNuevaCitaVisible" [modalVisible]="modalNuevaCitaVisible" (creada)="onCitaCreada()"
     (cerrado)="modalNuevaCitaVisible = false">

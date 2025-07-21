@@ -15,10 +15,10 @@ class HistorialController extends Controller
     /**
      * Constructor con middleware de autenticación y control de roles.
      */
-    public function __construct()
+/*     public function __construct()
     {
         $this->middleware(['auth:sanctum']);
-    }
+    } */
 
     /**
      * Listar entradas del historial de un especialista logueado.
@@ -34,7 +34,7 @@ class HistorialController extends Controller
             $especialistaId = Auth::user()->especialista->id ?? null;
 
             if (!$especialistaId) {
-                $this->registrarLog($userId, 'listar_historiales', 'historiales', null);
+                $this->registrarLog($userId, 'listar_historiales', 'historial', null);
                 $respuesta = ['message' => 'No autorizado como especialista.'];
                 $codigo = 403;
                 return response()->json($respuesta, $codigo);
@@ -45,7 +45,7 @@ class HistorialController extends Controller
                 ->orderBy('fecha', 'desc')
                 ->get();
 
-            $this->registrarLog($userId, 'listar_historiales', 'historiales', null);
+            $this->registrarLog($userId, 'listar_historiales', 'historial', null);
             $respuesta = ['message' => 'Historiales obtenidos correctamente', 'data' => $historiales];
         } catch (\Throwable $e) {
             $codigo = 500;
@@ -69,7 +69,7 @@ class HistorialController extends Controller
             $pacienteId = Auth::user()->paciente->id ?? null;
 
             if (!$pacienteId) {
-                $this->registrarLog($userId, 'listar_historiales_paciente', 'historiales', null);
+                $this->registrarLog($userId, 'listar_historiales_paciente', 'historial', null);
                 $respuesta = ['message' => 'No autorizado como paciente.'];
                 $codigo = 403;
                 return response()->json($respuesta, $codigo);
@@ -80,7 +80,7 @@ class HistorialController extends Controller
                 ->orderBy('fecha', 'desc')
                 ->get();
 
-            $this->registrarLog($userId, 'listar_historiales_paciente', 'historiales', null);
+            $this->registrarLog($userId, 'listar_historiales_paciente', 'historial', null);
             $respuesta = ['message' => 'Historiales del paciente obtenidos correctamente', 'data' => $historiales];
         } catch (\Throwable $e) {
             $codigo = 500;
@@ -120,7 +120,7 @@ class HistorialController extends Controller
 
             $historial = Historial::create([ ...$validated, 'id_especialista' => $especialista->id ]);
             
-            $this->registrarLog($userId, 'crear_historial', 'historiales', $historial->id);
+            $this->registrarLog($userId, 'crear_historial', 'historial', $historial->id);
             $respuesta = ['message' => 'Historial creado correctamente', 'data' => $historial];
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
@@ -152,7 +152,7 @@ class HistorialController extends Controller
             if (!$historial) {
                 $codigo = 404;
                 $respuesta = ['message' => 'Historial no encontrado.'];
-                $this->registrarLog($userId, 'actualizar_historial_no_encontrado', 'historiales', $id);
+                $this->registrarLog($userId, 'actualizar_historial_no_encontrado', 'historial', $id);
                 return response()->json($respuesta, $codigo);
             }
 
@@ -166,7 +166,7 @@ class HistorialController extends Controller
 
             $historial->update($validated);
 
-            $this->registrarLog($userId, 'actualizar_historial', 'historiales', $id);
+            $this->registrarLog($userId, 'actualizar_historial', 'historial', $id);
             $respuesta = ['message' => 'Historial actualizado correctamente', 'data' => $historial];
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
@@ -197,13 +197,13 @@ class HistorialController extends Controller
             if (!$historial) {
                 $codigo = 404;
                 $respuesta = ['message' => 'Historial no encontrado.'];
-                $this->registrarLog($userId, 'eliminar_historial_no_encontrado', 'historiales', $id);
+                $this->registrarLog($userId, 'eliminar_historial_no_encontrado', 'historial', $id);
                 return response()->json($respuesta, $codigo);
             }
 
             $historial->delete();
 
-            $this->registrarLog($userId, 'eliminar_historial', 'historiales', $id);
+            $this->registrarLog($userId, 'eliminar_historial', 'historial', $id);
             $respuesta = ['message' => 'Historial eliminado correctamente'];
         } catch (\Throwable $e) {
             $codigo = 500;

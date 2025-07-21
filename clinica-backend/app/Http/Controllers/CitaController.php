@@ -182,6 +182,8 @@ class CitaController extends Controller
                 $validar['especialista_id'] = $especialista->id;
             }
 
+
+
             // Mapear a columnas correctas
             $datos = [
                 'id_paciente' => $validar['paciente_id'],
@@ -194,12 +196,18 @@ class CitaController extends Controller
 
             $cita = Cita::create($datos);
 
+            if ($cita->tipo === 'telematica') {
+                $cita->nombre_sala = $this->generarNombreSala($cita->id_cita);
+                $cita->save();
+            }
+
             $this->registrarLog($userId, 'crear_cita', 'citas', $cita->id);
 
             $respuesta = [
                 'message' => 'Cita creada correctamente',
                 'cita' => $cita,
             ];
+
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
@@ -681,6 +689,55 @@ class CitaController extends Controller
         }
     }
 
+    /**
+     * Método para obtener la url de la videoconferencia según el usuario logueado.
+     * Se verifica si el usuario es paciente o especialista y si estos pertenecen a la cita,
+     * de esta forma, evitamos que se abra una conferencia donde solo hay un usuario asignado.
+     * @param $idCita id de la cita
+     * @return \Illuminate\Http\JsonResponse devuelve la url de la videoconferencia 
+     * y un codigo 200 en caso de éxito o de lo contrario, mensaje de error con su código de error 
+     */
+    public function obtenerSalaSegura($idCita): JsonResponse
+    {
+        $user = auth()->user();
+        $codigo = 200;
+        $respuesta = [];
+
+        try {
+            $cita = Cita::findOrFail($idCita);
+
+            //Verificar si el usuario es paciente o especialista de la cita asignado
+            $esPaciente = $cita->id_paciente && $cita->paciente->user_id === $user->id;
+            $esEspecialista = $cita->id_especialista && $cita->especialista->user_id === $user->id;
+
+            //Si no es uno de los participantes, no podrá tener acceso a la sala
+            if (!$esPaciente && !$esEspecialista) {
+                $codigo = 403;
+                $respuesta = ['message' => 'No tienes permisos para acceder a esta sala'];
+                return response()->json($respuesta, $codigo);
+            }
+
+            //Validar que sea una cita telemática con sala definida
+            if ($cita->tipo_cita !== 'telemática' || !$cita->nombre_sala) {
+                $codigo = 400;
+                $respuesta = ['message' => 'La cita no es telemática o no tiene sala asignada'];
+                return response()->json($respuesta, $codigo);
+            }
+
+            $respuesta = ['nombre_sala' => $cita->nombre_sala];
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            $codigo = 404;
+            $respuesta = ['message' => 'Cita no encontrada'];
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['message' => 'Error al obtener el nombre de la sala'];
+            $this->logError($user->id, 'Error en obtenerSalaSegura', $e->getMessage());
+        }
+
+        return response()->json($respuesta, $codigo);
+    }
+
 
     /**
      * Método para listar las horas disponibles de un especialista para un día determinado.
@@ -923,6 +980,24 @@ class CitaController extends Controller
                 'tipos_estado' => []
             ], 500);
         }
+    }
+
+    /**
+     * Función para generar los nombres de las salas para Jetsi Meet
+     */
+    public function generarNombreSala($idCita): string
+    {
+        if (!is_numeric($idCita) || $idCita <= 0) {
+            throw new \InvalidArgumentException('El ID de la cita no es válido');
+        }
+
+        $citaExiste = \App\Models\Cita::where('id_cita', $idCita)->exists();
+
+        if (!$citaExiste) {
+            throw new \Exception("La cita con ID $idCita no existe");
+        }
+
+        return 'clinicaDietetica-cita-' . $idCita;
     }
 
 

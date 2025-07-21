@@ -11,6 +11,9 @@ import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 import { Especialista } from '../models/especialista.model';
 import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
 import { CalendarioCitasComponent } from './calendario/calendario-citas.component';
+import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
+import { HttpClient } from '@angular/common/http';
+import { urlApiServicio } from '../components/utilidades/variable-entorno';
 
 
 
@@ -48,7 +51,7 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
 
     permitirCrearCitaPaciente: boolean = false;
 
-    constructor(private UserService: UserService, private authService: AuthService, private snackBar: MatSnackBar) { }
+    constructor(private UserService: UserService, private authService: AuthService, private snackBar: MatSnackBar, private HttpClient: HttpClient) { }
 
     ngOnInit(): void {
         this.obtenerCitas();
@@ -207,5 +210,11 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
             });
         });
     }
+
+    unirseAVideollamada(cita: CitaPorEspecialista): void {
+        const url = urlApiServicio.apiUrl;
+        unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
+    }
+
 
 }

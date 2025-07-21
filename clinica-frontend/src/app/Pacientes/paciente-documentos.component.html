@@ -1,0 +1,74 @@
+<!-- Botón para mostrar el formulario -->
+<div class="mb-3">
+    <button class="btn btn-primary" (click)="mostrarFormulario = !mostrarFormulario">
+        {{ mostrarFormulario ? 'Cancelar' : 'Subir nuevo documento' }}
+    </button>
+</div>
+
+<!-- Formulario oculto/visible -->
+<div *ngIf="mostrarFormulario">
+    <h2 class="text-xl font-bold mb-3">Subir nuevo documento</h2>
+
+    <form (ngSubmit)="enviarDocumento()" #formDoc="ngForm">
+        <div class="mb-3">
+            <label class="form-label">Nombre del documento</label>
+            <input type="text" class="form-control" required [(ngModel)]="nombre" name="nombre" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-control" [(ngModel)]="descripcion" name="descripcion"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Archivo (PDF o imagen, máx 5MB)</label>
+            <input type="file" class="form-control" required (change)="onArchivoSeleccionado($event)" />
+        </div>
+
+        <button class="btn btn-success" type="submit" [disabled]="!archivo || subiendo">
+            <span *ngIf="!subiendo">Subir</span>
+            <span *ngIf="subiendo" class="spinner-border spinner-border-sm me-2" role="status"
+                aria-hidden="true"></span>
+            <span *ngIf="subiendo">Subiendo...</span>
+        </button>
+
+        <!-- Spinner mientras sube el documento -->
+        <div *ngIf="subiendo" class="d-flex justify-content-center my-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Subiendo...</span>
+            </div>
+        </div>
+    </form>
+</div>
+<hr class="my-4">
+
+<h3 class="text-lg font-bold mb-2">Mis documentos subidos</h3>
+
+<div *ngIf="cargandoLista">Cargando documentos...</div>
+<!-- <div *ngIf="!cargandoLista && documentos.length === 0" class="text-muted">No tienes documentos subidos.</div> De este mensaje se encarga tabla-documentos-->
+
+<app-tabla-documentos [documentos]="documentos" [mostrarDescargar]="true" [mostrarEliminar]="true"
+    (descargar)="descargar($event)" (eliminar)="eliminar($event)">
+    <!-- Spinner de carga centralizado -->
+    <div *ngIf="cargandoLista"
+        class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+        style="z-index: 2000;">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando documentos...</p>
+        </div>
+    </div>
+    <!-- Spinner mientras se elimina un documento -->
+    <div *ngIf="cargandoEliminacion"
+        class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+        style="z-index: 2000;">
+        <div class="text-center">
+            <div class="spinner-border text-danger" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Eliminando...</span>
+            </div>
+            <p class="mt-2">Eliminando documento...</p>
+        </div>
+    </div>
+</app-tabla-documentos>

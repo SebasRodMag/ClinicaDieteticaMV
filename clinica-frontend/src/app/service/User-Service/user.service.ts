@@ -14,6 +14,7 @@ import { CitaPorEspecialista } from '../../models/citasPorEspecialista.model';
 import { CitaListado } from '../../models/listarCitas.model';
 import { CitaActualizar } from '../../models/citaActualizar.model';
 import { Log } from '../../models/log.model';
+import { urlApiServicio } from '../../components/utilidades/variable-entorno';
 import { Historial } from '../../models/historial.model';
 
 
@@ -21,7 +22,7 @@ import { Historial } from '../../models/historial.model';
     providedIn: 'root'
 })
 export class UserService {
-    private apiUrl = 'http://localhost:8000/api';
+    private apiUrl = urlApiServicio.apiUrl;
 
     constructor(private http: HttpClient) { }
 
@@ -343,5 +344,12 @@ export class UserService {
         );
     }
 
+    /******************************************************************************/
+    /******************* Rutas para video Conferencias ****************************/
+    /******************************************************************************/
 
+    //Obtener la url de la sala, desde la tabla de Citas.
+    obtenerNombreSalaCita(idCita: number): Observable<{ nombre_sala: string }> {
+        return this.http.get<{ nombre_sala: string }>(`${this.apiUrl}/citas/${idCita}/sala-segura`);
+    }
 }

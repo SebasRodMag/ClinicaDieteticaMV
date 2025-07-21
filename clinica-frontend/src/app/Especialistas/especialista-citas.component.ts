@@ -6,6 +6,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { CitaPorPaciente } from '../models/citasPorPaciente.model';
 import { FormsModule } from '@angular/forms';
 import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
+import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
+import { HttpClient } from '@angular/common/http';
+import { urlApiServicio } from '../components/utilidades/variable-entorno';
+import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
+import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
 
 @Component({
     selector: 'app-especialista-citas',
@@ -23,6 +28,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     loading: boolean = false;
     huboError: boolean = false;
     modalNuevaCitaVisible: boolean = false;
+    mostrarBotonVideollamada = mostrarBotonVideollamada;
 
     columnas = ['id', 'fecha', 'hora', 'nombre_paciente', 'dni_paciente', 'estado', 'tipo_cita', 'accion'];
 
@@ -30,7 +36,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
 
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
-    constructor(private UserService: UserService, private snackBar: MatSnackBar) { }
+    constructor(private UserService: UserService, private snackBar: MatSnackBar, private HttpClient:HttpClient) { }
 
     ngOnInit(): void {
         this.obtenerCitas();
@@ -136,5 +142,10 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     onCitaCreada(): void {
         this.modalNuevaCitaVisible = false;
         this.obtenerCitas();
+    }
+
+    unirseAVideollamada(cita: CitaPorEspecialista): void {
+        const url = urlApiServicio.apiUrl;
+        unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 }
