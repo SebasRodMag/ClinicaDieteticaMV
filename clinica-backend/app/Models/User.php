@@ -20,6 +20,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property string $telefono Teléfono de contacto del usuario
  * @property string $direccion Dirección del usuario
  * @property string $password Contraseña del usuario (encriptada)
+ * @property \Illuminate\Support\Collection $roles
+ * @property \App\Models\Paciente|null $paciente
+ * @property \App\Models\Especialista|null $especialista
  */
 class User extends Authenticatable
 {

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
 import { UserService } from '../service/User-Service/user.service';
 import { AuthService } from '../service/Auth-Service/Auth.service';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
@@ -23,11 +23,12 @@ import { urlApiServicio } from '../components/utilidades/variable-entorno';
     imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent],
     templateUrl: './pacientes-citas.component.html',
 })
-export class PacientesCitasComponent implements OnInit, AfterViewInit {
+export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy {
     citas: CitaPorEspecialista[] = [];
     citasFiltradas: CitaPorEspecialista[] = [];
 
     filtroTexto: string = '';
+    temporizadorActualizacion: any;//Para actualizar el botón de unirse a la conferencia sin recargar la página
 
     modalVisible = false;
     loading: boolean = false;
@@ -56,12 +57,19 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
     ngOnInit(): void {
         this.obtenerCitas();
         this.cargarConfiguracion();
+        this.iniciarActualizacionPeriodica();
     }
 
     ngAfterViewInit(): void {
         this.templatesMap = {
             accion: this.accionTemplate,
         };
+    }
+
+    ngOnDestroy(): void {
+        if (this.temporizadorActualizacion) {
+            clearInterval(this.temporizadorActualizacion);
+        }
     }
 
     cargarConfiguracion(): void {
@@ -214,6 +222,25 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
     unirseAVideollamada(cita: CitaPorEspecialista): void {
         const url = urlApiServicio.apiUrl;
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
+    }
+
+    puedeUnirseACita(cita: CitaPorEspecialista): boolean {
+        if (cita.tipo_cita !== 'telemática') return false;
+
+        const ahora = new Date();
+        const fechaHoraCita = new Date(`${cita.fecha}T${cita.hora}`);
+
+        //Tiempo durante el cual se muestra el botón de Unirse
+        const cincoMinAntes = new Date(fechaHoraCita.getTime() - 5 * 60 * 1000);//5 minutos antes de la cita
+        const treintaMinDespues = new Date(fechaHoraCita.getTime() + 30 * 60 * 1000);//30 minutos después del inicio de la cita
+
+        return ahora >= cincoMinAntes && ahora <= treintaMinDespues;
+    }
+
+    iniciarActualizacionPeriodica(): void {
+        this.temporizadorActualizacion = setInterval(() => {
+            this.filtrarCitas(); //actualiza los datos y reevaluará `puedeUnirseACita` por cada cita visible
+        }, 15000); //cada 15 segundos
     }
 
 

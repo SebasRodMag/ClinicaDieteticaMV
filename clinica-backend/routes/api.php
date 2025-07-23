@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('usuarios/{id}', [UserController::class, 'borrarUsuario']);
         Route::get('usuarios/listar/usuarios', [UserController::class, 'getUsuariosSinRolEspecialistaNiPaciente']);
         Route::get('/especialistasfull', [EspecialistaController::class, 'listarEspecialistasFull']);
+        Route::get('especialista/horas-disponibles/{fecha}', [CitaController::class, 'horasDisponiblesEspecialista']);
 
         Route::post('especialistas', [EspecialistaController::class, 'nuevoEspecialista']);
         Route::put('especialistas/{id}', [EspecialistaController::class, 'actualizarEspecialista']);
@@ -58,7 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:paciente|especialista|administrador')->group(function () {
-        Route::get('horas-disponibles/{fecha}', [CitaController::class, 'horasDisponibles']);
+        Route::get('horas-disponibles/{idEspecialista}/{fecha}', [CitaController::class, 'horasDisponiblesPorEspecialista']);
         Route::post('citas', [CitaController::class, 'nuevaCita']);
         Route::get('pacientes', [PacienteController::class, 'listarPacientes']);
         Route::get('pacientespornombre', [PacienteController::class, 'listarPacientesPorNombre']);
@@ -103,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
      * Rutas para la vista de Especialista
      */
     Route::middleware('role:especialista')->group(function () {
+        Route::get('especialista/horas-disponibles/{fecha}', [CitaController::class, 'horasDisponiblesEspecialista']);
         Route::get('historial-paciente/', [HistorialController::class, 'listarHistoriales']);
         Route::post('historial/', [HistorialController::class, 'nuevaEntrada']);
         //Route::get('mis-historiales', [HistorialController::class, 'historialesPorPaciente']); ya esta aplicada unicamente para pacientes

@@ -24,7 +24,7 @@ export class AuthInterceptor implements HttpInterceptor {
         req: HttpRequest<any>,
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
-        const token = this.authService.getToken();
+        const token = this.authService.obtenerToken();
 
         // Se excluyen las rutas públicas como login y register
         if (req.url.includes('/login') || req.url.includes('/register')) {

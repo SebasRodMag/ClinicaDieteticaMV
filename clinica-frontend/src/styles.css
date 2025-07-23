@@ -98,11 +98,22 @@ button {
     font-size: 1rem;
 }
 
-/*Botones primarios, sobre escribimos el estilo de bootstrap*/
+/*Botones primarios, sobre escribiendo el estilo de bootstrap*/
 .btn-primary {
     background-color: var(--color-tema) !important;
     border-color: var(--color-tema) !important;
     color: white !important;
+}
+
+.btn-outline-primary {
+    border-color: var(--color-tema) !important;
+    color: var(--color-tema) !important;
+}
+
+.btn-outline-primary:hover{
+    background-color: var(--color-tema) !important;
+    color: white !important;
+    border-color: var(--color-tema) !important;
 }
 
 .btn-primary:hover,
@@ -111,6 +122,35 @@ button {
     color: var(--color-tema) !important;
     border-color: var(--color-tema) !important;
     font-weight: 500;
+}
+
+/*Paginador, sobre escribiendo el estilo de bootstrap*/
+.page-item.active .page-link {
+    background-color: var(--color-tema) !important;
+    border-color: var(--color-tema) !important;
+    color: white !important;
+}
+
+.page-link:hover {
+    background-color: var(--color-tema) !important;
+    border-color: var(--color-tema) !important;
+    color: white !important;
+}
+
+.page-item.disabled .page-link {
+    color: #999 !important;
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+}
+
+.page-link {
+    border-color: var(--color-tema) !important;
+    color: var(--color-tema) !important;
+}
+
+.page-link:hover {
+    background-color: var(--color-tema) !important;
+    color: white !important;
 }
 
 .badge-primary {

@@ -19,6 +19,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     @Output() cerrado = new EventEmitter<void>();
 
     pacientes: Paciente[] = [];
+    pacientesCargados: boolean = false;
 
     pacienteSeleccionado: number | null = null;
     fecha: string = '';
@@ -51,13 +52,16 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     }
 
     private cargarPacientes(): void {
+        this.pacientesCargados = false;
         this.UserService.listarPacientes().subscribe({
             next: (data) => {
                 this.pacientes = data.pacientes || [];
+                this.pacientesCargados = true;
                 console.log('Pacientes en modal especialista:', this.pacientes);
             },
             error: () => {
                 this.snackBar.open('Error al cargar pacientes', 'Cerrar', { duration: 3000 });
+                this.pacientesCargados = true;
             }
         });
     }
@@ -179,6 +183,8 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             complete: () => this.cargando = false
         });
     }
+
+    
 
     cerrar(): void {
         this.cerrado.emit();

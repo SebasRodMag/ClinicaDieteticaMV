@@ -6,7 +6,7 @@ use App\Models\Especialista;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class EspecialistaControllerTest extends TestCase
+class PacienteEspecialistaControllerTest extends TestCase
 {
     use RefreshDatabase;
 

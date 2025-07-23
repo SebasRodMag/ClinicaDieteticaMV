@@ -1,12 +1,14 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="text-2xl font-bold mb-4">Vista mensual de las citas</h2>
-    <button (click)="nuevaCita()" class="btn btn-primary">
+    <!-- Solo se muestra el botón si está permitido crear cita -->
+    <button *ngIf="permitirCrearCitaPaciente" (click)="nuevaCita()" class="btn btn-primary">
         Nueva cita
     </button>
 </div>
 
 
-<app-calendario-citas [citas]="citas" (citaCancelada)="cancelarCitaDesdeCalendario($event)">
+<app-calendario-citas *ngIf="!loading && citas.length > 0" [citas]="citas"
+    (citaCancelada)="cancelarCitaDesdeCalendario($event)">
 </app-calendario-citas>
 <h2 class="text-2xl font-bold mb-4">Listado de todas las citas</h2>
 
@@ -34,8 +36,7 @@
     <button *ngIf="cita.estado === 'pendiente'" class="btn btn-outline-danger btn-sm" (click)="cancelarCita(cita)">
         Cancelar
     </button>
-    <button *ngIf="cita.tipo_cita === 'telemática'" class="btn btn-sm btn-outline-success"
-        (click)="unirseAVideollamada(cita)">
+    <button *ngIf="puedeUnirseACita(cita)" class="btn btn-sm btn-outline-success" (click)="unirseAVideollamada(cita)">
         <i class="bi bi-camera-video"></i> Unirse
     </button>
 </ng-template>

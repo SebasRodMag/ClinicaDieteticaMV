@@ -40,7 +40,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
     }
 
     const allowedRoles: string[] | undefined = route?.data?.['roles'];
-    const userRole = this.authService.getUserRole();
+    const userRole = this.authService.obtenerRol();
 
     if (allowedRoles && (!userRole || !allowedRoles.includes(userRole))) {
       console.warn(`[AuthGuard] Acceso denegado: Rol '${userRole}' no autorizado para esta ruta.`);

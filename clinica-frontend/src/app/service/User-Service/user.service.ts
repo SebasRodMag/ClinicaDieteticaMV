@@ -16,7 +16,7 @@ import { CitaActualizar } from '../../models/citaActualizar.model';
 import { Log } from '../../models/log.model';
 import { urlApiServicio } from '../../components/utilidades/variable-entorno';
 import { Historial } from '../../models/historial.model';
-
+import { AuthService } from '../Auth-Service/Auth.service';
 
 @Injectable({
     providedIn: 'root'
@@ -24,7 +24,7 @@ import { Historial } from '../../models/historial.model';
 export class UserService {
     private apiUrl = urlApiServicio.apiUrl;
 
-    constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient, private authService: AuthService) { }
 
     logout(): Observable<any> {
         return this.http.post(`${this.apiUrl}/logout`, null);
@@ -216,11 +216,19 @@ export class UserService {
      * Ejemplo de respuesta: ["09:00", "09:30", "10:00", "10:30", ...]
      */
     getHorasDisponibles(idEspecialista: number | null, fecha: string): Observable<{ horas_disponibles: string[] }> {
-        let url = `${this.apiUrl}/horas-disponibles`;
-        if (idEspecialista !== null) {
-            url += `/${idEspecialista}`;
+        let url = '';
+
+        const rol = this.authService.obtenerRol(); // Asegúrate de tener este método en AuthService
+
+        if (rol === 'especialista') {
+            url = `${this.apiUrl}/especialista/horas-disponibles/${fecha}`;
+        } else {
+            if (idEspecialista === null) {
+                throw new Error('Debe proporcionarse un ID de especialista para este rol.');
+            }
+            url = `${this.apiUrl}/horas-disponibles/${idEspecialista}/${fecha}`;
         }
-        url += `?fecha=${fecha}`;
+
         return this.http.get<{ horas_disponibles: string[] }>(url);
     }
 

@@ -5,6 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo Configuracion
+ *
+ * @property int $id
+ * @property string $clave
+ * @property string $valor
+ * @property string|null $descripcion
+ *
+ * Métodos estáticos:
+ * @method static mixed get(string $clave, mixed $preDefinido = null)
+ * @method static \App\Models\Configuracion set(string $clave, mixed $valor, ?string $descripcion = null)
+ */
+
 class Configuracion extends Model
 {
     use HasFactory;

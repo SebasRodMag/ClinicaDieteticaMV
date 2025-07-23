@@ -26,6 +26,7 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
         initialView: 'dayGridMonth',
         events: [],
         eventClick: this.onCitaClick.bind(this),
+        firstDay: 1,
         locale: 'es',
         headerToolbar: {
             left: 'prev,next today',
@@ -40,6 +41,7 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
             list: 'Agenda',
         },
         height: 'auto',
+        
     };
 
     constructor(private configService: ConfiguracionService) { }

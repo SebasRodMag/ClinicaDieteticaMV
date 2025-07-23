@@ -88,35 +88,35 @@ export class AuthService {
     // Estado de autenticación
     // ========================
     isLoggedIn(): boolean {
-        return !!this.getToken();
+        return !!this.obtenerToken();
     }
 
     // ========================
     // Obtener token JWT
     // ========================
-    getToken(): string | null {
+    obtenerToken(): string | null {
         return this.getItem<string>(this.tokenKey);
     }
 
     // ========================
     // Obtener objeto usuario
     // ========================
-    getUser(): User | null {
+    obtenerUser(): User | null {
         return this.getItem<User>(this.userKey);
     }
 
     // ========================
     // Obtener rol del usuario
     // ========================
-    getUserRole(): string | null {
-        return this.getUser()?.rol || null;
+    obtenerRol(): string | null {
+        return this.obtenerUser()?.rol || null;
     }
 
     // ========================
     // Headers autorizados para llamadas protegidas
     // ========================
     getAuthHeaders(): HttpHeaders {
-        const token = this.getToken();
+        const token = this.obtenerToken();
         return new HttpHeaders({
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -127,7 +127,7 @@ export class AuthService {
     // Obtener el id del usuario logueado
     // ========================
     getUserId(): number | null {
-        return this.getUser()?.id || null;
+        return this.obtenerUser()?.id || null;
     }
 
     // ========================
