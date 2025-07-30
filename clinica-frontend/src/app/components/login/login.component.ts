@@ -16,6 +16,7 @@ export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   errorMessage: string = '';
   loading = false;
+  mostrarPassword = false;
 
   constructor(
     private fb: FormBuilder,
