@@ -1,9 +1,10 @@
-<!-- Modal Bootstrap -->
+<div class="modal-backdrop fade show" *ngIf="visible"></div>
+<!-- Este modal es el mismo para editar como para crear un nuevo usuario -->
 <div class="modal fade" tabindex="-1" [ngClass]="{ 'show d-block': visible }" [attr.aria-hidden]="!visible">
     <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
         <div class="modal-content">
             <form (ngSubmit)="onSubmit()">
-                <div class="modal-header">
+                <div class="modal-header bg-primary text-white modal-header-sistema">
                     <h5 class="modal-title">
                         {{ esNuevo ? 'Nuevo Usuario' : 'Editar Usuario' }}
                     </h5>

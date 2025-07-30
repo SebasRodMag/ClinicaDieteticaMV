@@ -15,6 +15,18 @@ svg[viewBox*="%"] {
     text-align: center;
 }
 
+/*Para acegurarnos que el snackbar te mantenga por encima de los modales modificamos el div que los contiene*/
+.cdk-overlay-container {
+    z-index: 5000 !important;
+    position: fixed !important;
+}
+
+.snackbar-success,
+.snackbar-warning,
+.snackbar-error {
+    z-index: 5001 !important;
+}
+
 .overlay-cargando {
     position: absolute;
     top: 0;
@@ -78,6 +90,12 @@ body {
     color: white;
 }
 
+/*Subir la altura del los snackbar para que no los solapen los div de los modales*/
+.snackbar-warning,
+.snackbar-success,
+.snackbar-error {
+    z-index: 4000 !important;
+}
 
 .list-group-item:hover {
     background-color: #f1f1f1;
@@ -98,6 +116,11 @@ button {
     font-size: 1rem;
 }
 
+/*Sobre escribiendo la Cabecera de los modales*/
+.modal-header-sistema {
+    background-color: var(--color-tema) !important;
+}
+
 /*Botones primarios, sobre escribiendo el estilo de bootstrap*/
 .btn-primary {
     background-color: var(--color-tema) !important;
@@ -110,7 +133,7 @@ button {
     color: var(--color-tema) !important;
 }
 
-.btn-outline-primary:hover{
+.btn-outline-primary:hover {
     background-color: var(--color-tema) !important;
     color: white !important;
     border-color: var(--color-tema) !important;

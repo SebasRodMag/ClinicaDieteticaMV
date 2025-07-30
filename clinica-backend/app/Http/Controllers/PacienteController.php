@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 
 class PacienteController extends Controller
@@ -589,7 +591,7 @@ class PacienteController extends Controller
         $user = null;
 
         $validar = Validator::make($solicitud->all(), [
-            'user_id' => 'required|integer|exists:users,id',
+            'user_id' => 'required|integer|exists:users,id|unique:pacientes,user_id',
         ]);
 
         if ($validar->fails()) {
@@ -601,8 +603,13 @@ class PacienteController extends Controller
         try {
             $user = User::findOrFail($solicitud->user_id);
 
+            // Generar un número de historial único
+            $numeroHistorial = $this->generarNumeroHistorialUnico();
+
             $paciente = Paciente::create([
                 'user_id' => $user->id,
+                'numero_historial' => $numeroHistorial,
+                'fecha_alta' => now()->toDateString(),
             ]);
 
             $user->assignRole('paciente');
@@ -614,6 +621,7 @@ class PacienteController extends Controller
             $respuesta = [
                 'message' => 'Paciente creado correctamente',
                 'user' => $user,
+                'paciente'=> $paciente,
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -681,5 +689,18 @@ class PacienteController extends Controller
         }
 
         return response()->json($respuesta, $codigo);
+    }
+
+    private function generarNumeroHistorialUnico(): string
+    {
+        do {
+            $prefijo = strtoupper(Str::random(2));
+            $numeros = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $sufijo = strtoupper(Str::random(2));
+
+            $numeroHistorial = $prefijo . $numeros . $sufijo;
+        } while (Paciente::where('numero_historial', $numeroHistorial)->exists());
+
+        return $numeroHistorial;
     }
 }

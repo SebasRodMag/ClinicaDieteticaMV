@@ -15,3 +15,8 @@ export interface Paciente {
     especialista: Especialista | null;
     user: Usuario | null;
 }
+
+type PacienteExtendido = Paciente & {
+    nombre_paciente: string;
+    nombre_especialista: string;
+};

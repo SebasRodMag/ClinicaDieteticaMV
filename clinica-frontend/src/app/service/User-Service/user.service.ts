@@ -68,6 +68,10 @@ export class UserService {
         return this.http.put<Paciente>(`${this.apiUrl}/pacientes/${paciente.id}`, paciente);
     }
 
+    crearPaciente(paciente: Partial<Paciente>): Observable<Paciente> {
+        return this.http.post<any>(`${this.apiUrl}/nuevo-paciente`, paciente);
+    }
+
     /**
      * Listamos los pacientes registrados en la clínica.
      * Devuelve un json con un array de pacientes con la siguiente estructura:

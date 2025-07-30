@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('documentos/{id}/descargar', [DocumentoController::class, 'descargarDocumento']);
         Route::delete('documentos/{id}', [DocumentoController::class, 'eliminarDocumento']);
         Route::get('citas/{id}/sala-segura', [CitaController::class, 'obtenerSalaSegura']);
+        Route::post('nuevo-paciente', [PacienteController::class, 'nuevoPaciente']);
     });
     /**
      * 
