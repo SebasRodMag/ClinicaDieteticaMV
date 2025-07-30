@@ -22,6 +22,16 @@
     [columnaOrden]="null" [direccionOrdenAsc]="true" [paginaActual]="1" [itemsPorPagina]="10"
     [maxPaginasVisibles]="5" />
 
+<!-- Fecha en dd-MM-yyyy -->
+<ng-template #fechaTemplate let-cita>
+    {{ formatearFecha(cita.fecha, '/') }}
+</ng-template>
+
+<!-- Hora en HH:mm (si viene 'HH:mm:ss') -->
+<ng-template #horaTemplate let-cita>
+    {{ (cita.hora || '').slice(0, 5) }}
+</ng-template>
+
 <!-- Mensaje si no hay resultados filtrados -->
 <div *ngIf="!loading && citasFiltradas.length === 0" class="alert alert-info mt-3 text-center">
     No hay citas programadas para esta fecha o no coinciden con el filtro aplicado.

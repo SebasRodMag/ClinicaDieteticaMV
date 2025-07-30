@@ -11,6 +11,7 @@ import { HttpClient } from '@angular/common/http';
 import { urlApiServicio } from '../components/utilidades/variable-entorno';
 import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
 import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
+import { formatearFecha } from '../components/utilidades/sanitizar.utils';
 
 @Component({
     selector: 'app-especialista-citas',
@@ -21,6 +22,7 @@ import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton
 export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     citas: CitaPorPaciente[] = [];
     citasFiltradas: CitaPorPaciente[] = [];
+    formatearFecha = formatearFecha;
 
     filtroTexto: string = '';
     filtroFecha: string = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -33,10 +35,12 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     columnas = ['id', 'fecha', 'hora', 'nombre_paciente', 'dni_paciente', 'estado', 'tipo_cita', 'accion'];
 
     @ViewChild('accionTemplate', { static: true }) accionTemplate!: TemplateRef<any>;
+    @ViewChild('fechaTemplate', { static: true }) fechaTemplate!: TemplateRef<any>;
+    @ViewChild('horaTemplate', { static: true }) horaTemplate!: TemplateRef<any>;
 
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
-    constructor(private UserService: UserService, private snackBar: MatSnackBar, private HttpClient:HttpClient) { }
+    constructor(private UserService: UserService, private snackBar: MatSnackBar, private HttpClient: HttpClient) { }
 
     ngOnInit(): void {
         this.obtenerCitas();
@@ -45,6 +49,8 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     ngAfterViewInit(): void {
         this.templatesMap = {
             accion: this.accionTemplate,
+            fecha: this.fechaTemplate,
+            hora: this.horaTemplate,
         };
     }
 

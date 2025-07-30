@@ -18,14 +18,17 @@ export function validarEmail(email: string): boolean {
 }
 
 /**
- * Formatea fecha de '2025-06-19' a 'DD/MM/YYYY'.
+ * Formatea fecha de '2025-06-19' a 'DD/MM/YYYY' por defecto,
+ * y permite cambiar el separador (p. ej. '-').
  */
-export function formatearFecha(fechaIso: string): string {
+export function formatearFecha(fechaIso: string, sep: '-' | '/' = '/'): string {
+    if (!fechaIso) return '';
     const fecha = new Date(fechaIso);
-    const dia = fecha.getDate().toString().padStart(2, '0');
-    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    if (isNaN(fecha.getTime())) return fechaIso;
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
     const año = fecha.getFullYear();
-    return `${dia}/${mes}/${año}`;
+    return `${dia}${sep}${mes}${sep}${año}`;
 }
 
 /**

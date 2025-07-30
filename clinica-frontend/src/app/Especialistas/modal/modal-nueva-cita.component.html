@@ -1,7 +1,8 @@
 <!-- Spinner con backdrop -->
 <div *ngIf="cargando" class="modal-backdrop fade show"></div>
 <div *ngIf="!pacientesCargados || cargando" class="modal-backdrop fade show"></div>
-<div *ngIf="!pacientesCargados || cargando" class="modal d-block" tabindex="-1" aria-modal="true" role="dialog" style="z-index: 1050;">
+<div *ngIf="!pacientesCargados || cargando" class="modal d-block" tabindex="-1" aria-modal="true" role="dialog"
+    style="z-index: 1050;">
     <div class="d-flex justify-content-center align-items-center vh-100">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Cargando...</span>
@@ -21,6 +22,12 @@
                 </div>
 
                 <div class="modal-body">
+                    <!-- Mensaje -->
+                    <div class="alert alert-info small py-2">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        Desde aquí podremos crear una nueva cita para el paciente seleccionado. 
+                        Luego de seleccionar la fecha, podremos seleccionar la hora dependiendo de la disponibilidad del profesional.
+                    </div>
                     <!-- Paciente -->
                     <div class="mb-3">
                         <label for="paciente" class="form-label">Paciente</label>
