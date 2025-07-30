@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('documentos/{id}', [DocumentoController::class, 'eliminarDocumento']);
         Route::get('citas/{id}/sala-segura', [CitaController::class, 'obtenerSalaSegura']);
         Route::post('nuevo-paciente', [PacienteController::class, 'nuevoPaciente']);
+        Route::patch('citas/{id}/cancelar', [CitaController::class, 'cancelarCita']);
     });
     /**
      * 
@@ -92,7 +93,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:paciente')->group(function () {
 
         Route::post('pacientes/{id}/citas', [CitaController::class, 'crearNuevaCita']);
-        Route::patch('citas/{id}/cancelar', [CitaController::class, 'cancelarCita']);
+        
         Route::get('mis-historiales', [HistorialController::class, 'historialesPorPaciente']);
         Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
         Route::get('pacientes/{id}', [PacienteController::class, 'verPaciente']);

@@ -44,24 +44,48 @@
             </div>
         </div>
 
+        <!-- Contraseña -->
         <div class="col-md-6">
             <label for="password" class="form-label">Contraseña</label>
-            <input id="password" type="password" formControlName="password" class="form-control"
-                [class.is-invalid]="formulario['password'].invalid && formulario['password'].touched"
-                placeholder="******" #passwordInput (keydown.enter)="focusCampoSig('password_confirmation')" />
-            <div *ngIf="formulario['password'].invalid && formulario['password'].touched" class="invalid-feedback">
+
+            <div class="input-group">
+                <input [type]="mostrarPassword ? 'text' : 'password'" id="password" formControlName="password"
+                    class="form-control"
+                    [class.is-invalid]="formulario['password'].invalid && formulario['password'].touched"
+                    placeholder="*****" #passwordInput (keydown.enter)="focusCampoSig('password_confirmation')" />
+                <button type="button" class="btn btn-outline-secondary" (mousedown)="mostrarPassword = true"
+                    (mouseup)="mostrarPassword = false" (mouseleave)="mostrarPassword = false" [disabled]="loading"
+                    aria-label="Mostrar contraseña mientras se mantenga pulsado">
+                    <i class="bi" [ngClass]="mostrarPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                </button>
+            </div>
+
+            <!-- feedback bajo el input-group -->
+            <div *ngIf="formulario['password'].invalid && formulario['password'].touched"
+                class="invalid-feedback d-block">
                 <div *ngIf="formulario['password'].errors?.['required']">La contraseña es obligatoria.</div>
+                <div *ngIf="formulario['password'].errors?.['minlength']">Mínimo 6 caracteres.</div>
             </div>
         </div>
 
+        <!-- Confirmar contraseña -->
         <div class="col-md-6">
             <label for="password_confirmation" class="form-label">Confirmar contraseña</label>
-            <input id="password_confirmation" type="password" formControlName="password_confirmation"
-                class="form-control"
-                [class.is-invalid]="formulario['password_confirmation'].touched && (formulario['password_confirmation'].invalid || registerForm.errors?.['notMatching'])"
-                placeholder="******" #passwordConfirmationInput (keydown.enter)="onSubmit()" />
+
+            <div class="input-group">
+                <input [type]="mostrarConfirmarPassword ? 'text' : 'password'" id="password_confirmation"
+                    formControlName="password_confirmation" class="form-control"
+                    [class.is-invalid]="formulario['password_confirmation'].touched && (formulario['password_confirmation'].invalid || registerForm.errors?.['notMatching'])"
+                    placeholder="*****" #passwordConfirmationInput (keydown.enter)="onSubmit()" />
+                <button type="button" class="btn btn-outline-secondary" (mousedown)="mostrarConfirmarPassword = true"
+                    (mouseup)="mostrarConfirmarPassword = false" (mouseleave)="mostrarConfirmarPassword = false" [disabled]="loading"
+                    aria-label="Mostrar contraseña mientras se mantenga pulsado">
+                    <i class="bi" [ngClass]="mostrarConfirmarPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                </button>
+            </div>
+
             <div *ngIf="formulario['password_confirmation'].touched && (formulario['password_confirmation'].invalid || registerForm.errors?.['notMatching'])"
-                class="invalid-feedback">
+                class="invalid-feedback d-block">
                 <div *ngIf="formulario['password_confirmation'].errors?.['required']">Este campo es obligatorio.</div>
                 <div *ngIf="registerForm.errors?.['notMatching']">Las contraseñas no coinciden.</div>
             </div>

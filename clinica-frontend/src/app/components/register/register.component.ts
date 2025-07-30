@@ -39,6 +39,8 @@ export class RegisterComponent implements OnInit {
   registerForm: FormGroup;
   errorMessages: { [key: string]: string[] } = {};
   loading = false;
+  mostrarPassword = false;
+  mostrarConfirmarPassword = false;
 
   constructor(
     private fb: FormBuilder,
