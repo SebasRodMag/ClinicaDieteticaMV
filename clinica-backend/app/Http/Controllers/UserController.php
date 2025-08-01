@@ -389,7 +389,6 @@ class UserController extends Controller
         $codigo = 200;
         $respuesta = [];
 
-        // Validar acceso solo a administradores
         if (!auth()->check() || !auth()->user()->hasRole('administrador')) {
             $codigo = 403;
             $respuesta = ['errors' => ['autorizacion' => ['No autorizado.']]];
@@ -397,22 +396,17 @@ class UserController extends Controller
         }
 
         try {
-            $usuarios = DB::table('users')
-                ->leftJoin('pacientes', 'users.id', '=', 'pacientes.user_id')
-                ->leftJoin('especialistas', 'users.id', '=', 'especialistas.user_id')
-                ->whereNull('pacientes.user_id')
-                ->whereNull('especialistas.user_id')
-                ->select('users.id', 'users.nombre', 'users.apellidos')
+            $usuarios = User::role('usuario')
+                ->whereDoesntHave('paciente')
+                ->whereDoesntHave('especialista')
+                ->select('id', 'nombre', 'apellidos')
                 ->get()
-                ->map(function ($user) {
-                    return [
-                        'id' => $user->id,
-                        'nombre_apellidos' => $user->nombre . ' ' . $user->apellidos,
-                    ];
-                });
+                ->map(fn($user) => [
+                    'id' => $user->id,
+                    'nombre_apellidos' => $user->nombre . ' ' . $user->apellidos,
+                ]);
 
             $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
-
             $respuesta = ['data' => $usuarios];
         } catch (\Exception $e) {
             $codigo = 500;
@@ -422,6 +416,7 @@ class UserController extends Controller
 
         return response()->json($respuesta, $codigo);
     }
+
 
 
 }

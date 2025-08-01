@@ -6,6 +6,7 @@ use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Traits\Loggable;
+use App\Models\Cita;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -13,11 +14,17 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use App\Services\BajasServices;
+use Illuminate\Validation\Rule;
 
 
 class PacienteController extends Controller
 {
     use Loggable;
+
+    public function __construct(private BajasServices $bajasServices)
+    {
+    }
 
     /**
      * Muestra una lista de pacientes.
@@ -227,32 +234,82 @@ class PacienteController extends Controller
      */
     public function borrarPaciente($id): JsonResponse
     {
-        $userId = auth()->id();
-        $respuesta = [];
+        $userId = Auth::id();
         $codigo = 200;
+        $respuesta = ['message' => 'Paciente dado de baja y citas eliminadas correctamente'];
 
-        if (!is_numeric($id)) {
-            $this->registrarLog($userId, 'borrar_paciente_id_invalido', 'paciente', null);
-            $respuesta = ['message' => 'ID inválido'];
-            $codigo = 400;
-        } else {
+        try {
+            // Validación básica de ID
+            if (!is_numeric($id)) {
+                $codigo = 400;
+                $respuesta = ['message' => 'ID inválido'];
+                $this->registrarLog($userId, 'borrar_paciente_id_invalido', 'paciente', null);
+                return response()->json($respuesta, $codigo);
+            }
+
             $paciente = Paciente::find($id);
 
             if (!$paciente) {
-                $this->registrarLog($userId, 'borrar_paciente_id_no_encontrado', 'paciente', $id);
-                $respuesta = ['message' => 'Paciente no encontrado'];
                 $codigo = 404;
-            } else {
-                try {
-                    $paciente->delete();
-                    $this->registrarLog($userId, 'borrar_paciente', 'paciente', $id);
-                    $respuesta = ['message' => 'Paciente eliminado correctamente'];
-                } catch (\Exception $e) {
-                    $this->registrarLog($userId, 'borrar_paciente_error', 'paciente', $id);
-                    $respuesta = ['message' => 'No se pudo eliminar el paciente'];
-                    $codigo = 500;
+                $respuesta = ['message' => 'Paciente no encontrado'];
+                $this->registrarLog($userId, 'borrar_paciente_id_no_encontrado', 'paciente', $id);
+                return response()->json($respuesta, $codigo);
+            }
+
+            DB::beginTransaction();
+
+            // 1) Cambiar rol del usuario asociado a 'usuario'
+            $user = $paciente->user ?? $paciente->usuario;
+            if ($user) {
+                if (property_exists($user, 'rol') || array_key_exists('rol', $user->getAttributes())) {
+                    $user->rol = 'usuario';
+                    $user->save();
+                } elseif (method_exists($user, 'syncRoles')) {
+                    $user->syncRoles(['usuario']); // Spatie
                 }
             }
+
+            // 2) Eliminar citas del paciente (primero citas para evitar FK)
+            $citasIds = Cita::where(function ($q) use ($id) {
+                $q->where('paciente_id', $id)->orWhere('id_paciente', $id);
+            })
+                ->pluck('id');
+
+            $totalCitas = $citasIds->count();
+            if ($totalCitas > 0) {
+                Cita::whereIn('id', $citasIds)->delete();
+            }
+
+            // 3) Borrar fila del paciente (si usas SoftDeletes y quieres borrado físico, usa forceDelete)
+            if (method_exists($paciente, 'forceDelete')) {
+                $paciente->forceDelete();
+            } else {
+                $paciente->delete();
+            }
+
+            DB::commit();
+
+            // Log éxito + datos útiles
+            $this->registrarLog($userId, 'borrar_paciente', 'paciente', $id);
+
+            // Devolver detalle opcional
+            $respuesta['data'] = [
+                'paciente_id' => (int) $id,
+                'citas_eliminadas' => (int) $totalCitas,
+                'rol_usuario' => $user ? ($user->rol ?? 'usuario') : null,
+            ];
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $codigo = 500;
+            $respuesta = ['message' => 'No se pudo completar la baja del paciente'];
+            // Log del error técnico
+            if (method_exists($this, 'logError')) {
+                $this->logError($userId, 'borrar_paciente_error', $e->getMessage());
+            } else {
+                // fallback al registrarLog si no tienes logError
+                $this->registrarLog($userId, 'borrar_paciente_error', 'paciente', $id);
+            }
+            report($e);
         }
 
         return response()->json($respuesta, $codigo);
@@ -591,7 +648,12 @@ class PacienteController extends Controller
         $user = null;
 
         $validar = Validator::make($solicitud->all(), [
-            'user_id' => 'required|integer|exists:users,id|unique:pacientes,user_id',
+            'user_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id'),
+                Rule::unique('pacientes', 'user_id')->whereNull('deleted_at'),
+            ],
         ]);
 
         if ($validar->fails()) {
@@ -621,7 +683,7 @@ class PacienteController extends Controller
             $respuesta = [
                 'message' => 'Paciente creado correctamente',
                 'user' => $user,
-                'paciente'=> $paciente,
+                'paciente' => $paciente,
             ];
         } catch (\Exception $e) {
             DB::rollBack();
