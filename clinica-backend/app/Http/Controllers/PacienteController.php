@@ -652,7 +652,7 @@ class PacienteController extends Controller
                 'required',
                 'integer',
                 Rule::exists('users', 'id'),
-                Rule::unique('pacientes', 'user_id')->whereNull('deleted_at'),
+                Rule::unique('pacientes', 'user_id')->whereNull('deleted_at'), //Ignora el soft deletes
             ],
         ]);
 
@@ -665,31 +665,51 @@ class PacienteController extends Controller
         try {
             $user = User::findOrFail($solicitud->user_id);
 
-            // Generar un número de historial único
-            $numeroHistorial = $this->generarNumeroHistorialUnico();
+            //Buscar el paciente por si se ha eliminado previamente
+            $paciente = Paciente::withTrashed()->where('user_id', $user->id)->first();
 
-            $paciente = Paciente::create([
-                'user_id' => $user->id,
-                'numero_historial' => $numeroHistorial,
-                'fecha_alta' => now()->toDateString(),
-            ]);
+            if ($paciente && $paciente->trashed()) {
+                //Restaur paciente
+                $paciente->restore();
+                $paciente->fecha_alta = now()->toDateString();
+                $paciente->save();
 
-            $user->assignRole('paciente');
+                $user->assignRole('paciente');
 
-            $this->registrarLog(auth()->id(), 'create', "Paciente creado, user_id: {$user->id}", $paciente->id);
+                $this->registrarLog(auth()->id(), 'restaurar_paciente', "Paciente restaurado, user_id: {$user->id}", $paciente->id);
+
+                $respuesta = [
+                    'message' => 'Paciente restaurado correctamente',
+                    'user' => $user,
+                    'paciente' => $paciente,
+                ];
+            } else {
+                //Crea paciente nuevo
+                $numeroHistorial = $this->generarNumeroHistorialUnico();
+
+                $paciente = Paciente::create([
+                    'user_id' => $user->id,
+                    'numero_historial' => $numeroHistorial,
+                    'fecha_alta' => now()->toDateString(),
+                ]);
+
+                $user->assignRole('paciente');
+
+                $this->registrarLog(auth()->id(), 'crear_paciente', "Paciente creado, user_id: {$user->id}", $paciente->id);
+
+                $respuesta = [
+                    'message' => 'Paciente creado correctamente',
+                    'user' => $user,
+                    'paciente' => $paciente,
+                ];
+            }
 
             DB::commit();
-
-            $respuesta = [
-                'message' => 'Paciente creado correctamente',
-                'user' => $user,
-                'paciente' => $paciente,
-            ];
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError(auth()->id(), 'Error crear paciente: ' . $e->getMessage(), $user?->id);
-            $respuesta = ['message' => 'Error interno al crear paciente', 'error' => $e->getMessage()];
+            $this->logError(auth()->id(), 'Error en nuevoPaciente: ' . $e->getMessage(), $user?->id);
             $codigo = 500;
+            $respuesta = ['message' => 'Error interno al crear/restaurar paciente'];
         }
 
         return response()->json($respuesta, $codigo);
