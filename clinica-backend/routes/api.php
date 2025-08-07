@@ -73,7 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('estados/estados-cita', [CitaController::class, 'tiposEstadoCita']);
         Route::get('historiales/pacientes/', [HistorialController::class, 'listarHistorialesPacientes']);
         Route::get('especialistas/{id}', [EspecialistaController::class, 'verEspecialista']);
-        Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
+        Route::get('listar-citas-paciente', [CitaController::class, 'listarMisCitas']);
         Route::get('obtener-sala/{id}', [CitaController::class, 'obtenerSalaSegura']);
         Route::post('documentos', [DocumentoController::class, 'subirDocumento']);
         Route::get('documentos', [DocumentoController::class, 'listarDocumentos']);
@@ -114,7 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('historial/{id}', [HistorialController::class, 'eliminarEntrada']);
         Route::get('paciente-por-especialista', [PacienteController::class, 'listarPacientesDelEspecialista']);
 
-        //Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
+        Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
 
     });
 

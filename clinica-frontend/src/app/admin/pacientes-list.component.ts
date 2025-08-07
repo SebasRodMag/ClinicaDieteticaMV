@@ -109,25 +109,24 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
             .subscribe({
                 next: (data: any[]) => {
                     this.pacientes = data.map((raw): PacienteExtendido => {
-                        // Normaliza el usuario del paciente: acepta `user` o `usuario` y lo guarda en `user`
+                        // Normaliza el usuario del paciente: acepta `user` o `usuario`
                         const pacienteUser = (raw.user ?? raw.usuario) as Usuario | null;
 
                         // Normaliza el usuario del especialista: acepta `user` o `usuario` anidado
-                        const especialistaUser = (raw.ultima_cita?.especialista?.user
-                            ?? raw.ultima_cita?.especialista?.usuario) as Usuario | null;
+                        const especialistaUser = raw.ultima_cita?.especialista
+                            ? (raw.ultima_cita.especialista.user ?? raw.ultima_cita.especialista.usuario) as Usuario | null
+                            : null;
 
-                        // Reconstruye el objeto Paciente conforme a tu interfaz (que espera `user`)
+                        // Reconstruye el objeto Paciente conforme a tu interfaz
                         const pacienteBase: Paciente = {
                             ...raw,
-                            user: pacienteUser, // <- clave: tu interfaz usa `user`
-                            // opcionalmente podrías también normalizar el anidado:
+                            user: pacienteUser,
                             ultima_cita: raw.ultima_cita
                                 ? {
                                     ...raw.ultima_cita,
                                     especialista: raw.ultima_cita.especialista
                                         ? {
                                             ...raw.ultima_cita.especialista,
-                                            // garantizamos que dentro también exista `user`
                                             user: especialistaUser,
                                         }
                                         : null,
@@ -136,8 +135,13 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
                         };
 
                         // Propiedades planas para filtros y ordenación
-                        const nombre_paciente = `${pacienteUser?.nombre ?? ''} ${pacienteUser?.apellidos ?? ''}`.trim();
-                        const nombre_especialista = `${especialistaUser?.nombre ?? ''} ${especialistaUser?.apellidos ?? ''}`.trim();
+                        const nombre_paciente = pacienteUser
+                            ? `${pacienteUser.nombre ?? ''} ${pacienteUser.apellidos ?? ''}`.trim()
+                            : 'Paciente desconocido';
+
+                        const nombre_especialista = especialistaUser
+                            ? `${especialistaUser.nombre ?? ''} ${especialistaUser.apellidos ?? ''}`.trim()
+                            : 'Sin especialista';
 
                         return {
                             ...pacienteBase,
@@ -199,12 +203,12 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
             return (
                 !f ||
                 String(p.id).includes(f) ||
-                p.nombre_paciente.toLowerCase().includes(f) ||
-                (p.numero_historial ?? '').toLowerCase().includes(f) ||
-                p.nombre_especialista.toLowerCase().includes(f) ||
-                (p.ultima_cita?.especialista?.especialidad ?? '').toLowerCase().includes(f) ||
-                (p.ultima_cita?.estado ?? '').toLowerCase().includes(f) ||
-                (p.ultima_cita?.comentario ?? '').toLowerCase().includes(f)
+                (p.nombre_paciente?.toLowerCase() ?? '').includes(f) ||
+                (p.numero_historial?.toLowerCase() ?? '').includes(f) ||
+                (p.nombre_especialista?.toLowerCase() ?? '').includes(f) ||
+                (p.ultima_cita?.especialista?.especialidad?.toLowerCase() ?? '').includes(f) ||
+                (p.ultima_cita?.estado?.toLowerCase() ?? '').includes(f) ||
+                (p.ultima_cita?.comentario?.toLowerCase() ?? '').includes(f)
             );
         });
 

@@ -217,9 +217,19 @@ class CitaController extends Controller
 
             $this->registrarLog($userId, 'crear_cita', 'citas', $cita->id_cita);
 
+            //Se mapean y formatean los campos para que coincidan con los esperados por el frontend
             $respuesta = [
                 'message' => 'Cita creada correctamente',
-                'cita' => $cita,
+                'cita' => [
+                    'id' => $cita->id_cita,
+                    'fecha' => optional($cita->fecha_hora_cita)->format('d-m-Y'),
+                    'hora' => optional($cita->fecha_hora_cita)->format('H:i'),
+                    'nombre_paciente' => $cita->paciente?->usuario?->nombreCompleto() ?? '',
+                    'dni_paciente' => $cita->paciente?->usuario?->dni_usuario ?? '',
+                    'estado' => $cita->estado,
+                    'tipo_cita' => $cita->tipo_cita,
+                    'es_primera' => (bool) $cita->es_primera,
+                ],
             ];
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -511,60 +521,69 @@ class CitaController extends Controller
 
                 if (!$paciente) {
                     $this->registrarLog($userId, 'listar_mis_citas_fallido', 'pacientes', $userId);
-                    return response()->json(['message' => 'Perfil de paciente no encontrado.'], 404);
+                    $respuesta = ['citas' => [], 'message' => 'Este usuario aún no está vinculado como paciente.'];
+                } else {
+                    $citas = Cita::with(['especialista.user'])
+                        ->where('id_paciente', $paciente->id)
+                        ->get()
+                        ->map(function ($cita) {
+                            return [
+                                'id' => $cita->id_cita,
+                                'fecha' => $cita->fecha_hora_cita->format('d-m-Y'),
+                                'hora' => $cita->fecha_hora_cita->format('H:i'),
+                                'especialidad' => $cita->especialista->especialidad ?? null,
+                                'nombre_especialista' => optional($cita->especialista?->user)->nombre . ' ' . optional($cita->especialista?->user)->apellidos,
+                                'estado' => $cita->estado,
+                                'tipo_cita' => $cita->tipo_cita,
+                            ];
+                        });
+
+                    $respuesta = [
+                        'citas' => $citas,
+                        'message' => $citas->isEmpty() ? 'No hay citas registradas para este paciente.' : null
+                    ];
+
+                    $this->registrarLog($userId, 'listar_mis_citas', 'citas');
                 }
-
-                $citas = Cita::with(['especialista.user'])
-                    ->where('id_paciente', $paciente->id)
-                    ->get()
-                    ->map(function ($cita) {
-                        return [
-                            'id' => $cita->id_cita,
-                            'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
-                            'hora' => $cita->fecha_hora_cita->format('H:i'),
-                            'especialidad' => $cita->especialista->especialidad ?? null,
-                            'nombre_especialista' => $cita->especialista->user->nombre . ' ' . $cita->especialista->user->apellidos,
-                            'estado' => $cita->estado,
-                            'tipo_cita' => $cita->tipo_cita,
-                        ];
-                    });
-
-                $this->registrarLog($userId, 'listar_mis_citas', 'citas', null);
-                $respuesta = ['citas' => $citas];
 
             } elseif ($rol === 'especialista') {
                 $especialista = Especialista::where('user_id', $userId)->first();
 
                 if (!$especialista) {
                     $this->registrarLog($userId, 'listar_mis_citas_fallido', 'especialistas', $userId);
-                    return response()->json(['message' => 'Perfil de especialista no encontrado.'], 404);
+                    $respuesta = ['citas' => [], 'message' => 'Este usuario aún no está vinculado como especialista.'];
+                } else {
+                    $citas = Cita::with(['paciente.user'])
+                        ->where('id_especialista', $especialista->id)
+                        ->get()
+                        ->map(function ($cita) {
+                            return [
+                                'id' => $cita->id_cita,
+                                'fecha' => $cita->fecha_hora_cita->format('d-m-Y'),
+                                'hora' => $cita->fecha_hora_cita->format('H:i'),
+                                'nombre_paciente' => optional($cita->paciente?->user)->nombre . ' ' . optional($cita->paciente?->user)->apellidos,
+                                'dni_paciente' => optional($cita->paciente?->user)->dni_usuario,
+                                'estado' => $cita->estado,
+                                'tipo_cita' => $cita->tipo_cita,
+                                'es_primera' => $cita->es_primera,
+                            ];
+                        });
+
+                    $respuesta = [
+                        'citas' => $citas,
+                        'message' => $citas->isEmpty() ? 'No hay citas asignadas actualmente.' : null
+                    ];
+
+                    $this->registrarLog($userId, 'listar_mis_citas', 'citas');
                 }
 
-                $citas = Cita::with(['paciente.user'])
-                    ->where('id_especialista', $especialista->id)
-                    ->get()
-                    ->map(function ($cita) {
-                        return [
-                            'id' => $cita->id_cita,
-                            'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
-                            'hora' => $cita->fecha_hora_cita->format('H:i'),
-                            'nombre_paciente' => $cita->paciente->user->nombre . ' ' . $cita->paciente->user->apellidos,
-                            'dni_paciente' => $cita->paciente->user->dni_usuario,
-                            'estado' => $cita->estado,
-                            'tipo_cita' => $cita->tipo_cita,
-                            'es_primera' => $cita->es_primera,
-                        ];
-                    });
-
-                $this->registrarLog($userId, 'listar_mis_citas', 'citas', null);
-                $respuesta = ['citas' => $citas];
-
             } else {
+                $codigo = 403;
+                $respuesta = ['message' => 'No autorizado para ver citas'];
                 $this->registrarLog($userId, 'listar_mis_citas_no_autorizado', 'users', $userId);
-                return response()->json(['message' => 'No autorizado para ver citas'], 403);
             }
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno al obtener las citas'];
             $this->logError($userId, 'Error al listar mis citas', [

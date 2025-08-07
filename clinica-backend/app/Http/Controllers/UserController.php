@@ -15,6 +15,8 @@ use App\Traits\Loggable;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\PacienteAltaNotificacion;
+use Illuminate\Support\Facades\Notification;
 
 
 class UserController extends Controller
@@ -134,8 +136,26 @@ class UserController extends Controller
                     'dni_usuario' => $solicitud->input('dni_usuario'),
                 ]);
 
+                //Asignar el rol a usuario.
                 $usuario->assignRole('paciente');
-                $this->registrarLog(auth()->id(), 'crear usuario', 'users', $usuario->id);
+
+                // Crear el modelo Paciente
+                $paciente = Paciente::create([
+                    'user_id' => $usuario->id,
+                    'numero_historial' => $this->generarNumeroHistorialUnico(),
+                    'fecha_alta' => now(),
+                ]);
+
+                // Determinar quién crea al paciente (Administrador o Especialista)
+                $especialistaNombre = auth()->user()?->nombre ?? 'uno de nuestros especialistas';
+
+                // Notificar al nuevo paciente por email
+                Notification::send($usuario, new PacienteAltaNotificacion(
+                    nombreEspecialista: $especialistaNombre,
+                    numeroHistorial: $paciente->numero_historial,
+                ));
+
+                $this->registrarLog(auth()->id(), 'crear_usuario', 'users', $usuario->id);
 
                 $respuesta = $usuario->load('roles');
             } catch (QueryException $e) {
@@ -159,6 +179,7 @@ class UserController extends Controller
 
         return response()->json($respuesta, $codigo);
     }
+
 
 
 

@@ -7,8 +7,7 @@
 </div>
 
 
-<app-calendario-citas *ngIf="!loading && citas.length > 0" [citas]="citas"
-    (citaCancelada)="cancelarCitaDesdeCalendario($event)">
+<app-calendario-citas *ngIf="!loading" [citas]="citas" (citaCancelada)="cancelarCitaDesdeCalendario($event)">
 </app-calendario-citas>
 <h2 class="text-2xl font-bold mb-4">Listado de todas las citas</h2>
 

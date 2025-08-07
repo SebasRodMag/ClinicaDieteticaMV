@@ -9,27 +9,32 @@ import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
 import { HttpClient } from '@angular/common/http';
 import { urlApiServicio } from '../components/utilidades/variable-entorno';
-import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
 import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
 import { formatearFecha } from '../components/utilidades/sanitizar.utils';
+import { CalendarioCitasComponent } from '../components/calendario/calendario-citas.component';
+import { ModalInfoCitaComponent } from '../components/calendario/modal/modal-info-cita.component';
+import { CitaGenerica } from '../models/cita-generica.model';
+import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
 
 @Component({
     selector: 'app-especialista-citas',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent],
+    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent, ModalInfoCitaComponent],
     templateUrl: './especialista-citas.component.html',
 })
 export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     citas: CitaPorPaciente[] = [];
     citasFiltradas: CitaPorPaciente[] = [];
+    citaSeleccionada: CitaGenerica | null = null;
+    citasGenericas: CitaGenerica[] = [];
     formatearFecha = formatearFecha;
 
     filtroTexto: string = '';
-    filtroFecha: string = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     loading: boolean = false;
     huboError: boolean = false;
     modalNuevaCitaVisible: boolean = false;
+    modalInfoCitaVisible = false;
     mostrarBotonVideollamada = mostrarBotonVideollamada;
 
     columnas = ['id', 'fecha', 'hora', 'nombre_paciente', 'dni_paciente', 'estado', 'tipo_cita', 'accion'];
@@ -62,6 +67,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
             next: (response) => {
                 if (Array.isArray(response.citas)) {
                     this.citas = response.citas;
+                    this.citasGenericas = this.citas;
                     this.aplicarFiltros();
                 } else {
                     this.citas = [];
@@ -79,16 +85,12 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
 
     aplicarFiltros(): void {
         const termino = this.filtroTexto.toLowerCase().trim();
-        const fechaSeleccionada = this.filtroFecha;
 
         this.citasFiltradas = this.citas.filter((cita) =>
-            cita.fecha === fechaSeleccionada &&
-            (
-                cita.nombre_paciente.toLowerCase().includes(termino) ||
-                cita.dni_paciente.toLowerCase().includes(termino) ||
-                cita.estado.toLowerCase().includes(termino) ||
-                cita.tipo_cita.toLowerCase().includes(termino)
-            )
+            cita.nombre_paciente.toLowerCase().includes(termino) ||
+            cita.dni_paciente.toLowerCase().includes(termino) ||
+            cita.estado.toLowerCase().includes(termino) ||
+            cita.tipo_cita.toLowerCase().includes(termino)
         );
     }
 
@@ -134,13 +136,6 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         });
     }
 
-    cambiarDia(dias: number): void {
-        const fecha = new Date(this.filtroFecha);
-        fecha.setDate(fecha.getDate() + dias);
-        this.filtroFecha = fecha.toISOString().split('T')[0];
-        this.aplicarFiltros();
-    }
-
     nuevaCita(): void {
         this.modalNuevaCitaVisible = true;
     }
@@ -153,5 +148,16 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     unirseAVideollamada(cita: CitaPorEspecialista): void {
         const url = urlApiServicio.apiUrl;
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
+    }
+
+    abrirModalInfoCita(cita: CitaGenerica): void {
+        this.citaSeleccionada = cita;
+        this.modalInfoCitaVisible = true;
+    }
+
+    cancelarCitaDesdeCalendario(idCita: number): void {
+        const cita = this.citas.find(c => c.id === idCita);
+        if (!cita) return;
+        this.cancelarCita(cita);
     }
 }

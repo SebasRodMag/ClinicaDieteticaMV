@@ -32,6 +32,15 @@ export function formatearFecha(fechaIso: string, sep: '-' | '/' = '/'): string {
 }
 
 /**
+ * Convierte una fecha en formato 'DD-MM-YYYY' a formato ISO 'YYYY-MM-DD'.
+ */
+export function convertirFechaAISO(fecha: string): string {
+    if (!fecha || !/^\d{2}-\d{2}-\d{4}$/.test(fecha)) return fecha;
+    const [dia, mes, anio] = fecha.split('-');
+    return `${anio}-${mes}-${dia}`;
+}
+
+/**
  * Formatea una hora de '2025-06-19T14:30:00' a 'HH:mm'.
  */
 export function formatearHora(fechaHora: string): string {

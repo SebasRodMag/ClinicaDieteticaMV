@@ -10,10 +10,11 @@ import { Paciente } from '../models/paciente.model';
 import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 import { Especialista } from '../models/especialista.model';
 import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
-import { CalendarioCitasComponent } from './calendario/calendario-citas.component';
+import { CalendarioCitasComponent } from '../components/calendario/calendario-citas.component';
 import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
 import { HttpClient } from '@angular/common/http';
 import { urlApiServicio } from '../components/utilidades/variable-entorno';
+import { CitaGenerica } from '../models/cita-generica.model';
 
 
 
@@ -24,8 +25,8 @@ import { urlApiServicio } from '../components/utilidades/variable-entorno';
     templateUrl: './pacientes-citas.component.html',
 })
 export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy {
-    citas: CitaPorEspecialista[] = [];
-    citasFiltradas: CitaPorEspecialista[] = [];
+    citas: CitaGenerica[] = [];
+    citasFiltradas: CitaGenerica[] = [];
 
     filtroTexto: string = '';
     temporizadorActualizacion: any;//Para actualizar el botón de unirse a la conferencia sin recargar la página
@@ -105,11 +106,14 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
     filtrarCitas(): void {
         const filtroLower = this.filtroTexto.toLowerCase();
 
-        this.citasFiltradas = this.citas.filter(cita =>
-            cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
-            cita.especialidad.toLowerCase().includes(filtroLower) ||
-            cita.estado.toLowerCase().includes(filtroLower)
-        );
+        this.citasFiltradas = this.citas.filter(cita => {
+            if (this.esCitaPorEspecialista(cita)) {
+                return cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
+                    cita.especialidad.toLowerCase().includes(filtroLower) ||
+                    cita.estado.toLowerCase().includes(filtroLower);
+            }
+            return cita.estado.toLowerCase().includes(filtroLower);
+        });
 
         this.ordenarDatos();
         this.paginaActual = 1;
@@ -142,7 +146,9 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         this.paginaActual = pagina;
     }
 
-    cancelarCita(cita: CitaPorEspecialista): void {
+    cancelarCita(cita: CitaGenerica): void {
+        if (!this.esCitaPorEspecialista(cita)) return;
+
         const snackRef = this.snackBar.open(
             `¿Cancelar la cita del ${cita.fecha} a las ${cita.hora}?`,
             'Cancelar',
@@ -241,6 +247,10 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         this.temporizadorActualizacion = setInterval(() => {
             this.filtrarCitas(); //actualiza los datos y reevaluará `puedeUnirseACita` por cada cita visible
         }, 15000); //cada 15 segundos
+    }
+
+    esCitaPorEspecialista(cita: CitaGenerica): cita is CitaPorEspecialista {
+        return 'nombre_especialista' in cita && 'especialidad' in cita;
     }
 
 

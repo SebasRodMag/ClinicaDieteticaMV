@@ -9,8 +9,18 @@
             <div class="modal-body">
                 <p><strong>Fecha:</strong> {{ citaSeleccionada.fecha }}</p>
                 <p><strong>Hora:</strong> {{ citaSeleccionada.hora }}</p>
-                <p><strong>Especialista:</strong> {{ citaSeleccionada.nombre_especialista }}</p>
-                <p><strong>Especialidad:</strong> {{ citaSeleccionada.especialidad }}</p>
+                <p *ngIf="tienePropiedad('nombre_especialista')">
+                    <strong>Especialista:</strong> {{ obtenerPropiedad('nombre_especialista') }}
+                </p>
+                <p *ngIf="tienePropiedad('especialidad')">
+                    <strong>Especialidad:</strong> {{ obtenerPropiedad('especialidad') }}
+                </p>
+                <p *ngIf="tienePropiedad('nombre_paciente')">
+                    <strong>Paciente:</strong> {{ obtenerPropiedad('nombre_paciente') }}
+                </p>
+                <p *ngIf="tienePropiedad('dni_paciente')">
+                    <strong>DNI:</strong> {{ obtenerPropiedad('dni_paciente') }}
+                </p>
                 <p><strong>Estado:</strong> {{ citaSeleccionada.estado }}</p>
                 <p><strong>Tipo:</strong> {{ citaSeleccionada.tipo_cita }}</p>
 

@@ -189,7 +189,7 @@ export class UserService {
     }
 
     obtenerCitasDelPacienteAutenticado(): Observable<{ citas: CitaPorEspecialista[] }> {
-        return this.http.get<{ citas: CitaPorEspecialista[] }>(`${this.apiUrl}/pacientes/citas/todas`);
+        return this.http.get<{ citas: CitaPorEspecialista[] }>(`${this.apiUrl}/listar-citas-paciente`);
     }
 
     cancelarCita(idCita: number): Observable<any> {

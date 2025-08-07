@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CitaPorEspecialista } from '../../../models/citasPorEspecialista.model';
+import { CitaGenerica } from '../../../models/cita-generica.model';
 
 @Component({
     selector: 'app-modal-info-cita',
@@ -9,8 +10,10 @@ import { CitaPorEspecialista } from '../../../models/citasPorEspecialista.model'
     templateUrl: './modal-info-cita.component.html',
 })
 export class ModalInfoCitaComponent {
-    @Input() citaSeleccionada!: CitaPorEspecialista;
+    @Input() citaSeleccionada: CitaGenerica | null = null;
     @Input() colorSistema: string = '#0d6efd';
+
+
     @Output() cerrado = new EventEmitter<void>();
     @Output() cancelar = new EventEmitter<number>();
 
@@ -18,7 +21,9 @@ export class ModalInfoCitaComponent {
 
 
     ngOnInit(): void {
-        this.evaluarCancelacion();
+        if (this.citaSeleccionada) {
+            this.evaluarCancelacion();
+        }
     }
 
     cerrarModal(): void {
@@ -44,4 +49,16 @@ export class ModalInfoCitaComponent {
 
         this.puedeCancelar = diffHoras > 24;
     }
+
+    tienePropiedad(prop: string): boolean {
+        if (!this.citaSeleccionada) return false;
+        return Object.prototype.hasOwnProperty.call(this.citaSeleccionada, prop);
+    }
+
+    obtenerPropiedad(prop: string): string {
+        return this.citaSeleccionada && (this.citaSeleccionada as any)[prop]
+            ? String((this.citaSeleccionada as any)[prop])
+            : '';
+    }
+
 }
