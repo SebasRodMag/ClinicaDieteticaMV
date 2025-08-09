@@ -23,21 +23,33 @@ export function validarEmail(email: string): boolean {
  */
 export function formatearFecha(fechaIso: string, sep: '-' | '/' = '/'): string {
     if (!fechaIso) return '';
-    const fecha = new Date(fechaIso);
-    if (isNaN(fecha.getTime())) return fechaIso;
-    const dia = String(fecha.getDate()).padStart(2, '0');
-    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-    const año = fecha.getFullYear();
-    return `${dia}${sep}${mes}${sep}${año}`;
+    // Acepta también 'YYYY-MM-DDTHH:mm:ss' y se queda con la parte de fecha
+    const soloFecha = fechaIso.slice(0, 10);
+    const m = soloFecha.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return fechaIso;
+    const [, y, mm, dd] = m;
+    return `${dd}${sep}${mm}${sep}${y}`;
 }
 
 /**
- * Convierte una fecha en formato 'DD-MM-YYYY' a formato ISO 'YYYY-MM-DD'.
+ * Convierte 'DD-MM-YYYY' o 'DD/MM/YYYY' a 'YYYY-MM-DD'.
+ * Si ya viene en ISO 'YYYY-MM-DD', lo deja igual.
  */
 export function convertirFechaAISO(fecha: string): string {
-    if (!fecha || !/^\d{2}-\d{2}-\d{4}$/.test(fecha)) return fecha;
-    const [dia, mes, anio] = fecha.split('-');
-    return `${anio}-${mes}-${dia}`;
+    if (!fecha) return fecha;
+
+    //Ya es ISO (YYYY-MM-DD)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+
+    //DD-MM-YYYY o DD/MM/YYYY
+    const m = fecha.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
+    if (m) {
+        const [, dd, mm, yyyy] = m;
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    //Si no reconoce el formato, devuelve el original para no romper flujos
+    return fecha;
 }
 
 /**
@@ -86,4 +98,19 @@ export function validarDniNie(identificador: string): boolean {
     }
 
     return esValido;
+}
+
+/**
+ * Devuelve la fecha local (no UTC) a partir de fecha y hora.
+ * Acepta fecha 'YYYY-MM-DD', 'DD-MM-YYYY' o 'DD/MM/YYYY'.
+ * Hora opcional en 'HH:mm' o 'HH:mm:ss'.
+ */
+export function construirFechaHoraLocal(fecha: string, hora?: string): Date {
+    const iso = convertirFechaAISO(fecha);
+    const hhmm = (hora ?? '00:00').slice(0, 5);
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return new Date(NaN);
+    const [, y, mm, dd] = m.map(Number);
+    const [h, min] = hhmm.split(':').map(Number);
+    return new Date(y, (mm - 1), dd, h || 0, min || 0, 0, 0);
 }

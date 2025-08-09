@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('citas/{id}/sala-segura', [CitaController::class, 'obtenerSalaSegura']);
         Route::post('nuevo-paciente', [PacienteController::class, 'nuevoPaciente']);
         Route::patch('citas/{id}/cancelar', [CitaController::class, 'cancelarCita']);
+        Route::patch('citas/{id}/cambiar-estado', [CitaController::class, 'cambiarEstadoCita']);
     });
     /**
      * 
@@ -113,7 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('historial/{id}', [HistorialController::class, 'actualizarEntrada']);
         Route::delete('historial/{id}', [HistorialController::class, 'eliminarEntrada']);
         Route::get('paciente-por-especialista', [PacienteController::class, 'listarPacientesDelEspecialista']);
-
+        Route::get('perfilespecialista', [EspecialistaController::class, 'perfilEspecialista']);
         Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
 
     });

@@ -45,6 +45,12 @@ export class UserService {
             );
     }
 
+    obtenerPerfilEspecialista(): Observable<Usuario> {
+        return this.http
+            .get<{ user: Usuario }>(`${this.apiUrl}/perfilespecialista`)
+            .pipe(map(response => response.user));
+    }
+
 
     getUsuario(id: number): Observable<Usuario> {
         return this.http.get<Usuario>(`${this.apiUrl}/usuarios/${id}`);
@@ -194,6 +200,10 @@ export class UserService {
 
     cancelarCita(idCita: number): Observable<any> {
         return this.http.patch(`${this.apiUrl}/citas/${idCita}/cancelar`, {});
+    }
+
+    cambiarEstadoCita(idCita: number, nuevoEstado: string): Observable<any> {
+        return this.http.patch(`${this.apiUrl}/citas/${idCita}/cambiar-estado`, { estado: nuevoEstado });
     }
 
     verPaciente(id: number): Observable<any> {

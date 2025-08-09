@@ -1004,5 +1004,62 @@ class CitaController extends Controller
     }
 
 
+    /**
+     * Método para cambiar el estado de la cita siempre que el usuario autenticado sea un especialista o paciente y donde, en el caso del paciente, solo puede cancelar la cita
+     * @param \Illuminate\Http\Request $request estado al que cambiaremos la cita
+     * @param int $id de la cita
+     * @return JsonResponse respuesta con el estado de la solicitud
+     */
+    public function cambiarEstadoCita(Request $request, int $id): JsonResponse
+    {
+        $usuario = auth()->user();
+        $rol = $usuario->getRoleNames()->first();
+        $userId = $usuario->id;
+
+        $estadoNuevo = $request->input('estado');
+
+        $request->validate([
+            'estado' => 'required|string|in:pendiente,realizada,cancelada,ausente,reasignada,finalizada',
+        ]);
+
+        $cita = Cita::find($id);
+        if (!$cita) {
+            return response()->json(['message' => 'Cita no encontrada.'], 404);
+        }
+
+        $puedeActualizar = false;
+
+        if ($rol === 'administrador') {
+            $puedeActualizar = true;
+        } elseif ($rol === 'especialista') {
+            $especialista = Especialista::where('user_id', $userId)->first();
+            if ($especialista && $especialista->id === $cita->id_especialista) {
+                $puedeActualizar = true;
+            }
+        } elseif ($rol === 'paciente') {
+            $paciente = Paciente::where('user_id', $userId)->first();
+            if ($paciente && $paciente->id === $cita->id_paciente && $estadoNuevo === 'cancelada') {
+                $puedeActualizar = true;
+            }
+        }
+
+        if (!$puedeActualizar) {
+            return response()->json(['message' => 'No autorizado para cambiar el estado de esta cita.'], 403);
+        }
+
+        $estadoAnterior = $cita->estado;
+        $cita->estado = $estadoNuevo;
+        $cita->save();
+
+        $this->registrarLog($userId, "cambiar_estado_cita ($estadoAnterior → $estadoNuevo)", 'citas', $id);
+
+        return response()->json([
+            'message' => 'Estado de la cita actualizado correctamente.',
+            'estado_anterior' => $estadoAnterior,
+            'estado_nuevo' => $estadoNuevo,
+        ]);
+    }
+
+
 
 }

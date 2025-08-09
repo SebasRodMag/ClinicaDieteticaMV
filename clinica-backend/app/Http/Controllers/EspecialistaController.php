@@ -387,4 +387,30 @@ class EspecialistaController extends Controller
 
         return response()->json($especialistas);
     }
+
+    /**
+     * Devuelve el perfil del especialista autenticado.
+     * Respuesta mínima compatible con tu frontend: { user: Usuario }
+     * Además incluye especialista_id para usos opcionales.
+     */
+    public function perfilEspecialista(): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->hasRole('especialista')) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $especialista = Especialista::select('id', 'user_id')
+            ->where('user_id', $user->id)
+            ->first();
+
+        // Devolvemos un objeto de usuario, Laravel oculta el password.
+        // y agregamos el especialista_id y la especialidad
+        return response()->json([
+            'user' => $user->only(['id', 'nombre', 'apellidos', 'email']),
+            'especialista_id' => $especialista?->id,
+            'especialidad' => $especialista?->especialidad,
+        ]);
+    }
 }

@@ -7,8 +7,10 @@
 </div>
 
 
-<app-calendario-citas *ngIf="!loading" [citas]="citas" (citaCancelada)="cancelarCitaDesdeCalendario($event)">
+<app-calendario-citas *ngIf="!loading" [citas]="citas" (citaClick)="abrirModalInfoCita($event)"
+    (citaCancelada)="cancelarCitaDesdeCalendario($event)">
 </app-calendario-citas>
+
 <h2 class="text-2xl font-bold mb-4">Listado de todas las citas</h2>
 
 <div class="d-flex align-items-center gap-2 mb-3">
@@ -43,6 +45,11 @@
 <app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible" [idEspecialista]="especialista?.id"
     (cerrado)="modalVisible = false" (creada)="obtenerCitas(); modalVisible = false">
 </app-modal-nueva-cita>
+
+<app-modal-info-cita *ngIf="modalInfoCitaVisible && citaSeleccionada" [citaSeleccionada]="citaSeleccionada"
+    [esEspecialista]="false" (cerrado)="modalInfoCitaVisible = false" (cancelar)="cancelarCitaDesdeCalendario($event)">
+</app-modal-info-cita>
+
 <div *ngIf="loading" class="spinner mt-3">
     <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>

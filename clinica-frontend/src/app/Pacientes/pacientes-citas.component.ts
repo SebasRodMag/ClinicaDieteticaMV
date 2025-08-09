@@ -15,13 +15,15 @@ import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
 import { HttpClient } from '@angular/common/http';
 import { urlApiServicio } from '../components/utilidades/variable-entorno';
 import { CitaGenerica } from '../models/cita-generica.model';
+import { ModalInfoCitaComponent } from '../components/calendario/modal/modal-info-cita.component';
+import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
 
 
 
 @Component({
     selector: 'app-pacientes-citas',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent],
+    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent, ModalInfoCitaComponent],
     templateUrl: './pacientes-citas.component.html',
 })
 export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -44,6 +46,9 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
 
     columnaOrden: string | null = null;
     direccionOrdenAsc: boolean = true;
+
+    citaSeleccionada: CitaGenerica | null = null;
+    modalInfoCitaVisible = false;
 
     columnas = ['id', 'fecha', 'hora', 'estado', 'nombre_especialista', 'especialidad', 'tipo_cita', 'accion'];
 
@@ -186,14 +191,6 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         this.modalVisible = true;
     }
 
-    onCambioTexto(): void {
-        this.filtrarCitas();
-    }
-
-    onCambioFecha(): void {
-        this.filtrarCitas();
-    }
-
 
     cancelarCitaDesdeCalendario(idCita: number): void {
         const cita = this.citas.find(c => c.id === idCita);
@@ -230,17 +227,12 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 
-    puedeUnirseACita(cita: CitaPorEspecialista): boolean {
-        if (cita.tipo_cita !== 'telemática') return false;
-
-        const ahora = new Date();
-        const fechaHoraCita = new Date(`${cita.fecha}T${cita.hora}`);
-
-        //Tiempo durante el cual se muestra el botón de Unirse
-        const cincoMinAntes = new Date(fechaHoraCita.getTime() - 5 * 60 * 1000);//5 minutos antes de la cita
-        const treintaMinDespues = new Date(fechaHoraCita.getTime() + 30 * 60 * 1000);//30 minutos después del inicio de la cita
-
-        return ahora >= cincoMinAntes && ahora <= treintaMinDespues;
+    puedeUnirseACita(cita: CitaGenerica): boolean {
+        return mostrarBotonVideollamada(cita, {
+            minutosAntes: 5, //minutos antes de la cita
+            minutosDespues: 30,//minutos después de la cita
+            requiereSala: false
+        });
     }
 
     iniciarActualizacionPeriodica(): void {
@@ -253,5 +245,9 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         return 'nombre_especialista' in cita && 'especialidad' in cita;
     }
 
+    abrirModalInfoCita(cita: CitaGenerica): void {
+        this.citaSeleccionada = { ...cita };
+        this.modalInfoCitaVisible = true;
+    }
 
 }

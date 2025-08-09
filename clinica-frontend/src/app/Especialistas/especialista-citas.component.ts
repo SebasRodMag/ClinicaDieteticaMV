@@ -15,11 +15,14 @@ import { CalendarioCitasComponent } from '../components/calendario/calendario-ci
 import { ModalInfoCitaComponent } from '../components/calendario/modal/modal-info-cita.component';
 import { CitaGenerica } from '../models/cita-generica.model';
 import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
+import { HistorialService } from '../service/Historial-Service/historial.service';
+import { Historial } from '../models/historial.model';
+import { ModalEditHistorialComponent } from './modal/modal-edit-historial.component';
 
 @Component({
     selector: 'app-especialista-citas',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent, ModalInfoCitaComponent],
+    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent, ModalInfoCitaComponent, ModalEditHistorialComponent],
     templateUrl: './especialista-citas.component.html',
 })
 export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
@@ -27,6 +30,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     citasFiltradas: CitaPorPaciente[] = [];
     citaSeleccionada: CitaGenerica | null = null;
     citasGenericas: CitaGenerica[] = [];
+    especialistaId: number | null = null;
     formatearFecha = formatearFecha;
 
     filtroTexto: string = '';
@@ -35,6 +39,9 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     huboError: boolean = false;
     modalNuevaCitaVisible: boolean = false;
     modalInfoCitaVisible = false;
+    cargandoActualizarEstado: boolean = false;
+    modalHistorialVisible = false;
+    borradorHistorial: Partial<Historial> = {};
     mostrarBotonVideollamada = mostrarBotonVideollamada;
 
     columnas = ['id', 'fecha', 'hora', 'nombre_paciente', 'dni_paciente', 'estado', 'tipo_cita', 'accion'];
@@ -45,10 +52,11 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
 
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
-    constructor(private UserService: UserService, private snackBar: MatSnackBar, private HttpClient: HttpClient) { }
+    constructor(private historialService: HistorialService, private UserService: UserService, private snackBar: MatSnackBar, private HttpClient: HttpClient) { }
 
     ngOnInit(): void {
         this.obtenerCitas();
+        this.cargarEspecialistaId();
     }
 
     ngAfterViewInit(): void {
@@ -57,6 +65,13 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
             fecha: this.fechaTemplate,
             hora: this.horaTemplate,
         };
+    }
+
+    cargarEspecialistaId(): void {
+        this.UserService.obtenerPerfilEspecialista().subscribe({
+            next: (perfil) => this.especialistaId = perfil?.id ?? null,
+            error: () => this.especialistaId = null
+        });
     }
 
     obtenerCitas(): void {
@@ -92,14 +107,6 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
             cita.estado.toLowerCase().includes(termino) ||
             cita.tipo_cita.toLowerCase().includes(termino)
         );
-    }
-
-    onCambioTexto(): void {
-        this.aplicarFiltros();
-    }
-
-    onCambioFecha(): void {
-        this.aplicarFiltros();
     }
 
     cancelarCita(CitaPorPaciente: CitaPorPaciente): void {
@@ -140,24 +147,85 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         this.modalNuevaCitaVisible = true;
     }
 
-    onCitaCreada(): void {
+    cuandoCitaCreada(): void {
         this.modalNuevaCitaVisible = false;
         this.obtenerCitas();
     }
 
-    unirseAVideollamada(cita: CitaPorEspecialista): void {
+    unirseAVideollamada(cita: CitaGenerica): void {
         const url = urlApiServicio.apiUrl;
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 
     abrirModalInfoCita(cita: CitaGenerica): void {
-        this.citaSeleccionada = cita;
+        this.citaSeleccionada = { ...cita };
         this.modalInfoCitaVisible = true;
+    }
+
+    cerrarModalCita(): void {
+        this.modalInfoCitaVisible = false;
+        this.citaSeleccionada = null;
     }
 
     cancelarCitaDesdeCalendario(idCita: number): void {
         const cita = this.citas.find(c => c.id === idCita);
         if (!cita) return;
         this.cancelarCita(cita);
+    }
+
+    actualizarEstadoCita(evento: { id: number; nuevoEstado: string }): void {
+        this.cargandoActualizarEstado = true;
+
+        this.UserService.cambiarEstadoCita(evento.id, evento.nuevoEstado).subscribe({
+            next: () => {
+                this.obtenerCitas();
+                this.modalInfoCitaVisible = false;
+                this.snackBar.open('Estado actualizado correctamente.', 'Cerrar', { duration: 3000 });
+            },
+            error: () => {
+                this.cargandoActualizarEstado = false;
+                this.snackBar.open('No se pudo actualizar el estado de la cita.', 'Cerrar', { duration: 3000 });
+            },
+            complete: () => {
+                this.cargandoActualizarEstado = false;
+            }
+        });
+    }
+
+    abrirHistorialParaCita(evt: { id_paciente: number; id_cita: number; fecha: string }) {
+        this.historialService.obtenerUltimoHistorialPorPaciente(evt.id_paciente).subscribe({
+            next: (ultimo) => {
+                this.borradorHistorial = {
+                    id_paciente: evt.id_paciente,
+                    fecha: evt.fecha, // hoy
+                    observaciones_especialista: ultimo?.observaciones_especialista ?? '',
+                    recomendaciones: '',
+                    dieta: '',
+                    lista_compra: '',
+                    id_especialista: this.especialistaId ?? undefined
+                };
+                this.modalHistorialVisible = true;
+            },
+            error: () => {
+                this.borradorHistorial = {
+                    id_paciente: evt.id_paciente,
+                    fecha: evt.fecha,
+                    observaciones_especialista: '',
+                    id_especialista: this.especialistaId ?? undefined
+                };
+                this.modalHistorialVisible = true;
+                this.snackBar.open('No se pudieron cargar observaciones previas', 'Cerrar', { duration: 3000 });
+            }
+        });
+    }
+
+    guardarHistorial(payload: Partial<Historial>) {
+        this.historialService.crearHistorial(payload).subscribe({
+            next: () => {
+                this.snackBar.open('Historial guardado', 'Cerrar', { duration: 2500 });
+                this.modalHistorialVisible = false;
+            },
+            error: () => this.snackBar.open('Error al guardar historial', 'Cerrar', { duration: 3000 })
+        });
     }
 }

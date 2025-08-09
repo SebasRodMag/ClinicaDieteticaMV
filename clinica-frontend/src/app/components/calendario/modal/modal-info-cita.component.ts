@@ -1,39 +1,87 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CitaPorEspecialista } from '../../../models/citasPorEspecialista.model';
 import { CitaGenerica } from '../../../models/cita-generica.model';
+import { FormsModule } from '@angular/forms';
+import { UserService } from '../../../service/User-Service/user.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { HttpClient } from '@angular/common/http';
+import { urlApiServicio } from '../../utilidades/variable-entorno';
+import { unirseConferencia } from '../../utilidades/unirse-conferencia';
+import { construirFechaHoraLocal } from '../../utilidades/sanitizar.utils';
+import { mostrarBotonVideollamada } from '../../utilidades/mostrar-boton-videollamada';
 
 @Component({
     selector: 'app-modal-info-cita',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './modal-info-cita.component.html',
 })
-export class ModalInfoCitaComponent {
+export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
     @Input() citaSeleccionada: CitaGenerica | null = null;
-    @Input() colorSistema: string = '#0d6efd';
+    @Input() color: string = '#b7bbc2ff';  //<-----Color por defecto #b7bbc2ff
+    @Input() esEspecialista: boolean = false;
 
 
     @Output() cerrado = new EventEmitter<void>();
     @Output() cancelar = new EventEmitter<number>();
+    @Output() estadoActualizado = new EventEmitter<{ id: number; nuevoEstado: string }>();
+    @Output() irACita = new EventEmitter<{ id_paciente: number; id_cita: number; fecha: string }>();
 
     puedeCancelar: boolean = false;
+    mostrarUnirse = false;
+    nuevoEstado: string = '';
+    mensajeEstadoActualizado: string = '';
+    tiposEstado: string[] = [];
+    cargando: boolean = true;
 
+    private temporizadorUi: any;
+
+    constructor(private http: HttpClient, private userService: UserService, private snackBar: MatSnackBar) { }
 
     ngOnInit(): void {
         if (this.citaSeleccionada) {
-            this.evaluarCancelacion();
+            this.recalcularBotones();
+        }
+        this.cargarTiposEstado();
+        this.temporizadorUi = setInterval(() => {
+            this.recalcularBotones();
+        }, 15000);//recalcula cada 15 segundos
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['citaSeleccionada'] && this.citaSeleccionada) {
+            this.recalcularBotones();
         }
     }
 
+    ngOnDestroy(): void {
+        if (this.temporizadorUi) clearInterval(this.temporizadorUi);
+    }
+
     cerrarModal(): void {
+        if (this.temporizadorUi) {
+            clearInterval(this.temporizadorUi);
+            this.temporizadorUi = null;
+        }
         this.cerrado.emit();
     }
 
     cancelarCita(): void {
-        if (this.citaSeleccionada) {
-            this.cancelar.emit(this.citaSeleccionada.id);
-        }
+        const cita = this.citaSeleccionada;
+        if (!cita) return;
+
+        const mensaje = `¿Cancelar la cita del ${cita.fecha} a las ${cita.hora}?`;
+
+        const snackRef = this.snackBar.open(mensaje, 'Cancelar', {
+            duration: 5000,
+            panelClass: ['snackbar-delete'],
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+        });
+
+        snackRef.onAction().subscribe(() => {
+            if (cita.id) this.cancelar.emit(cita.id);
+        });
     }
 
     evaluarCancelacion(): void {
@@ -42,11 +90,19 @@ export class ModalInfoCitaComponent {
             return;
         }
 
-        const fechaHoraCita = new Date(`${this.citaSeleccionada.fecha}T${this.citaSeleccionada.hora}`);
+        const fechaHoraCita = construirFechaHoraLocal(
+            this.citaSeleccionada.fecha,
+            this.citaSeleccionada.hora
+        );
+
+        if (isNaN(fechaHoraCita.getTime())) {
+            console.warn('Fecha/hora de cita inválida:', this.citaSeleccionada);
+            this.puedeCancelar = false;
+            return;
+        }
+
         const ahora = new Date();
-
         const diffHoras = (fechaHoraCita.getTime() - ahora.getTime()) / (1000 * 60 * 60);
-
         this.puedeCancelar = diffHoras > 24;
     }
 
@@ -60,5 +116,99 @@ export class ModalInfoCitaComponent {
             ? String((this.citaSeleccionada as any)[prop])
             : '';
     }
+
+    actualizarEstado(): void {
+        if (!this.nuevoEstado || !this.citaSeleccionada) return;
+
+        if (this.nuevoEstado === 'cancelada' && !this.puedeCancelar) {
+            this.snackBar.open('No puedes cancelar una cita con menos de 24 horas de antelación.', 'Cerrar', { duration: 3000 });
+            return;
+        }
+
+        this.estadoActualizado.emit({ id: this.citaSeleccionada.id, nuevoEstado: this.nuevoEstado });
+        this.mensajeEstadoActualizado = `Estado actualizado a "${this.nuevoEstado}".`;
+    }
+
+    cargarTiposEstado(): void {
+        this.userService.getTiposEstadoCita().subscribe({
+            next: (respuesta) => {
+                if (respuesta.success) this.tiposEstado = respuesta.tipos_estado;
+                this.cargando = false;
+            },
+            error: () => {
+                console.warn('No se pudieron cargar los tipos de estado de cita');
+                this.cargando = false;
+            }
+        });
+    }
+
+    puedeUnirseAVideollamada(): boolean {
+        if (!this.citaSeleccionada || this.citaSeleccionada.tipo_cita !== 'telemática') return false;
+
+        const fechaHora = new Date(`${this.citaSeleccionada.fecha}T${this.citaSeleccionada.hora}`);
+        const ahora = new Date();
+
+        const cincoMinAntes = new Date(fechaHora.getTime() - 5 * 60 * 1000);
+        const treintaMinDespues = new Date(fechaHora.getTime() + 30 * 60 * 1000);
+
+        return ahora >= cincoMinAntes && ahora <= treintaMinDespues;
+    }
+
+    unirseAVideollamada(): void {
+        if (this.citaSeleccionada) {
+            unirseConferencia(this.citaSeleccionada.id, this.http, this.snackBar, urlApiServicio.apiUrl);
+        }
+    }
+
+    irALaCita(): void {
+        const idPaciente = this.obtenerPacienteIdDeCita();
+        if (!this.citaSeleccionada || !idPaciente) return;
+
+        const hoy = new Date();
+        const yyyy = hoy.getFullYear();
+        const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dd = String(hoy.getDate()).padStart(2, '0');
+
+        this.irACita.emit({
+            id_paciente: idPaciente,
+            id_cita: this.citaSeleccionada.id,
+            fecha: `${yyyy}-${mm}-${dd}`
+        });
+    }
+
+    private recalcularBotones(): void {
+        this.evaluarCancelacion();
+        this.mostrarUnirse = this.calcularPuedeUnirse();
+    }
+
+    private normalizarFechaHora(fecha: string, hora: string | undefined): Date {
+        //Aseguramos el formato HH:mm
+        const hhmm = (hora ?? '00:00').slice(0, 5);
+        return new Date(`${fecha}T${hhmm}`);
+    }
+
+    private calcularPuedeUnirse(): boolean {
+        return mostrarBotonVideollamada(this.citaSeleccionada!, {
+            minutosAntes: 5,
+            minutosDespues: 30
+        });
+    }
+
+    private obtenerPacienteIdDeCita(): number | null {
+        if (!this.citaSeleccionada) return null;
+        const c: any = this.citaSeleccionada;
+        return typeof c.id_paciente === 'number' ? c.id_paciente
+            : typeof c.paciente_id === 'number' ? c.paciente_id
+                : c.paciente?.id ?? null;
+    }
+
+
+
+
+
+
+
+
+
 
 }

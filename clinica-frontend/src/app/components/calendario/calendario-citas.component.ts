@@ -3,9 +3,6 @@ import { CommonModule } from '@angular/common';
 import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import { FullCalendarModule } from '@fullcalendar/angular';
-import { CitaPorEspecialista } from '../../models/citasPorEspecialista.model';
-import { CitaPorPaciente } from '../../models/citasPorPaciente.model';
-import { ModalInfoCitaComponent } from './modal/modal-info-cita.component';
 import { ConfiguracionService } from '../../service/Config-Service/configuracion.service';
 import { CitaGenerica } from '../../models/cita-generica.model';
 import { convertirFechaAISO } from '../utilidades/sanitizar.utils';
@@ -13,7 +10,7 @@ import { convertirFechaAISO } from '../utilidades/sanitizar.utils';
 @Component({
     selector: 'app-calendario-citas',
     standalone: true,
-    imports: [CommonModule, FullCalendarModule, ModalInfoCitaComponent],
+    imports: [CommonModule, FullCalendarModule],
     templateUrl: './calendario-citas.component.html',
     styleUrls: ['./calendario-citas.component.css'],
 })
@@ -21,15 +18,18 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
     @Input() citas: CitaGenerica[] = [];
     @Output() citaClick = new EventEmitter<any>();
     @Output() citaCancelada = new EventEmitter<number>();
+    @Output() recargarCitas = new EventEmitter<void>();
 
-    citaSeleccionada: CitaGenerica | null = null;
-    colorSistema: string = '#28a745';
+    
+
+    colorSistema: string = '#b7bbc2ff';  //<-----Color por defecto #b7bbc2ff
+    cargandoActualizarEstado: boolean = false;
 
     calendarOptions: CalendarOptions = {
         plugins: [dayGridPlugin],
         initialView: 'dayGridMonth',
         events: [],
-        eventClick: this.onCitaClick.bind(this),
+        eventClick: (event) => this.citaClick.emit(this.obtenerCitaPorId(+event.event.id)),
         eventTimeFormat: {
             hour: '2-digit',
             minute: '2-digit',
@@ -69,8 +69,6 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
     }
 
     private actualizarEventos(): void {
-        console.log('actualizarEventos - citas recibidas:', this.citas); // 👈
-
         if (!this.citas || this.citas.length === 0) {
             console.warn('No hay citas para mostrar en el calendario.');
             this.calendarOptions.events = [];
@@ -90,8 +88,6 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
             };
         });
 
-        console.log('Eventos cargados en calendario:', eventos); // 👈
-
         this.calendarOptions.events = eventos;
     }
 
@@ -101,19 +97,7 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
         return `${nombre} (${datoExtra})`;
     }
 
-    onCitaClick(event: any): void {
-        const id = +event.event.id;
-        this.citaSeleccionada = this.citas.find(c => c.id === id) || null;
-        if (this.citaSeleccionada) {
-            this.citaClick.emit(this.citaSeleccionada);
-        }
-    }
-
-    cerrarModal(): void {
-        this.citaSeleccionada = null;
-    }
-
-    cancelarCita(idCita: number): void {
-        this.citaCancelada.emit(idCita);
+    private obtenerCitaPorId(id: number): CitaGenerica | null {
+        return this.citas.find(c => c.id === id) || null;
     }
 }
