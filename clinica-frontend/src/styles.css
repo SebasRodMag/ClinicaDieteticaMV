@@ -21,6 +21,14 @@ svg[viewBox*="%"] {
     position: fixed !important;
 }
 
+.modal {
+    z-index: 1060 !important;
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
 .snackbar-success,
 .snackbar-warning,
 .snackbar-error {
@@ -55,8 +63,8 @@ svg[viewBox*="%"] {
 /*Cambiar el color de los paneles de información según configuración*/
 .alert-info {
     background-color: color-mix(in srgb, var(--color-tema) 20%, white 80%) !important;
-    border-color: var(--color-tema)!important;
-    color: var(--color-tema)!important;
+    border-color: var(--color-tema) !important;
+    color: var(--color-tema) !important;
 }
 
 .pagination .page-item.active .page-link {

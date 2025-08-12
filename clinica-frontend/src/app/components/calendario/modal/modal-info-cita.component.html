@@ -1,26 +1,25 @@
-<!-- Spinner mientras se cargan datos del modal -->
-<div *ngIf="cargando"
-    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
-    style="z-index: 2000;">
-    <div class="text-center">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">Cargando modal...</span>
-        </div>
-        <p class="mt-2">Cargando detalles de la cita...</p>
-    </div>
-</div>
-<div class="modal fade show d-block" tabindex="-1" *ngIf="citaSeleccionada"
-    style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
-
-    <div class="modal-dialog">
-
-
+<!-- RAÍZ: sin fondo oscuro aquí -->
+<div class="modal fade show d-block" tabindex="-1" *ngIf="citaSeleccionada">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border border-light shadow">
             <div class="modal-header bg-primary text-white modal-header-sistema">
                 <h5 class="modal-title">Detalles de la cita</h5>
                 <button type="button" class="btn-close" (click)="cerrarModal()"></button>
             </div>
-            <div class="modal-body">
+
+            <!-- Spinner SOLO dentro del body -->
+            <div class="modal-body position-relative">
+                <div *ngIf="cargando"
+                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+                    style="z-index: 2000; pointer-events: none;">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Cargando modal...</span>
+                        </div>
+                        <p class="mt-2">Cargando detalles de la cita...</p>
+                    </div>
+                </div>
+
                 <p><strong>Fecha:</strong> {{ citaSeleccionada.fecha }}</p>
                 <p><strong>Hora:</strong> {{ citaSeleccionada.hora }}</p>
                 <p *ngIf="tienePropiedad('nombre_especialista')">
@@ -42,8 +41,15 @@
                     <strong>Nota:</strong> Solo puedes cancelar citas pendientes con más de 24 horas de antelación.
                 </div>
             </div>
+
             <div class="modal-footer">
                 <!-- Si es especialista y la cita está pendiente -->
+                <div *ngIf="esEspecialista && citaSeleccionada?.estado === 'pendiente'"
+                    class="alert alert-info small py-2">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Aquí puedes cambiar el estado de la cita.
+                </div>
+
                 <div *ngIf="esEspecialista && citaSeleccionada?.estado === 'pendiente'"
                     class="d-flex align-items-center gap-2 w-100">
                     <select class="form-select" [(ngModel)]="nuevoEstado">
@@ -53,26 +59,26 @@
                             {{ estado | titlecase }}
                         </option>
                     </select>
-                    <button class="btn btn-primary" [disabled]="!nuevoEstado"
+                    <button class="btn btn-sm btn-primary" [disabled]="!nuevoEstado"
                         (click)="actualizarEstado()">Aplicar</button>
                 </div>
 
-                <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cerrar</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cerrarModal()">Cerrar</button>
 
-                <!-- Si es paciente y puede cancelar -->
-                <button *ngIf="!esEspecialista && puedeCancelar" type="button" class="btn btn-outline-danger btn-sm"
+                <!-- Botón Cancelar (solo paciente, y solo si puede) -->
+                <button *ngIf="!esEspecialista && puedeCancelar" type="button" class="btn btn-sm btn-outline-danger"
                     (click)="cancelarCita()">
                     Cancelar cita
                 </button>
 
-                <!-- Botón videollamada (ahora con propiedad) -->
+                <!-- Videollamada (ambos roles si ventana horaria) -->
                 <button *ngIf="mostrarUnirse" class="btn btn-sm btn-outline-success" (click)="unirseAVideollamada()">
                     <i class="bi bi-camera-video"></i> Unirse
                 </button>
-                <!-- Botón IR A LA CITA (solo especialista + presencial) -->
-                <button
-                    *ngIf="esEspecialista && (citaSeleccionada?.tipo_cita || '').toLowerCase().includes('presencial')"
-                    class="btn btn-sm btn-outline-success" (click)="irALaCita()">
+
+                <!-- Ir a la cita (solo especialista + presencial + ventana) -->
+                <button *ngIf="esEspecialista && mostrarIrAPresencial" class="btn btn-sm btn-outline-success"
+                    (click)="irALaCita()">
                     <i class="bi bi-clipboard-plus"></i> Ir a la cita
                 </button>
             </div>

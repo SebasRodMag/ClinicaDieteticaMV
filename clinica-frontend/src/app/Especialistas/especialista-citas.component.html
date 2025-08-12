@@ -17,44 +17,35 @@
     </button>
 </div>
 
-
-
 <app-tabla-datos [datosTotales]="citasFiltradas" [columnas]="columnas" [templatesMap]="templatesMap"
     [columnaOrden]="null" [direccionOrdenAsc]="true" [paginaActual]="1" [itemsPorPagina]="10"
     [maxPaginasVisibles]="5" />
 
-<!-- Fecha en dd-MM-yyyy -->
 <ng-template #fechaTemplate let-cita>
     {{ formatearFecha(cita.fecha, '/') }}
 </ng-template>
 
-<!-- Hora en HH:mm (si viene 'HH:mm:ss') -->
 <ng-template #horaTemplate let-cita>
     {{ (cita.hora || '').slice(0, 5) }}
 </ng-template>
 
-<!-- Mensaje si no hay resultados filtrados -->
 <div *ngIf="!loading && citasFiltradas.length === 0" class="alert alert-info mt-3 text-center">
     No hay citas programadas para esta fecha o no coinciden con el filtro aplicado.
 </div>
 
-<!-- Mensaje si no se pudieron cargar citas -->
 <div *ngIf="!loading && citas.length === 0 && huboError" class="alert alert-danger mt-3 text-center">
     Ocurrió un error al cargar las citas. Inténtalo nuevamente más tarde.
 </div>
 
 <ng-template #accionTemplate let-cita>
-    <button *ngIf="cita.estado === 'pendiente'" class="btn btn-outline-danger btn-sm" (click)="cancelarCita(cita)">
-        Cancelar
+    <button *ngIf="cita.estado === 'pendiente'" class="btn btn-sm btn-outline-info" (click)="abrirModalInfoCita(cita)">
+        Editar
     </button>
-    <button *ngIf="mostrarBotonVideollamada(cita)" class="btn btn-sm btn-outline-success"
+    <button *ngIf="mostrarBotonVideollamada(cita)" class="btn btn-sm btn-outline-info"
         (click)="unirseAVideollamada(cita)">
         <i class="bi bi-camera-video"></i> Unirse
     </button>
 </ng-template>
-
-
-
 
 <app-modal-nueva-cita *ngIf="modalNuevaCitaVisible" [modalVisible]="modalNuevaCitaVisible" (creada)="cuandoCitaCreada()"
     (cerrado)="modalNuevaCitaVisible = false">
@@ -63,15 +54,16 @@
 <!-- Modal para ver detalles de la cita -->
 <app-modal-info-cita *ngIf="modalInfoCitaVisible && citaSeleccionada" [citaSeleccionada]="citaSeleccionada"
     [esEspecialista]="true" (cerrado)="modalInfoCitaVisible = false" (irACita)="abrirHistorialParaCita($event)"
-    (estadoActualizado)="actualizarEstadoCita($event)">
+    (estadoActualizado)="actualizarEstadoCita($event)" (cancelar)="cancelarCitaDesdeModal($event)">
 </app-modal-info-cita>
 
 <!-- Modal de historial -->
 <app-modal-edit-historial *ngIf="modalHistorialVisible" [visible]="modalHistorialVisible" [esNuevo]="true"
-    [historial]="borradorHistorial" (cerrar)="modalHistorialVisible = false" (guardar)="guardarHistorial($event)">
+    [historial]="borradorHistorial" [pacienteNombre]="pacienteNombre" (cerrar)="modalHistorialVisible = false"
+    (guardar)="guardarHistorial($event)">
 </app-modal-edit-historial>
 
-<div *ngIf="modalHistorialVisible" class="modal-backdrop fade show" style="z-index:1050;"></div>
+<div *ngIf="modalInfoCitaVisible || modalHistorialVisible" class="modal-backdrop fade show"></div>
 
 <div *ngIf="loading" class="spinner mt-3">
     <div class="spinner-border text-primary" role="status">

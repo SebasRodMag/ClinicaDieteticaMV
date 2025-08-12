@@ -1,11 +1,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="text-2xl font-bold mb-4">Vista mensual de las citas</h2>
-    <!-- Solo se muestra el botón si está permitido crear cita -->
     <button *ngIf="permitirCrearCitaPaciente" (click)="nuevaCita()" class="btn btn-primary">
         Nueva cita
     </button>
 </div>
-
 
 <app-calendario-citas *ngIf="!loading" [citas]="citas" (citaClick)="abrirModalInfoCita($event)"
     (citaCancelada)="cancelarCitaDesdeCalendario($event)">
@@ -21,14 +19,13 @@
 <app-tabla-datos [datosTotales]="citasFiltradas" [columnas]="columnas" [templatesMap]="templatesMap"
     [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"
     [itemsPorPagina]="itemsPorPagina" [maxPaginasVisibles]="maxPaginasVisibles" (ordenar)="ordenarPor($event)"
-    (cambiarPagina)="cambiarPagina($event)"></app-tabla-datos>
+    (cambiarPagina)="cambiarPagina($event)">
+</app-tabla-datos>
 
-<!-- Mensaje si no hay resultados filtrados -->
 <div *ngIf="!loading && citasFiltradas.length === 0" class="alert alert-info mt-3 text-center">
     No hay citas programadas para esta fecha o no coinciden con el filtro aplicado.
 </div>
 
-<!-- Mensaje si no se pudieron cargar citas -->
 <div *ngIf="!loading && citas.length === 0 && huboError" class="alert alert-danger mt-3 text-center">
     Ocurrió un error al cargar las citas. Inténtalo nuevamente más tarde.
 </div>
@@ -42,7 +39,7 @@
     </button>
 </ng-template>
 
-<app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible" [idEspecialista]="especialista?.id"
+<app-modal-nueva-cita *ngIf="modalVisible" [modalVisible]="modalVisible" [idEspecialista]="especialista?.id ?? null"
     (cerrado)="modalVisible = false" (creada)="obtenerCitas(); modalVisible = false">
 </app-modal-nueva-cita>
 

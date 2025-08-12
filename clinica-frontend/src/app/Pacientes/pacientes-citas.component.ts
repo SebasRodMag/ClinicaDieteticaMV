@@ -4,7 +4,6 @@ import { AuthService } from '../service/Auth-Service/Auth.service';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
 import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { CitaPorPaciente } from '../models/citasPorPaciente.model';
 import { FormsModule } from '@angular/forms';
 import { Paciente } from '../models/paciente.model';
 import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
@@ -18,12 +17,17 @@ import { CitaGenerica } from '../models/cita-generica.model';
 import { ModalInfoCitaComponent } from '../components/calendario/modal/modal-info-cita.component';
 import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
 
-
-
 @Component({
     selector: 'app-pacientes-citas',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent, ModalInfoCitaComponent],
+    imports: [
+        CommonModule,
+        TablaDatosComponent,
+        FormsModule,
+        ModalNuevaCitaComponent,
+        CalendarioCitasComponent,
+        ModalInfoCitaComponent
+    ],
     templateUrl: './pacientes-citas.component.html',
 })
 export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -31,14 +35,14 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
     citasFiltradas: CitaGenerica[] = [];
 
     filtroTexto: string = '';
-    temporizadorActualizacion: any;//Para actualizar el botón de unirse a la conferencia sin recargar la página
+    temporizadorActualizacion: any;
 
     modalVisible = false;
     loading: boolean = false;
     huboError: boolean = false;
 
     paciente!: Paciente;
-    especialista!: any;
+    especialista!: Especialista | null;
 
     paginaActual = 1;
     itemsPorPagina = 10;
@@ -53,12 +57,16 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
     columnas = ['id', 'fecha', 'hora', 'estado', 'nombre_especialista', 'especialidad', 'tipo_cita', 'accion'];
 
     @ViewChild('accionTemplate', { static: true }) accionTemplate!: TemplateRef<any>;
-
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
     permitirCrearCitaPaciente: boolean = false;
 
-    constructor(private UserService: UserService, private authService: AuthService, private snackBar: MatSnackBar, private HttpClient: HttpClient) { }
+    constructor(
+        private UserService: UserService,
+        private authService: AuthService,
+        private snackBar: MatSnackBar,
+        private HttpClient: HttpClient
+    ) { }
 
     ngOnInit(): void {
         this.obtenerCitas();
@@ -67,15 +75,11 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     ngAfterViewInit(): void {
-        this.templatesMap = {
-            accion: this.accionTemplate,
-        };
+        this.templatesMap = { accion: this.accionTemplate };
     }
 
     ngOnDestroy(): void {
-        if (this.temporizadorActualizacion) {
-            clearInterval(this.temporizadorActualizacion);
-        }
+        if (this.temporizadorActualizacion) clearInterval(this.temporizadorActualizacion);
     }
 
     cargarConfiguracion(): void {
@@ -107,15 +111,16 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         });
     }
 
-
     filtrarCitas(): void {
         const filtroLower = this.filtroTexto.toLowerCase();
 
         this.citasFiltradas = this.citas.filter(cita => {
             if (this.esCitaPorEspecialista(cita)) {
-                return cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
+                return (
+                    cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
                     cita.especialidad.toLowerCase().includes(filtroLower) ||
-                    cita.estado.toLowerCase().includes(filtroLower);
+                    cita.estado.toLowerCase().includes(filtroLower)
+                );
             }
             return cita.estado.toLowerCase().includes(filtroLower);
         });
@@ -126,11 +131,9 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
 
     ordenarDatos(): void {
         if (!this.columnaOrden) return;
-
         this.citasFiltradas.sort((a: any, b: any) => {
             const valA = a[this.columnaOrden!];
             const valB = b[this.columnaOrden!];
-
             if (valA < valB) return this.direccionOrdenAsc ? -1 : 1;
             if (valA > valB) return this.direccionOrdenAsc ? 1 : -1;
             return 0;
@@ -191,7 +194,6 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         this.modalVisible = true;
     }
 
-
     cancelarCitaDesdeCalendario(idCita: number): void {
         const cita = this.citas.find(c => c.id === idCita);
         if (!cita) return;
@@ -222,23 +224,24 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         });
     }
 
-    unirseAVideollamada(cita: CitaPorEspecialista): void {
+    // Acepta CitaGenerica (solo usa id)
+    unirseAVideollamada(cita: CitaGenerica): void {
         const url = urlApiServicio.apiUrl;
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 
     puedeUnirseACita(cita: CitaGenerica): boolean {
         return mostrarBotonVideollamada(cita, {
-            minutosAntes: 5, //minutos antes de la cita
-            minutosDespues: 30,//minutos después de la cita
+            minutosAntes: 5,
+            minutosDespues: 30,
             requiereSala: false
         });
     }
 
     iniciarActualizacionPeriodica(): void {
         this.temporizadorActualizacion = setInterval(() => {
-            this.filtrarCitas(); //actualiza los datos y reevaluará `puedeUnirseACita` por cada cita visible
-        }, 15000); //cada 15 segundos
+            this.filtrarCitas();
+        }, 15000);
     }
 
     esCitaPorEspecialista(cita: CitaGenerica): cita is CitaPorEspecialista {
@@ -249,5 +252,4 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
         this.citaSeleccionada = { ...cita };
         this.modalInfoCitaVisible = true;
     }
-
 }

@@ -16,7 +16,7 @@ import { Especialista } from '../../models/especialista.model';
 })
 export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     @Input() modalVisible!: boolean;
-    @Input() idEspecialista!: number;
+    @Input() idEspecialista: number | null = null;
     especialidades: string[] = [];
     @Input() todosLosEspecialistas: Especialista[] = [];
 

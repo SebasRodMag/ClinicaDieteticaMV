@@ -9,6 +9,7 @@ import { urlApiServicio } from '../../utilidades/variable-entorno';
 import { unirseConferencia } from '../../utilidades/unirse-conferencia';
 import { construirFechaHoraLocal } from '../../utilidades/sanitizar.utils';
 import { mostrarBotonVideollamada } from '../../utilidades/mostrar-boton-videollamada';
+import { CitaGenericaExtendida } from '../../../models/cita-generica.model';
 
 @Component({
     selector: 'app-modal-info-cita',
@@ -17,18 +18,18 @@ import { mostrarBotonVideollamada } from '../../utilidades/mostrar-boton-videoll
     templateUrl: './modal-info-cita.component.html',
 })
 export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
-    @Input() citaSeleccionada: CitaGenerica | null = null;
+    @Input() citaSeleccionada: CitaGenericaExtendida | null = null;
     @Input() color: string = '#b7bbc2ff';  //<-----Color por defecto #b7bbc2ff
     @Input() esEspecialista: boolean = false;
-
 
     @Output() cerrado = new EventEmitter<void>();
     @Output() cancelar = new EventEmitter<number>();
     @Output() estadoActualizado = new EventEmitter<{ id: number; nuevoEstado: string }>();
-    @Output() irACita = new EventEmitter<{ id_paciente: number; id_cita: number; fecha: string }>();
+    @Output() irACita = new EventEmitter<{ id_paciente: number | null; id_cita: number; fecha: string; nombre_paciente?: string; dni_paciente?: string; }>();
 
     puedeCancelar: boolean = false;
     mostrarUnirse = false;
+    mostrarIrAPresencial = false;
     nuevoEstado: string = '';
     mensajeEstadoActualizado: string = '';
     tiposEstado: string[] = [];
@@ -161,24 +162,27 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     irALaCita(): void {
-        const idPaciente = this.obtenerPacienteIdDeCita();
-        if (!this.citaSeleccionada || !idPaciente) return;
+        if (!this.citaSeleccionada) return;
 
+        const idPaciente = this.obtenerPacienteIdDeCita(); //esto puede ser null
         const hoy = new Date();
         const yyyy = hoy.getFullYear();
         const mm = String(hoy.getMonth() + 1).padStart(2, '0');
         const dd = String(hoy.getDate()).padStart(2, '0');
 
         this.irACita.emit({
-            id_paciente: idPaciente,
+            id_paciente: idPaciente ?? null,
             id_cita: this.citaSeleccionada.id,
-            fecha: `${yyyy}-${mm}-${dd}`
+            fecha: `${yyyy}-${mm}-${dd}`,
+            nombre_paciente: this.obtenerPropiedad('nombre_paciente') || '',
+            dni_paciente: this.obtenerPropiedad('dni_paciente') || ''
         });
     }
 
     private recalcularBotones(): void {
         this.evaluarCancelacion();
-        this.mostrarUnirse = this.calcularPuedeUnirse();
+        this.mostrarUnirse = this.calcularPuedeUnirse();          //telemática
+        this.mostrarIrAPresencial = this.calcularPuedeIrPresencial(); //presencial
     }
 
     private normalizarFechaHora(fecha: string, hora: string | undefined): Date {
@@ -188,10 +192,8 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     private calcularPuedeUnirse(): boolean {
-        return mostrarBotonVideollamada(this.citaSeleccionada!, {
-            minutosAntes: 5,
-            minutosDespues: 30
-        });
+        // Ya lo tienes: usa tu helper para telemática (5 min antes, 30 después)
+        return this.citaSeleccionada ? mostrarBotonVideollamada(this.citaSeleccionada, { minutosAntes: 5, minutosDespues: 30 }) : false;
     }
 
     private obtenerPacienteIdDeCita(): number | null {
@@ -202,13 +204,19 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
                 : c.paciente?.id ?? null;
     }
 
+    private calcularPuedeIrPresencial(): boolean {
+        if (!this.citaSeleccionada) return false;
 
+        const esPresencial = (this.citaSeleccionada.tipo_cita || '').toLowerCase().includes('presencial');
+        if (!esPresencial) return false;
 
+        const fechaHora = construirFechaHoraLocal(this.citaSeleccionada.fecha, this.citaSeleccionada.hora);
+        if (isNaN(fechaHora.getTime())) return false;
 
+        const ahora = new Date();
+        const cincoMinAntes = new Date(fechaHora.getTime() - 5 * 60 * 1000);
+        const noventaMinDespues = new Date(fechaHora.getTime() + 90 * 60 * 1000);
 
-
-
-
-
-
+        return ahora >= cincoMinAntes && ahora <= noventaMinDespues;
+    }
 }
