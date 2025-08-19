@@ -18,6 +18,8 @@ import { HistorialService } from '../service/Historial-Service/historial.service
 import { Historial } from '../models/historial.model';
 import { ModalEditHistorialComponent } from './modal/modal-edit-historial.component';
 import { CitaGenericaExtendida } from '../models/cita-generica.model';
+import { forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 @Component({
     selector: 'app-especialista-citas',
@@ -29,7 +31,7 @@ import { CitaGenericaExtendida } from '../models/cita-generica.model';
         ModalNuevaCitaComponent,
         CalendarioCitasComponent,
         ModalInfoCitaComponent,
-        ModalEditHistorialComponent
+        ModalEditHistorialComponent,
     ],
     templateUrl: './especialista-citas.component.html',
 })
@@ -40,6 +42,8 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     citasGenericas: CitaGenerica[] = [];
     especialistaId: number | null = null;
     pacienteNombre: string = '';
+    cargandoModalHistorial = false;
+    pacientesPrecargados: any[] = [];
     formatearFecha = formatearFecha;
 
     filtroTexto: string = '';
@@ -174,6 +178,33 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 
+    unirseAVideollamadaConHistorial(cita: CitaGenerica): void {
+        //cogemos los datos para pasar al modal
+        const original: any = this.citas.find(c => c.id === cita.id);
+        const id_paciente =
+            (original?.id_paciente ?? original?.paciente_id ?? original?.paciente?.id) ?? null;
+
+        const hoy = new Date();
+        const yyyy = hoy.getFullYear();
+        const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dd = String(hoy.getDate()).padStart(2, '0');
+
+        // Reutilizamos el mismo flujo de "Ir a la cita"
+        this.abrirHistorialParaCita({
+            id_paciente,
+            id_cita: cita.id,
+            fecha: `${yyyy}-${mm}-${dd}`,
+            nombre_paciente: (cita as any).nombre_paciente || '',
+            dni_paciente: (cita as any).dni_paciente || ''
+        });
+
+        // Le damos un diley a la apertura de la videollamada  para que se vea el spinner primero
+        setTimeout(() => {
+            const url = urlApiServicio.apiUrl;
+            unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
+        }, 0);
+    }
+
     abrirModalInfoCita(cita: CitaGenerica): void {
         const original: any = this.citas.find(c => c.id === cita.id);
         const id_paciente =
@@ -224,70 +255,56 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         dni_paciente?: string;
     }) {
         this.pacienteNombre = evt.nombre_paciente ?? '';
-
-        // 1) cierra el modal-info
+        // Cierra el modal-info
         this.modalInfoCitaVisible = false;
+        this.cargandoModalHistorial = true;
 
-        // 2) espera un tick para que Angular quite el DOM y backdrop, y LUEGO sigue
-        setTimeout(() => {
-            const continuarCon = (idPaciente: number | null) => {
-                if (idPaciente) {
-                    this.historialService.obtenerUltimoHistorialPorPaciente(idPaciente).subscribe({
-                        next: (ultimo) => {
-                            this.borradorHistorial = {
-                                id_paciente: idPaciente,
-                                fecha: evt.fecha,
-                                observaciones_especialista: ultimo?.observaciones_especialista ?? '',
-                                recomendaciones: '',
-                                dieta: '',
-                                lista_compra: '',
-                                id_especialista: this.especialistaId ?? undefined
-                            };
-                            this.modalHistorialVisible = true;
-                        },
-                        error: () => {
-                            this.borradorHistorial = {
-                                id_paciente: idPaciente,
-                                fecha: evt.fecha,
-                                observaciones_especialista: '',
-                                id_especialista: this.especialistaId ?? undefined
-                            };
-                            this.modalHistorialVisible = true;
-                            this.snackBar.open('No se pudieron cargar observaciones previas', 'Cerrar', { duration: 3000 });
-                        }
-                    });
-                    return;
-                }
+        const normalizar = (s: string) =>
+            (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+        const pacientes$ = this.historialService.obtenerPacientesEspecialista().pipe(
+            map((lista: any[]) => lista.map(p => ({
+                ...p,
+                nombreCompleto: `${p.nombre} ${p.apellidos}`.trim()
+            })))
+        );
 
-                // Sin id: abre y que el ng-select preseleccione por nombre
-                this.borradorHistorial = {
-                    fecha: evt.fecha,
-                    observaciones_especialista: '',
-                    id_especialista: this.especialistaId ?? undefined
-                };
-                this.modalHistorialVisible = true;
-            };
+        const idInicial = evt.id_paciente ?? null;
+        const ultimo$ = idInicial
+            ? this.historialService.obtenerUltimoHistorialPorPaciente(idInicial).pipe(catchError(() => of(null)))
+            : of(null);
 
-            if (evt.id_paciente) {
-                continuarCon(evt.id_paciente);
-                return;
-            }
-
-            // Fallback: resolver id por nombre/DNI
-            this.historialService.obtenerPacientesEspecialista().subscribe({
-                next: (lista: any[]) => {
-                    const targetNombre = this.normalizar(evt.nombre_paciente || '');
-                    const targetDni = this.normalizar(evt.dni_paciente || '');
-                    const encontrado = (lista || []).find((p: any) => {
-                        const nombreCompleto = this.normalizar(`${p.nombre} ${p.apellidos}`);
-                        const dni = this.normalizar(p.dni || '');
+        forkJoin({ pacientes: pacientes$, ultimo: ultimo$ }).subscribe({
+            next: ({ pacientes, ultimo }) => {
+                let idPaciente = idInicial;
+                if (!idPaciente) {
+                    const targetNombre = normalizar(evt.nombre_paciente || '');
+                    const targetDni = normalizar(evt.dni_paciente || '');
+                    const encontrado = (pacientes || []).find((p: any) => {
+                        const nombreCompleto = normalizar(`${p.nombre} ${p.apellidos}`);
+                        const dni = normalizar(p.dni || '');
                         return (targetDni && dni === targetDni) || (!!targetNombre && nombreCompleto === targetNombre);
                     });
-                    continuarCon(encontrado?.id ?? null);
-                },
-                error: () => continuarCon(null)
-            });
-        }, 0);
+                    idPaciente = encontrado?.id ?? null;
+                }
+                this.borradorHistorial = {
+                    id_paciente: idPaciente ?? undefined,
+                    fecha: evt.fecha,
+                    observaciones_especialista: ultimo?.observaciones_especialista ?? '',
+                    recomendaciones: '',
+                    dieta: '',
+                    lista_compra: '',
+                    id_especialista: this.especialistaId ?? undefined
+                };
+
+                this.pacientesPrecargados = pacientes;
+                this.modalHistorialVisible = true;
+                this.cargandoModalHistorial = false;
+            },
+            error: () => {
+                this.cargandoModalHistorial = false;
+                this.snackBar.open('No se pudieron cargar los datos del historial.', 'Cerrar', { duration: 3000 });
+            }
+        });
     }
 
     guardarHistorial(payload: Partial<Historial>) {

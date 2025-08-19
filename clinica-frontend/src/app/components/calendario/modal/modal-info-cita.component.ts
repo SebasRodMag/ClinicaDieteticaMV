@@ -156,9 +156,29 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     unirseAVideollamada(): void {
-        if (this.citaSeleccionada) {
-            unirseConferencia(this.citaSeleccionada.id, this.http, this.snackBar, urlApiServicio.apiUrl);
+        if (!this.citaSeleccionada) return;
+
+        //Si es especialista, pedimos al padre que abra el modal de historial.
+        if (this.esEspecialista) {
+            const idPaciente = this.obtenerPacienteIdDeCita();
+            const hoy = new Date();
+            const yyyy = hoy.getFullYear();
+            const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoy.getDate()).padStart(2, '0');
+
+            this.irACita.emit({
+                id_paciente: idPaciente ?? null,
+                id_cita: this.citaSeleccionada.id,
+                fecha: `${yyyy}-${mm}-${dd}`,
+                nombre_paciente: this.obtenerPropiedad('nombre_paciente') || '',
+                dni_paciente: this.obtenerPropiedad('dni_paciente') || ''
+            });
         }
+
+        //Abrir la videollamada. Lo hacemos en el siguiente tick para que Angular procese el cierre del modal-info.
+        setTimeout(() => {
+            unirseConferencia(this.citaSeleccionada!.id, this.http, this.snackBar, urlApiServicio.apiUrl);
+        }, 0);
     }
 
     irALaCita(): void {

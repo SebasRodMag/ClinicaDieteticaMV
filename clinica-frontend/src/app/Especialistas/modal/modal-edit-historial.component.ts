@@ -12,12 +12,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     imports: [CommonModule, FormsModule, NgSelectModule, MatSnackBarModule],
     templateUrl: './modal-edit-historial.component.html'
 })
-export class ModalEditHistorialComponent implements OnInit, OnChanges {
+export class ModalEditHistorialComponent implements OnChanges, OnInit {
     @Input() visible: boolean = false;
     @Input() esNuevo: boolean = false;
     @Input() historial: Partial<Historial> = {};
     @Input() color: string = '#b7bbc2ff';
     @Input() pacienteNombre: string = '';
+    @Input() listaPacientes: any[] | null = null;
     @Output() cerrar = new EventEmitter<void>();
     @Output() guardar = new EventEmitter<Partial<Historial>>();
 
@@ -32,9 +33,7 @@ export class ModalEditHistorialComponent implements OnInit, OnChanges {
         private snackBar: MatSnackBar
     ) { }
 
-    ngOnInit(): void {
-        this.cargarPacientes();
-    }
+    ngOnInit(): void {}
 
     ngOnChanges(changes: SimpleChanges): void {
         //Cuando se abre el modal, si no hay fecha se pone hoy
@@ -42,10 +41,14 @@ export class ModalEditHistorialComponent implements OnInit, OnChanges {
             if (!this.historial.fecha) {
                 this.historial.fecha = this.fechaActual;
             }
-            //Si los pacientes ya están cargados, lo buscamos
-            if (this.pacientes?.length) {
+            if (this.listaPacientes  && this.listaPacientes .length) {
+                // Usar los pacientes que vinieron del padre (modal abre listo)
+                this.pacientes = this.listaPacientes ;
+                this.cargandoPacientes = false;
                 this.preseleccionarPaciente();
+                this.mostrarResumenPaciente();
             } else {
+                // Fallback: se carga desde el modal
                 this.cargarPacientes();
             }
         }
