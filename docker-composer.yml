@@ -1,0 +1,103 @@
+version: "3.9"
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: clinica
+      MYSQL_USER: clinica
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL}
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: clinica
+      DB_USERNAME: clinica
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      MAIL_MAILER: smtp
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8080:8080"    # backend en :8080 (Nginx interno)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health || echo ok"] # opcional si haces ruta /health
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["php","artisan","queue:work","--sleep=3","--tries=3","--timeout=90"]
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      # … (mismas vars que backend)
+      DB_HOST: db
+      REDIS_HOST: redis
+    depends_on:
+      - backend
+      - redis
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # schedule:work es práctico en contenedor
+    command: ["php","artisan","schedule:work"]
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      DB_HOST: db
+      REDIS_HOST: redis
+    depends_on:
+      - backend
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      # Si tu Angular necesita apuntar al backend, usa variable de entorno y reemplazo en build
+      # por ejemplo, en environments.prod.ts
+    ports:
+      - "80:80"   # web pública (Angular)
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
