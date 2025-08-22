@@ -1,3 +1,4 @@
+<div class="modal-backdrop fade show" *ngIf="modalVisible"></div>
 <!-- Spinner mientras carga -->
 <div *ngIf="cargando" class="overlay-cargando">
     <div class="spinner-border text-primary" role="status">
@@ -9,7 +10,7 @@
 <div *ngIf="!cargando" class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-primary text-white modal-header-sistema">
                 <h5 class="modal-title">Nuevo Especialista</h5>
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"
                     (click)="cerrar()"></button>

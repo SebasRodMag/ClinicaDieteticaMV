@@ -1,65 +1,89 @@
-<div class="modal fade show d-block" tabindex="-1" role="dialog" *ngIf="visible">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content p-3">
-            <div class="modal-header text-white" [ngStyle]="{ 'background-color': color }">
+<!-- SIN fondo oscuro en el contenedor del modal -->
+<div class="modal fade show d-block" tabindex="-1" role="dialog" *ngIf="visible" style="z-index: 1050;">
+    <!-- Centrado horizontal y vertical. Quitamos m-0 -->
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border border-light shadow">
+            <div class="modal-header bg-primary text-white modal-header-sistema">
                 <h5 class="modal-title">
                     {{ esNuevo ? 'Crear nuevo historial' : 'Editar historial' }}
                 </h5>
                 <button type="button" class="btn-close" (click)="cerrar.emit()"></button>
             </div>
 
-            <div class="modal-body">
+            <!-- El overlay de carga SOLO sobre el body -->
+            <div class="modal-body position-relative">
+                <div *ngIf="cargandoPacientes"
+                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+                    style="z-index: 2000; pointer-events: none;">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Cargando pacientes...</span>
+                        </div>
+                        <p class="mt-2">Cargando pacientes...</p>
+                    </div>
+                </div>
+
                 <form>
                     <!-- Selección de paciente -->
                     <div class="mb-3">
                         <label for="paciente">Paciente</label>
                         <ng-select [items]="pacientes" bindLabel="nombreCompleto" bindValue="id"
                             placeholder="Seleccione un paciente" [(ngModel)]="historial.id_paciente" name="id_paciente"
-                            [searchable]="true" [clearable]="false" [disabled]="!esNuevo" required></ng-select>
+                            [searchable]="true" [clearable]="false" [disabled]="!esNuevo || cargandoPacientes" required>
+                        </ng-select>
                     </div>
 
                     <!-- Fecha -->
                     <div class="mb-3">
                         <label for="fecha">Fecha</label>
                         <input type="date" class="form-control" [(ngModel)]="historial.fecha" name="fecha"
-                            [min]="fechaActual" required />
+                            [min]="fechaActual" [disabled]="cargandoPacientes" required />
                     </div>
 
                     <!-- Observaciones -->
                     <div class="mb-3">
                         <label for="observaciones">Observaciones</label>
                         <textarea class="form-control" rows="3" [(ngModel)]="historial.observaciones_especialista"
-                            name="observaciones_especialista"></textarea>
+                            name="observaciones_especialista" [disabled]="cargandoPacientes">
+            </textarea>
                     </div>
 
                     <!-- Recomendaciones -->
                     <div class="mb-3">
                         <label for="recomendaciones">Recomendaciones</label>
                         <textarea class="form-control" rows="2" [(ngModel)]="historial.recomendaciones"
-                            name="recomendaciones"></textarea>
+                            name="recomendaciones" [disabled]="cargandoPacientes">
+            </textarea>
                     </div>
 
                     <!-- Dieta -->
                     <div class="mb-3">
                         <label for="dieta">Dieta</label>
-                        <textarea class="form-control" rows="2" [(ngModel)]="historial.dieta" name="dieta"></textarea>
+                        <textarea class="form-control" rows="2" [(ngModel)]="historial.dieta" name="dieta"
+                            [disabled]="cargandoPacientes">
+            </textarea>
                     </div>
 
                     <!-- Lista de compra -->
                     <div class="mb-3">
                         <label for="listaCompra">Lista de Compra</label>
-                        <textarea class="form-control" rows="2" [(ngModel)]="historial.lista_compra"
-                            name="lista_compra"></textarea>
+                        <textarea class="form-control" rows="2" [(ngModel)]="historial.lista_compra" name="lista_compra"
+                            [disabled]="cargandoPacientes">
+            </textarea>
                     </div>
                 </form>
             </div>
 
             <div class="modal-footer">
                 <button class="btn btn-secondary" (click)="cerrar.emit()">Cancelar</button>
-                <button class="btn btn-primary" [disabled]="!esFormularioValido()" (click)="guardar.emit(historial)">
+                <button class="btn btn-primary" [disabled]="cargandoPacientes || !esFormularioValido()"
+                    (click)="guardar.emit(historial)">
                     Guardar
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Backdrop separado, detrás del modal -->
+<div *ngIf="visible" class="modal-backdrop fade show"></div>

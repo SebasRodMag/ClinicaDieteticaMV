@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * Representa a un especialista médico en la aplicación.
  * @property int $id Identificador único del especialista
  * @property int $user_id Identificador del usuario asociado al especialista
- * @property string $especialidad Especialidad del especialista
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Cita[] $citas
  */
 class Paciente extends Model
 {

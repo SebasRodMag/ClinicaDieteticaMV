@@ -15,6 +15,26 @@ svg[viewBox*="%"] {
     text-align: center;
 }
 
+/*Para acegurarnos que el snackbar te mantenga por encima de los modales modificamos el div que los contiene*/
+.cdk-overlay-container {
+    z-index: 5000 !important;
+    position: fixed !important;
+}
+
+.modal {
+    z-index: 1060 !important;
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+.snackbar-success,
+.snackbar-warning,
+.snackbar-error {
+    z-index: 5001 !important;
+}
+
 .overlay-cargando {
     position: absolute;
     top: 0;
@@ -38,6 +58,13 @@ svg[viewBox*="%"] {
     /* Asignar al spinner el color-tema */
     border-color: var(--color-tema, #28a745) transparent var(--color-tema, #28a745) transparent;
     transition: border-color 0.3s ease;
+}
+
+/*Cambiar el color de los paneles de información según configuración*/
+.alert-info {
+    background-color: color-mix(in srgb, var(--color-tema) 20%, white 80%) !important;
+    border-color: var(--color-tema) !important;
+    color: var(--color-tema) !important;
 }
 
 .pagination .page-item.active .page-link {
@@ -78,6 +105,12 @@ body {
     color: white;
 }
 
+/*Subir la altura del los snackbar para que no los solapen los div de los modales*/
+.snackbar-warning,
+.snackbar-success,
+.snackbar-error {
+    z-index: 4000 !important;
+}
 
 .list-group-item:hover {
     background-color: #f1f1f1;
@@ -98,11 +131,27 @@ button {
     font-size: 1rem;
 }
 
-/*Botones primarios, sobre escribimos el estilo de bootstrap*/
+/*Sobre escribiendo la Cabecera de los modales*/
+.modal-header-sistema {
+    background-color: var(--color-tema) !important;
+}
+
+/*Botones primarios, sobre escribiendo el estilo de bootstrap*/
 .btn-primary {
     background-color: var(--color-tema) !important;
     border-color: var(--color-tema) !important;
     color: white !important;
+}
+
+.btn-outline-primary {
+    border-color: var(--color-tema) !important;
+    color: var(--color-tema) !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--color-tema) !important;
+    color: white !important;
+    border-color: var(--color-tema) !important;
 }
 
 .btn-primary:hover,
@@ -111,6 +160,35 @@ button {
     color: var(--color-tema) !important;
     border-color: var(--color-tema) !important;
     font-weight: 500;
+}
+
+/*Paginador, sobre escribiendo el estilo de bootstrap*/
+.page-item.active .page-link {
+    background-color: var(--color-tema) !important;
+    border-color: var(--color-tema) !important;
+    color: white !important;
+}
+
+.page-link:hover {
+    background-color: var(--color-tema) !important;
+    border-color: var(--color-tema) !important;
+    color: white !important;
+}
+
+.page-item.disabled .page-link {
+    color: #999 !important;
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+}
+
+.page-link {
+    border-color: var(--color-tema) !important;
+    color: var(--color-tema) !important;
+}
+
+.page-link:hover {
+    background-color: var(--color-tema) !important;
+    color: white !important;
 }
 
 .badge-primary {

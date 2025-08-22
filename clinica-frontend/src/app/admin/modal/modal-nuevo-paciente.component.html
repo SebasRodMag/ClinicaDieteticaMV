@@ -1,0 +1,49 @@
+<div class="modal-backdrop fade show" *ngIf="visible"></div>
+
+<div class="modal d-block" *ngIf="visible" style="z-index: 2000;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white modal-header-sistema">
+                <h5 class="modal-title">Nuevo paciente</h5>
+                <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+            </div>
+
+            <div class="modal-body">
+                <form (ngSubmit)="guardar()">
+                    <!-- Campo de búsqueda separado del select -->
+                    <div class="mb-3">
+                        <label>Buscar usuario</label>
+                        <input type="text" class="form-control mb-2" [(ngModel)]="filtroUsuario" name="filtroUsuario"
+                            placeholder="Buscar por nombre o ID" />
+                    </div>
+                    <div *ngIf="mensajeErrorBusqueda" class="text-danger small mt-1">
+                        {{ mensajeErrorBusqueda }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Seleccionar usuario sin rol</label>
+                        <select class="form-select" [(ngModel)]="user_idSeleccionado" name="usuario" required
+                            (change)="mensajeErrorBusqueda = ''">
+                            <option [ngValue]="null" disabled [selected]="!user_idSeleccionado">
+                                {{ usuariosFiltrados.length > 0 ? 'Seleccione un usuario' : 'No se encontraron usuarios'
+                                }}
+                            </option>
+                            <option *ngFor="let usuario of usuariosFiltrados" [value]="usuario.id">
+                                {{ usuario.nombre_apellidos }} — ID: {{ usuario.id }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary me-2"
+                            [disabled]="cargando || !user_idSeleccionado">
+                            Seleccionar
+                        </button>
+                        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>

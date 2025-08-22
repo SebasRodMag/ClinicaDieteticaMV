@@ -1,0 +1,14 @@
+# --- Build Angular ---
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+# Ajusta el nombre del proyecto Angular si difiere
+RUN npm run build -- --configuration=production
+
+# --- Nginx estático ---
+FROM nginx:1.25-alpine
+# Ajusta la ruta si tu dist es distinta (Angular 17 suele: dist/<app>/browser)
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf

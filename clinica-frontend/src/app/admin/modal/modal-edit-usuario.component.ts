@@ -25,6 +25,9 @@ export class ModalEditUsuarioComponent implements OnChanges {
     usuarioForm!: Usuario;
     errores: { [campo: string]: string } = {};
 
+    mostrarPassword = false;
+    mostrarPasswordConfirm = false;
+
     constructor(private snackBar: MatSnackBar) { }
 
     ngOnChanges(changes: SimpleChanges): void {

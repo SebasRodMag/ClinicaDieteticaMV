@@ -8,9 +8,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 /**
  * Modelo Cita
  * Representa una cita médica en la aplicación.
- * @property int $id_cita Identificador único de la cita
- * @property int $id_paciente Identificador del paciente asociado a la cita
- * @property int $id_especialista Identificador del especialista asociado a la cita
+ *
+ * @property int $id_cita
+ * @property int $id_paciente
+ * @property int $id_especialista
+ * @property \Carbon\Carbon $fecha_hora_cita
+ * @property string $tipo_cita
+ * @property string $estado
+ * @property bool $es_primera
+ * @property string|null $comentario
+ * @property string|null $nombre_sala
+ * @property \App\Models\Paciente $paciente
+ * @property \App\Models\Especialista $especialista
+ * Relaciones:
+ * @property \App\Models\Paciente|null $paciente
+ * @property \App\Models\Especialista|null $especialista
  */
 class Cita extends Model
 {

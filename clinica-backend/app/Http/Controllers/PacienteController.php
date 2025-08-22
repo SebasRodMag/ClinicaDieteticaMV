@@ -6,16 +6,27 @@ use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Traits\Loggable;
+use App\Models\Cita;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
+use App\Services\BajasServices;
+use Illuminate\Validation\Rule;
+use App\Notifications\PacienteAltaNotificacion;
+use Illuminate\Support\Facades\Notification;
 
 
 class PacienteController extends Controller
 {
     use Loggable;
+
+    public function __construct(private BajasServices $bajasServices)
+    {
+    }
 
     /**
      * Muestra una lista de pacientes.
@@ -225,32 +236,82 @@ class PacienteController extends Controller
      */
     public function borrarPaciente($id): JsonResponse
     {
-        $userId = auth()->id();
-        $respuesta = [];
+        $userId = Auth::id();
         $codigo = 200;
+        $respuesta = ['message' => 'Paciente dado de baja y citas eliminadas correctamente'];
 
-        if (!is_numeric($id)) {
-            $this->registrarLog($userId, 'borrar_paciente_id_invalido', 'paciente', null);
-            $respuesta = ['message' => 'ID inválido'];
-            $codigo = 400;
-        } else {
+        try {
+            // Validación básica de ID
+            if (!is_numeric($id)) {
+                $codigo = 400;
+                $respuesta = ['message' => 'ID inválido'];
+                $this->registrarLog($userId, 'borrar_paciente_id_invalido', 'paciente', null);
+                return response()->json($respuesta, $codigo);
+            }
+
             $paciente = Paciente::find($id);
 
             if (!$paciente) {
-                $this->registrarLog($userId, 'borrar_paciente_id_no_encontrado', 'paciente', $id);
-                $respuesta = ['message' => 'Paciente no encontrado'];
                 $codigo = 404;
-            } else {
-                try {
-                    $paciente->delete();
-                    $this->registrarLog($userId, 'borrar_paciente', 'paciente', $id);
-                    $respuesta = ['message' => 'Paciente eliminado correctamente'];
-                } catch (\Exception $e) {
-                    $this->registrarLog($userId, 'borrar_paciente_error', 'paciente', $id);
-                    $respuesta = ['message' => 'No se pudo eliminar el paciente'];
-                    $codigo = 500;
+                $respuesta = ['message' => 'Paciente no encontrado'];
+                $this->registrarLog($userId, 'borrar_paciente_id_no_encontrado', 'paciente', $id);
+                return response()->json($respuesta, $codigo);
+            }
+
+            DB::beginTransaction();
+
+            // 1) Cambiar rol del usuario asociado a 'usuario'
+            $user = $paciente->user ?? $paciente->usuario;
+            if ($user) {
+                if (property_exists($user, 'rol') || array_key_exists('rol', $user->getAttributes())) {
+                    $user->rol = 'usuario';
+                    $user->save();
+                } elseif (method_exists($user, 'syncRoles')) {
+                    $user->syncRoles(['usuario']); // Spatie
                 }
             }
+
+            // 2) Eliminar citas del paciente (primero citas para evitar FK)
+            $citasIds = Cita::where(function ($q) use ($id) {
+                $q->where('paciente_id', $id)->orWhere('id_paciente', $id);
+            })
+                ->pluck('id');
+
+            $totalCitas = $citasIds->count();
+            if ($totalCitas > 0) {
+                Cita::whereIn('id', $citasIds)->delete();
+            }
+
+            // 3) Borrar fila del paciente (si usas SoftDeletes y quieres borrado físico, usa forceDelete)
+            if (method_exists($paciente, 'forceDelete')) {
+                $paciente->forceDelete();
+            } else {
+                $paciente->delete();
+            }
+
+            DB::commit();
+
+            // Log éxito + datos útiles
+            $this->registrarLog($userId, 'borrar_paciente', 'paciente', $id);
+
+            // Devolver detalle opcional
+            $respuesta['data'] = [
+                'paciente_id' => (int) $id,
+                'citas_eliminadas' => (int) $totalCitas,
+                'rol_usuario' => $user ? ($user->rol ?? 'usuario') : null,
+            ];
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $codigo = 500;
+            $respuesta = ['message' => 'No se pudo completar la baja del paciente'];
+            // Log del error técnico
+            if (method_exists($this, 'logError')) {
+                $this->logError($userId, 'borrar_paciente_error', $e->getMessage());
+            } else {
+                // fallback al registrarLog si no tienes logError
+                $this->registrarLog($userId, 'borrar_paciente_error', 'paciente', $id);
+            }
+            report($e);
         }
 
         return response()->json($respuesta, $codigo);
@@ -332,47 +393,46 @@ class PacienteController extends Controller
         $codigo = 200;
 
         try {
-            $pacientes = Paciente::with('user')->get();
+            $pacientes = Paciente::with(['user', 'citas.especialista.user'])->get();
 
             $resultado = $pacientes->map(function ($paciente) {
-                $ultimaCita = $paciente->citas()
-                    ->with('especialista.user')
-                    ->orderBy('fecha_hora_cita', 'desc')
+                $ultimaCita = $paciente->citas
+                    ->sortByDesc('fecha_hora_cita')
                     ->first();
 
-                $especialista = $ultimaCita ? $ultimaCita->especialista : null;
-                $usuarioEspecialista = $especialista ? $especialista->user : null;
+                $especialista = $ultimaCita?->especialista;
+                $usuarioEspecialista = $especialista?->user;
 
                 return [
                     'id' => $paciente->id,
                     'user_id' => $paciente->user_id,
                     'numero_historial' => $paciente->numero_historial,
-                    'fecha_alta' => $paciente->fecha_alta instanceof \Carbon\Carbon ? $paciente->fecha_alta->format('Y-m-d') : ($paciente->fecha_alta ?? null),
-                    'fecha_baja' => $paciente->fecha_baja instanceof \Carbon\Carbon ? $paciente->fecha_baja->format('Y-m-d') : ($paciente->fecha_baja ?? null),
-                    'created_at' => $paciente->created_at instanceof \Carbon\Carbon ? $paciente->created_at->format('Y-m-d H:i:s') : ($paciente->created_at ?? null),
-                    'updated_at' => $paciente->updated_at instanceof \Carbon\Carbon ? $paciente->updated_at->format('Y-m-d H:i:s') : ($paciente->updated_at ?? null),
-                    'deleted_at' => $paciente->deleted_at instanceof \Carbon\Carbon ? $paciente->deleted_at->format('Y-m-d H:i:s') : ($paciente->deleted_at ?? null),
+                    'fecha_alta' => optional($paciente->fecha_alta)->format('Y-m-d'),
+                    'fecha_baja' => optional($paciente->fecha_baja)->format('Y-m-d'),
+                    'created_at' => optional($paciente->created_at)->format('Y-m-d H:i:s'),
+                    'updated_at' => optional($paciente->updated_at)->format('Y-m-d H:i:s'),
+                    'deleted_at' => optional($paciente->deleted_at)->format('Y-m-d H:i:s'),
 
                     'ultima_cita' => $ultimaCita ? [
                         'id_cita' => $ultimaCita->id_cita,
                         'id_paciente' => $ultimaCita->id_paciente,
                         'id_especialista' => $ultimaCita->id_especialista,
-                        'fecha_hora_cita' => $ultimaCita->fecha_hora_cita instanceof \Carbon\Carbon ? $ultimaCita->fecha_hora_cita->format('Y-m-d H:i:s') : ($ultimaCita->fecha_hora_cita ?? null),
+                        'fecha_hora_cita' => optional($ultimaCita->fecha_hora_cita)->format('Y-m-d H:i:s'),
                         'tipo_cita' => $ultimaCita->tipo_cita,
                         'estado' => $ultimaCita->estado,
                         'es_primera' => $ultimaCita->es_primera,
                         'comentario' => $ultimaCita->comentario,
-                        'created_at' => $ultimaCita->created_at instanceof \Carbon\Carbon ? $ultimaCita->created_at->format('Y-m-d H:i:s') : ($ultimaCita->created_at ?? null),
-                        'updated_at' => $ultimaCita->updated_at instanceof \Carbon\Carbon ? $ultimaCita->updated_at->format('Y-m-d H:i:s') : ($ultimaCita->updated_at ?? null),
-                        'deleted_at' => $ultimaCita->deleted_at instanceof \Carbon\Carbon ? $ultimaCita->deleted_at->format('Y-m-d H:i:s') : ($ultimaCita->deleted_at ?? null),
+                        'created_at' => optional($ultimaCita->created_at)->format('Y-m-d H:i:s'),
+                        'updated_at' => optional($ultimaCita->updated_at)->format('Y-m-d H:i:s'),
+                        'deleted_at' => optional($ultimaCita->deleted_at)->format('Y-m-d H:i:s'),
 
                         'especialista' => $especialista ? [
                             'id' => $especialista->id,
                             'user_id' => $especialista->user_id,
                             'especialidad' => $especialista->especialidad,
-                            'created_at' => $especialista->created_at instanceof \Carbon\Carbon ? $especialista->created_at->format('Y-m-d H:i:s') : ($especialista->created_at ?? null),
-                            'updated_at' => $especialista->updated_at instanceof \Carbon\Carbon ? $especialista->updated_at->format('Y-m-d H:i:s') : ($especialista->updated_at ?? null),
-                            'deleted_at' => $especialista->deleted_at instanceof \Carbon\Carbon ? $especialista->deleted_at->format('Y-m-d H:i:s') : ($especialista->deleted_at ?? null),
+                            'created_at' => optional($especialista->created_at)->format('Y-m-d H:i:s'),
+                            'updated_at' => optional($especialista->updated_at)->format('Y-m-d H:i:s'),
+                            'deleted_at' => optional($especialista->deleted_at)->format('Y-m-d H:i:s'),
 
                             'usuario' => $usuarioEspecialista ? [
                                 'id' => $usuarioEspecialista->id,
@@ -380,13 +440,13 @@ class PacienteController extends Controller
                                 'apellidos' => $usuarioEspecialista->apellidos,
                                 'dni_usuario' => $usuarioEspecialista->dni_usuario,
                                 'email' => $usuarioEspecialista->email,
-                                'email_verified_at' => $usuarioEspecialista->email_verified_at instanceof \Carbon\Carbon ? $usuarioEspecialista->email_verified_at->format('Y-m-d H:i:s') : ($ultimaCita->deleted_at ?? null),
+                                'email_verified_at' => optional($usuarioEspecialista->email_verified_at)->format('Y-m-d H:i:s'),
                                 'direccion' => $usuarioEspecialista->direccion,
-                                'fecha_nacimiento' => $usuarioEspecialista->fecha_nacimiento instanceof \Carbon\Carbon ? $usuarioEspecialista->fecha_nacimiento->format('Y-m-d') : ($ultimaCita->deleted_at ?? null),
+                                'fecha_nacimiento' => optional($usuarioEspecialista->fecha_nacimiento)->format('Y-m-d'),
                                 'telefono' => $usuarioEspecialista->telefono,
-                                'created_at' => $usuarioEspecialista->created_at instanceof \Carbon\Carbon ? $usuarioEspecialista->created_at->format('Y-m-d H:i:s') : ($usuarioEspecialista->created_at ?? null),
-                                'updated_at' => $usuarioEspecialista->updated_at instanceof \Carbon\Carbon ? $usuarioEspecialista->updated_at->format('Y-m-d H:i:s') : ($usuarioEspecialista->updated_at ?? null),
-                                'deleted_at' => $usuarioEspecialista->deleted_at instanceof \Carbon\Carbon ? $usuarioEspecialista->deleted_at->format('Y-m-d H:i:s') : ($usuarioEspecialista->deleted_at ?? null),
+                                'created_at' => optional($usuarioEspecialista->created_at)->format('Y-m-d H:i:s'),
+                                'updated_at' => optional($usuarioEspecialista->updated_at)->format('Y-m-d H:i:s'),
+                                'deleted_at' => optional($usuarioEspecialista->deleted_at)->format('Y-m-d H:i:s'),
                             ] : null,
                         ] : null,
                     ] : null,
@@ -397,13 +457,13 @@ class PacienteController extends Controller
                         'apellidos' => $paciente->user->apellidos,
                         'dni_usuario' => $paciente->user->dni_usuario,
                         'email' => $paciente->user->email,
-                        'email_verified_at' => $paciente->user->email_verified_at instanceof \Carbon\Carbon ? $paciente->user->email_verified_at->format('Y-m-d H:i:s') : ($paciente->user->email_verified_at ?? null),
+                        'email_verified_at' => optional($paciente->user->email_verified_at)->format('Y-m-d H:i:s'),
                         'direccion' => $paciente->user->direccion,
-                        'fecha_nacimiento' => $paciente->user->fecha_nacimiento instanceof \Carbon\Carbon ? $paciente->user->fecha_nacimiento->format('Y-m-d') : ($paciente->user->fecha_nacimiento ?? null),
+                        'fecha_nacimiento' => optional($paciente->user->fecha_nacimiento)->format('Y-m-d'),
                         'telefono' => $paciente->user->telefono,
-                        'created_at' => $paciente->user->created_at instanceof \Carbon\Carbon ? $paciente->user->created_at->format('Y-m-d H:i:s') : ($paciente->user->created_at ?? null),
-                        'updated_at' => $paciente->user->updated_at instanceof \Carbon\Carbon ? $paciente->user->updated_at->format('Y-m-d H:i:s') : ($paciente->user->updated_at ?? null),
-                        'deleted_at' => $paciente->user->deleted_at instanceof \Carbon\Carbon ? $paciente->user->deleted_at->format('Y-m-d H:i:s') : ($paciente->user->deleted_at ?? null),
+                        'created_at' => optional($paciente->user->created_at)->format('Y-m-d H:i:s'),
+                        'updated_at' => optional($paciente->user->updated_at)->format('Y-m-d H:i:s'),
+                        'deleted_at' => optional($paciente->user->deleted_at)->format('Y-m-d H:i:s'),
                     ] : null,
                 ];
             });
@@ -416,6 +476,8 @@ class PacienteController extends Controller
             return response()->json(['message' => 'Error interno al obtener pacientes con especialista'], 500);
         }
     }
+
+
 
 
     /**
@@ -589,7 +651,12 @@ class PacienteController extends Controller
         $user = null;
 
         $validar = Validator::make($solicitud->all(), [
-            'user_id' => 'required|integer|exists:users,id',
+            'user_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id'),
+                Rule::unique('pacientes', 'user_id')->whereNull('deleted_at'), //Ignora el soft deletes
+            ],
         ]);
 
         if ($validar->fails()) {
@@ -601,25 +668,63 @@ class PacienteController extends Controller
         try {
             $user = User::findOrFail($solicitud->user_id);
 
-            $paciente = Paciente::create([
-                'user_id' => $user->id,
-            ]);
+            //Buscar el paciente por si se ha eliminado previamente
+            $paciente = Paciente::withTrashed()->where('user_id', $user->id)->first();
 
-            $user->assignRole('paciente');
+            if ($paciente && $paciente->trashed()) {
+                //Restaur paciente
+                $paciente->restore();
+                $paciente->fecha_alta = now()->toDateString();
+                $paciente->save();
 
-            $this->registrarLog(auth()->id(), 'create', "Paciente creado, user_id: {$user->id}", $paciente->id);
+                $user->assignRole('paciente');
+
+                $this->registrarLog(auth()->id(), 'restaurar_paciente', "Paciente restaurado, user_id: {$user->id}", $paciente->id);
+
+                $respuesta = [
+                    'message' => 'Paciente restaurado correctamente',
+                    'user' => $user,
+                    'paciente' => $paciente,
+                ];
+            } else {
+                //Crea paciente nuevo
+                $numeroHistorial = $this->generarNumeroHistorialUnico();
+
+                $paciente = Paciente::create([
+                    'user_id' => $user->id,
+                    'numero_historial' => $numeroHistorial,
+                    'fecha_alta' => now()->toDateString(),
+                ]);
+
+                $user->assignRole('paciente');
+
+                // Determinar quién crea al paciente (Administrador o Especialista)
+                $especialistaNombre = auth()->user()?->nombre ?? 'uno de nuestros especialistas';
+
+                // Notificar al nuevo paciente por email
+                Notification::send($user, new PacienteAltaNotificacion(
+                    nombreEspecialista: $especialistaNombre,
+                    numeroHistorial: $paciente->numero_historial,
+                ));
+
+                $this->registrarLog(auth()->id(), 'crear_paciente', "Paciente creado, user_id: {$user->id}", $paciente->id);
+
+                //Notificación por correo de la creación del usuario
+
+
+                $respuesta = [
+                    'message' => 'Paciente creado correctamente',
+                    'user' => $user,
+                    'paciente' => $paciente,
+                ];
+            }
 
             DB::commit();
-
-            $respuesta = [
-                'message' => 'Paciente creado correctamente',
-                'user' => $user,
-            ];
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError(auth()->id(), 'Error crear paciente: ' . $e->getMessage(), $user?->id);
-            $respuesta = ['message' => 'Error interno al crear paciente', 'error' => $e->getMessage()];
+            $this->logError(auth()->id(), 'Error en nuevoPaciente: ' . $e->getMessage(), $user?->id);
             $codigo = 500;
+            $respuesta = ['message' => 'Error interno al crear/restaurar paciente'];
         }
 
         return response()->json($respuesta, $codigo);
@@ -681,5 +786,18 @@ class PacienteController extends Controller
         }
 
         return response()->json($respuesta, $codigo);
+    }
+
+    private function generarNumeroHistorialUnico(): string
+    {
+        do {
+            $prefijo = strtoupper(Str::random(2));
+            $numeros = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $sufijo = strtoupper(Str::random(2));
+
+            $numeroHistorial = $prefijo . $numeros . $sufijo;
+        } while (Paciente::where('numero_historial', $numeroHistorial)->exists());
+
+        return $numeroHistorial;
     }
 }

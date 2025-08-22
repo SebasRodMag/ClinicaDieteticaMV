@@ -12,11 +12,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     imports: [CommonModule, FormsModule, NgSelectModule, MatSnackBarModule],
     templateUrl: './modal-edit-historial.component.html'
 })
-export class ModalEditHistorialComponent implements OnInit, OnChanges {
+export class ModalEditHistorialComponent implements OnChanges, OnInit {
     @Input() visible: boolean = false;
     @Input() esNuevo: boolean = false;
     @Input() historial: Partial<Historial> = {};
-    @Input() color: string = '#28a745';
+    @Input() color: string = '#b7bbc2ff';
+    @Input() pacienteNombre: string = '';
+    @Input() listaPacientes: any[] | null = null;
     @Output() cerrar = new EventEmitter<void>();
     @Output() guardar = new EventEmitter<Partial<Historial>>();
 
@@ -24,34 +26,66 @@ export class ModalEditHistorialComponent implements OnInit, OnChanges {
     pacienteSeleccionado: any = null;
     fechaActual: string = new Date().toISOString().split('T')[0];
 
+    cargandoPacientes = false;
+
     constructor(
         private historialService: HistorialService,
         private snackBar: MatSnackBar
     ) { }
 
-    ngOnInit(): void {
-        this.cargarPacientes();
-    }
+    ngOnInit(): void {}
 
     ngOnChanges(changes: SimpleChanges): void {
+        //Cuando se abre el modal, si no hay fecha se pone hoy
         if (changes['visible'] && this.visible) {
-            this.cargarPacientes();
+            if (!this.historial.fecha) {
+                this.historial.fecha = this.fechaActual;
+            }
+            if (this.listaPacientes  && this.listaPacientes .length) {
+                // Usar los pacientes que vinieron del padre (modal abre listo)
+                this.pacientes = this.listaPacientes ;
+                this.cargandoPacientes = false;
+                this.preseleccionarPaciente();
+                this.mostrarResumenPaciente();
+            } else {
+                // Fallback: se carga desde el modal
+                this.cargarPacientes();
+            }
         }
     }
 
     cargarPacientes(): void {
+        this.cargandoPacientes = true;
         this.historialService.obtenerPacientesEspecialista().subscribe({
             next: (data) => {
                 this.pacientes = (data as any[]).map(p => ({
                     ...p,
                     nombreCompleto: `${p.nombre} ${p.apellidos}`.trim()
                 }));
+                this.preseleccionarPaciente();
                 this.mostrarResumenPaciente();
+                this.cargandoPacientes = false;
             },
             error: () => {
                 this.snackBar.open('Error al cargar pacientes', 'Cerrar', { duration: 3000 });
+                this.cargandoPacientes = false;
             }
         });
+    }
+
+    private preseleccionarPaciente(): void {
+        if (this.historial.id_paciente && this.pacientes.some(p => p.id === this.historial.id_paciente)) {
+            return;
+        }
+
+        //Si no tenemos el id, se busca por nombre
+        const nombre = (this.pacienteNombre || '').trim().toLowerCase();
+        if (nombre) {
+            const encontrado = this.pacientes.find(p => p.nombreCompleto.trim().toLowerCase() === nombre);
+            if (encontrado) {
+                this.historial.id_paciente = encontrado.id;
+            }
+        }
     }
 
     mostrarResumenPaciente(): void {

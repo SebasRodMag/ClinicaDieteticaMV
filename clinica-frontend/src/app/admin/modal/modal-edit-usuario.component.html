@@ -1,13 +1,15 @@
-<!-- Modal Bootstrap -->
+<div class="modal-backdrop fade show" *ngIf="visible"></div>
+<!-- Este modal es el mismo para editar como para crear un nuevo usuario -->
 <div class="modal fade" tabindex="-1" [ngClass]="{ 'show d-block': visible }" [attr.aria-hidden]="!visible">
     <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
         <div class="modal-content">
             <form (ngSubmit)="onSubmit()">
-                <div class="modal-header">
+                <div class="modal-header bg-primary text-white modal-header-sistema">
                     <h5 class="modal-title">
                         {{ esNuevo ? 'Nuevo Usuario' : 'Editar Usuario' }}
                     </h5>
-                    <button type="button" class="btn-close ms-auto" aria-label="Cerrar" (click)="cerrarModal()"></button>
+                    <button type="button" class="btn-close ms-auto" aria-label="Cerrar"
+                        (click)="cerrarModal()"></button>
                 </div>
 
                 <div class="modal-body">
@@ -16,7 +18,9 @@
                         <div class="col-md-6">
                             <!-- Nombre -->
                             <div>
-                                <label for="nombre" class="form-label">Nombre <span *ngIf="esNuevo" class="text-danger">*</span></label>
+                                <label for="nombre" class="form-label">
+                                    Nombre <span *ngIf="esNuevo" class="text-danger">*</span>
+                                </label>
                                 <input id="nombre" type="text" [(ngModel)]="usuarioForm.nombre" name="nombre"
                                     class="form-control" [ngClass]="{ 'is-invalid': errores['nombre'] }"
                                     (blur)="validarCampo('nombre')" (change)="validarCampo('nombre')" />
@@ -27,9 +31,12 @@
 
                             <!-- DNI -->
                             <div>
-                                <label for="dni_usuario" class="form-label">DNI <span *ngIf="esNuevo" class="text-danger">*</span></label>
-                                <input id="dni_usuario" type="text" [(ngModel)]="usuarioForm.dni_usuario" name="dni_usuario"
-                                    class="form-control" [ngClass]="{ 'is-invalid': errores['dni_usuario'] }"
+                                <label for="dni_usuario" class="form-label">
+                                    DNI <span *ngIf="esNuevo" class="text-danger">*</span>
+                                </label>
+                                <input id="dni_usuario" type="text" [(ngModel)]="usuarioForm.dni_usuario"
+                                    name="dni_usuario" class="form-control"
+                                    [ngClass]="{ 'is-invalid': errores['dni_usuario'] }"
                                     (blur)="validarCampo('dni_usuario')" (change)="validarCampo('dni_usuario')" />
                                 <div *ngIf="errores['dni_usuario']" class="invalid-feedback d-block">
                                     {{ errores['dni_usuario'] }}
@@ -65,10 +72,21 @@
                                     <span *ngIf="esNuevo" class="text-danger">*</span>
                                     <small class="text-muted fst-italic ms-1" *ngIf="!esNuevo">(Opcional)</small>
                                 </label>
-                                <input id="password" type="password" [(ngModel)]="usuarioForm.password" name="password"
-                                    class="form-control" [ngClass]="{ 'is-invalid': errores['password'] }"
-                                    [placeholder]="esNuevo ? 'Introduzca una contraseña' : 'Dejar vacío para no cambiar'"
-                                    (blur)="validarCampo('password')" (change)="validarCampo('password')" />
+                                <!-- Contenedor relativo SOLO para el input, así el botón se centra respecto al input -->
+                                <div class="position-relative">
+                                    <input id="password" [type]="mostrarPassword ? 'text' : 'password'"
+                                        [(ngModel)]="usuarioForm.password" name="password" class="form-control pe-5"
+                                        [ngClass]="{ 'is-invalid': errores['password'] }"
+                                        [placeholder]="esNuevo ? 'Introduzca una contraseña' : 'Dejar vacío para no cambiar'"
+                                        (blur)="validarCampo('password')" (change)="validarCampo('password')" />
+                                    <button type="button"
+                                        class="btn btn-outline-secondary btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
+                                        style="height: 32px; width: 32px; padding: 0;"
+                                        (click)="mostrarPassword = !mostrarPassword"
+                                        aria-label="Mostrar/Ocultar contraseña" tabindex="-1">
+                                        <i class="bi" [ngClass]="mostrarPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                                    </button>
+                                </div>
                                 <div *ngIf="errores['password']" class="invalid-feedback d-block">
                                     {{ errores['password'] }}
                                 </div>
@@ -79,7 +97,9 @@
                         <div class="col-md-6">
                             <!-- Apellidos -->
                             <div>
-                                <label for="apellidos" class="form-label">Apellidos <span *ngIf="esNuevo" class="text-danger">*</span></label>
+                                <label for="apellidos" class="form-label">
+                                    Apellidos <span *ngIf="esNuevo" class="text-danger">*</span>
+                                </label>
                                 <input id="apellidos" type="text" [(ngModel)]="usuarioForm.apellidos" name="apellidos"
                                     class="form-control" [ngClass]="{ 'is-invalid': errores['apellidos'] }"
                                     (blur)="validarCampo('apellidos')" (change)="validarCampo('apellidos')" />
@@ -90,7 +110,9 @@
 
                             <!-- Email -->
                             <div>
-                                <label for="email" class="form-label">Email <span *ngIf="esNuevo" class="text-danger">*</span></label>
+                                <label for="email" class="form-label">
+                                    Email <span *ngIf="esNuevo" class="text-danger">*</span>
+                                </label>
                                 <input id="email" type="email" [(ngModel)]="usuarioForm.email" name="email"
                                     class="form-control" [ngClass]="{ 'is-invalid': errores['email'] }"
                                     (blur)="validarCampo('email')" (change)="validarCampo('email')" />
@@ -113,11 +135,24 @@
                                     <span *ngIf="esNuevo" class="text-danger">*</span>
                                     <small class="text-muted fst-italic ms-1" *ngIf="!esNuevo">(Opcional)</small>
                                 </label>
-                                <input id="password_confirmation" type="password"
-                                    [(ngModel)]="usuarioForm.password_confirmation" name="password_confirmation"
-                                    class="form-control" [ngClass]="{ 'is-invalid': errores['password_confirmation'] }"
-                                    [placeholder]="esNuevo ? 'Confirme la contraseña' : 'Dejar vacío para no cambiar'"
-                                    (blur)="validarCampo('password_confirmation')" (change)="validarCampo('password_confirmation')" />
+                                <div class="position-relative">
+                                    <input id="password_confirmation"
+                                        [type]="mostrarPasswordConfirm ? 'text' : 'password'"
+                                        [(ngModel)]="usuarioForm.password_confirmation" name="password_confirmation"
+                                        class="form-control pe-5"
+                                        [ngClass]="{ 'is-invalid': errores['password_confirmation'] }"
+                                        [placeholder]="esNuevo ? 'Confirme la contraseña' : 'Dejar vacío para no cambiar'"
+                                        (blur)="validarCampo('password_confirmation')"
+                                        (change)="validarCampo('password_confirmation')" />
+                                    <button type="button"
+                                        class="btn btn-outline-secondary btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
+                                        style="height: 32px; width: 32px; padding: 0;"
+                                        (click)="mostrarPasswordConfirm = !mostrarPasswordConfirm"
+                                        aria-label="Mostrar/Ocultar confirmación" tabindex="-1">
+                                        <i class="bi"
+                                            [ngClass]="mostrarPasswordConfirm ? 'bi-eye-slash' : 'bi-eye'"></i>
+                                    </button>
+                                </div>
                                 <div *ngIf="errores['password_confirmation']" class="invalid-feedback d-block">
                                     {{ errores['password_confirmation'] }}
                                 </div>

@@ -6,9 +6,8 @@
             <label for="email" class="form-label">Correo electrónico</label>
             <input type="email" id="email" formControlName="email" class="form-control"
                 [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
-                placeholder="usuario@ejemplo.com"
-                (keydown.enter)="focusPasswordInput()"
-                #emailInput /> <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="invalid-feedback">
+                placeholder="usuario@ejemplo.com" (keydown.enter)="focusPasswordInput()" #emailInput />
+            <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="invalid-feedback">
                 <div *ngIf="loginForm.get('email')?.errors?.['required']">El correo es obligatorio.</div>
                 <div *ngIf="loginForm.get('email')?.errors?.['email']">Debe ser un correo válido.</div>
             </div>
@@ -16,12 +15,23 @@
 
         <div class="mb-3">
             <label for="password" class="form-label">Contraseña</label>
-            <input type="password" id="password" formControlName="password" class="form-control"
-                [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-                placeholder="******"
-                #passwordInput />
+
+            <div class="input-group">
+                <input [type]="mostrarPassword ? 'text' : 'password'" id="password" formControlName="password"
+                    class="form-control"
+                    [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+                    placeholder="*****" #passwordInput (keydown.enter)="onSubmit()" />
+
+                <button type="button" class="btn btn-outline-secondary" (mousedown)="mostrarPassword = true"
+                    (mouseup)="mostrarPassword = false" (mouseleave)="mostrarPassword = false" [disabled]="loading"
+                    aria-label="Mostrar contraseña mientras se mantenga pulsado">
+                    <i class="bi" [ngClass]="mostrarPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                </button>
+            </div>
+
+            <!-- Feedback debajo del input-group -->
             <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-                class="invalid-feedback">
+                class="invalid-feedback d-block">
                 <div *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es obligatoria.</div>
                 <div *ngIf="loginForm.get('password')?.errors?.['minlength']">Mínimo 6 caracteres.</div>
             </div>
@@ -40,7 +50,8 @@
         <button class="btn btn-link mt-3 w-100" (click)="volverLanding()" [disabled]="loading">
             Volver a la página principal
         </button>
-        <p style="text-align: center;">Si no tienes cuenta, puedes <a routerLink="/register" class="link-primary">registrarte</a>.</p>
+        <p style="text-align: center;">Si no tienes cuenta, puedes <a routerLink="/register"
+                class="link-primary">registrarte</a>.</p>
     </div>
 
     <div *ngIf="loading" class="d-flex justify-content-center mt-3">

@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('usuarios/{id}', [UserController::class, 'borrarUsuario']);
         Route::get('usuarios/listar/usuarios', [UserController::class, 'getUsuariosSinRolEspecialistaNiPaciente']);
         Route::get('/especialistasfull', [EspecialistaController::class, 'listarEspecialistasFull']);
+        Route::get('especialista/horas-disponibles/{fecha}', [CitaController::class, 'horasDisponiblesEspecialista']);
 
         Route::post('especialistas', [EspecialistaController::class, 'nuevoEspecialista']);
         Route::put('especialistas/{id}', [EspecialistaController::class, 'actualizarEspecialista']);
@@ -58,7 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:paciente|especialista|administrador')->group(function () {
-        Route::get('horas-disponibles/{fecha}', [CitaController::class, 'horasDisponibles']);
+        Route::get('horas-disponibles/{idEspecialista}/{fecha}', [CitaController::class, 'horasDisponiblesPorEspecialista']);
         Route::post('citas', [CitaController::class, 'nuevaCita']);
         Route::get('pacientes', [PacienteController::class, 'listarPacientes']);
         Route::get('pacientespornombre', [PacienteController::class, 'listarPacientesPorNombre']);
@@ -72,7 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('estados/estados-cita', [CitaController::class, 'tiposEstadoCita']);
         Route::get('historiales/pacientes/', [HistorialController::class, 'listarHistorialesPacientes']);
         Route::get('especialistas/{id}', [EspecialistaController::class, 'verEspecialista']);
-        Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
+        Route::get('listar-citas-paciente', [CitaController::class, 'listarMisCitas']);
         Route::get('obtener-sala/{id}', [CitaController::class, 'obtenerSalaSegura']);
         Route::post('documentos', [DocumentoController::class, 'subirDocumento']);
         Route::get('documentos', [DocumentoController::class, 'listarDocumentos']);
@@ -81,6 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('documentos/{id}/descargar', [DocumentoController::class, 'descargarDocumento']);
         Route::delete('documentos/{id}', [DocumentoController::class, 'eliminarDocumento']);
         Route::get('citas/{id}/sala-segura', [CitaController::class, 'obtenerSalaSegura']);
+        Route::post('nuevo-paciente', [PacienteController::class, 'nuevoPaciente']);
+        Route::patch('citas/{id}/cancelar', [CitaController::class, 'cancelarCita']);
+        Route::patch('citas/{id}/cambiar-estado', [CitaController::class, 'cambiarEstadoCita']);
     });
     /**
      * 
@@ -90,7 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:paciente')->group(function () {
 
         Route::post('pacientes/{id}/citas', [CitaController::class, 'crearNuevaCita']);
-        Route::patch('citas/{id}/cancelar', [CitaController::class, 'cancelarCita']);
+        
         Route::get('mis-historiales', [HistorialController::class, 'historialesPorPaciente']);
         Route::get('especialistas', [EspecialistaController::class, 'listarEspecialistasPorEspecialidad']);
         Route::get('pacientes/{id}', [PacienteController::class, 'verPaciente']);
@@ -103,14 +107,15 @@ Route::middleware('auth:sanctum')->group(function () {
      * Rutas para la vista de Especialista
      */
     Route::middleware('role:especialista')->group(function () {
+        Route::get('especialista/horas-disponibles/{fecha}', [CitaController::class, 'horasDisponiblesEspecialista']);
         Route::get('historial-paciente/', [HistorialController::class, 'listarHistoriales']);
         Route::post('historial/', [HistorialController::class, 'nuevaEntrada']);
         //Route::get('mis-historiales', [HistorialController::class, 'historialesPorPaciente']); ya esta aplicada unicamente para pacientes
         Route::put('historial/{id}', [HistorialController::class, 'actualizarEntrada']);
         Route::delete('historial/{id}', [HistorialController::class, 'eliminarEntrada']);
         Route::get('paciente-por-especialista', [PacienteController::class, 'listarPacientesDelEspecialista']);
-
-        //Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
+        Route::get('perfilespecialista', [EspecialistaController::class, 'perfilEspecialista']);
+        Route::get('pacientes/citas/todas', [CitaController::class, 'listarMisCitas']);
 
     });
 

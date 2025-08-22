@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property int $id Identificador único del documento
  * @property int $historial_id Identificador del historial médico asociado
  * @property int $user_id Identificador del usuario propietario del documento
+ * @property string $especialidad Especialidad médica asociada al especialista
+ * @property \App\Models\User $user
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Cita[] $citas
  */
 class Especialista extends Model
 {

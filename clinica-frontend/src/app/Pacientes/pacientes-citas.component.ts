@@ -1,40 +1,48 @@
-import { Component, OnInit, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
 import { UserService } from '../service/User-Service/user.service';
 import { AuthService } from '../service/Auth-Service/Auth.service';
 import { TablaDatosComponent } from '../components/tabla_datos/tabla-datos.component';
 import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { CitaPorPaciente } from '../models/citasPorPaciente.model';
 import { FormsModule } from '@angular/forms';
 import { Paciente } from '../models/paciente.model';
 import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 import { Especialista } from '../models/especialista.model';
 import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
-import { CalendarioCitasComponent } from './calendario/calendario-citas.component';
+import { CalendarioCitasComponent } from '../components/calendario/calendario-citas.component';
 import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
 import { HttpClient } from '@angular/common/http';
 import { urlApiServicio } from '../components/utilidades/variable-entorno';
-
-
+import { CitaGenerica } from '../models/cita-generica.model';
+import { ModalInfoCitaComponent } from '../components/calendario/modal/modal-info-cita.component';
+import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
 
 @Component({
     selector: 'app-pacientes-citas',
     standalone: true,
-    imports: [CommonModule, TablaDatosComponent, FormsModule, ModalNuevaCitaComponent, CalendarioCitasComponent],
+    imports: [
+        CommonModule,
+        TablaDatosComponent,
+        FormsModule,
+        ModalNuevaCitaComponent,
+        CalendarioCitasComponent,
+        ModalInfoCitaComponent
+    ],
     templateUrl: './pacientes-citas.component.html',
 })
-export class PacientesCitasComponent implements OnInit, AfterViewInit {
-    citas: CitaPorEspecialista[] = [];
-    citasFiltradas: CitaPorEspecialista[] = [];
+export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy {
+    citas: CitaGenerica[] = [];
+    citasFiltradas: CitaGenerica[] = [];
 
     filtroTexto: string = '';
+    temporizadorActualizacion: any;
 
     modalVisible = false;
     loading: boolean = false;
     huboError: boolean = false;
 
     paciente!: Paciente;
-    especialista!: any;
+    especialista!: Especialista | null;
 
     paginaActual = 1;
     itemsPorPagina = 10;
@@ -43,25 +51,35 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
     columnaOrden: string | null = null;
     direccionOrdenAsc: boolean = true;
 
+    citaSeleccionada: CitaGenerica | null = null;
+    modalInfoCitaVisible = false;
+
     columnas = ['id', 'fecha', 'hora', 'estado', 'nombre_especialista', 'especialidad', 'tipo_cita', 'accion'];
 
     @ViewChild('accionTemplate', { static: true }) accionTemplate!: TemplateRef<any>;
-
     templatesMap: { [key: string]: TemplateRef<any> } = {};
 
     permitirCrearCitaPaciente: boolean = false;
 
-    constructor(private UserService: UserService, private authService: AuthService, private snackBar: MatSnackBar, private HttpClient: HttpClient) { }
+    constructor(
+        private UserService: UserService,
+        private authService: AuthService,
+        private snackBar: MatSnackBar,
+        private HttpClient: HttpClient
+    ) { }
 
     ngOnInit(): void {
         this.obtenerCitas();
         this.cargarConfiguracion();
+        this.iniciarActualizacionPeriodica();
     }
 
     ngAfterViewInit(): void {
-        this.templatesMap = {
-            accion: this.accionTemplate,
-        };
+        this.templatesMap = { accion: this.accionTemplate };
+    }
+
+    ngOnDestroy(): void {
+        if (this.temporizadorActualizacion) clearInterval(this.temporizadorActualizacion);
     }
 
     cargarConfiguracion(): void {
@@ -93,15 +111,19 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         });
     }
 
-
     filtrarCitas(): void {
         const filtroLower = this.filtroTexto.toLowerCase();
 
-        this.citasFiltradas = this.citas.filter(cita =>
-            cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
-            cita.especialidad.toLowerCase().includes(filtroLower) ||
-            cita.estado.toLowerCase().includes(filtroLower)
-        );
+        this.citasFiltradas = this.citas.filter(cita => {
+            if (this.esCitaPorEspecialista(cita)) {
+                return (
+                    cita.nombre_especialista.toLowerCase().includes(filtroLower) ||
+                    cita.especialidad.toLowerCase().includes(filtroLower) ||
+                    cita.estado.toLowerCase().includes(filtroLower)
+                );
+            }
+            return cita.estado.toLowerCase().includes(filtroLower);
+        });
 
         this.ordenarDatos();
         this.paginaActual = 1;
@@ -109,11 +131,9 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
 
     ordenarDatos(): void {
         if (!this.columnaOrden) return;
-
         this.citasFiltradas.sort((a: any, b: any) => {
             const valA = a[this.columnaOrden!];
             const valB = b[this.columnaOrden!];
-
             if (valA < valB) return this.direccionOrdenAsc ? -1 : 1;
             if (valA > valB) return this.direccionOrdenAsc ? 1 : -1;
             return 0;
@@ -134,7 +154,9 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         this.paginaActual = pagina;
     }
 
-    cancelarCita(cita: CitaPorEspecialista): void {
+    cancelarCita(cita: CitaGenerica): void {
+        if (!this.esCitaPorEspecialista(cita)) return;
+
         const snackRef = this.snackBar.open(
             `¿Cancelar la cita del ${cita.fecha} a las ${cita.hora}?`,
             'Cancelar',
@@ -172,15 +194,6 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         this.modalVisible = true;
     }
 
-    onCambioTexto(): void {
-        this.filtrarCitas();
-    }
-
-    onCambioFecha(): void {
-        this.filtrarCitas();
-    }
-
-
     cancelarCitaDesdeCalendario(idCita: number): void {
         const cita = this.citas.find(c => c.id === idCita);
         if (!cita) return;
@@ -211,10 +224,32 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit {
         });
     }
 
-    unirseAVideollamada(cita: CitaPorEspecialista): void {
+    // Acepta CitaGenerica (solo usa id)
+    unirseAVideollamada(cita: CitaGenerica): void {
         const url = urlApiServicio.apiUrl;
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 
+    puedeUnirseACita(cita: CitaGenerica): boolean {
+        return mostrarBotonVideollamada(cita, {
+            minutosAntes: 5,
+            minutosDespues: 30,
+            requiereSala: false
+        });
+    }
 
+    iniciarActualizacionPeriodica(): void {
+        this.temporizadorActualizacion = setInterval(() => {
+            this.filtrarCitas();
+        }, 15000);
+    }
+
+    esCitaPorEspecialista(cita: CitaGenerica): cita is CitaPorEspecialista {
+        return 'nombre_especialista' in cita && 'especialidad' in cita;
+    }
+
+    abrirModalInfoCita(cita: CitaGenerica): void {
+        this.citaSeleccionada = { ...cita };
+        this.modalInfoCitaVisible = true;
+    }
 }

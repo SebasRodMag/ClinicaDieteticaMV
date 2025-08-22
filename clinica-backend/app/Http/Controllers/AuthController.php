@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use App\Models\User;
 use App\Traits\Loggable;
+use App\Models\Paciente;
 
 class AuthController extends Controller
 {
@@ -198,6 +199,13 @@ class AuthController extends Controller
 
             $user->assignRole('paciente');
             $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Crear entrada en la tabla 'pacientes'
+            Paciente::create([
+                'user_id' => $user->id,
+                'numero_historial' => $this->generarNumeroHistorialUnico(),
+                'fecha_alta' => now(),
+            ]);
 
             $this->registrarLog($user->id, 'registro', 'users', $user->id);
 

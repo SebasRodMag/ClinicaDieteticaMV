@@ -9,6 +9,11 @@ use App\Models\User;
 use App\Traits\Loggable;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use App\Models\Cita;
+use App\Notifications\EspecialistaBajaNotificacion;
+use Illuminate\Support\Facades\Notification;
 
 class EspecialistaController extends Controller
 {
@@ -148,24 +153,81 @@ class EspecialistaController extends Controller
      * @throws \Exception si ocurre un error al intentar eliminar el especialista.
      * 
      */
+
+
     public function borrarEspecialista(int $id): JsonResponse
     {
-        $especialista = Especialista::find($id);
-
-        if (!$especialista) {
-            $this->registrarLog(auth()->id(), 'eliminar_especialista_fallido', 'Especialista no encontrado', $id);
-            return response()->json(['message' => 'Especialista no encontrado'], 404);
-        }
+        $userId = auth()->id();
+        $codigo = 200;
+        $respuesta = [];
 
         try {
-            $especialista->delete();
-            $this->registrarLog(auth()->id(), 'eliminar_especialista', 'Especialista eliminado', $id);
-            return response()->json(['message' => 'Especialista eliminado correctamente']);
-        } catch (\Exception $e) {
-            $this->logError(auth()->id(), 'Error al eliminar especialista', $e->getMessage());
-            return response()->json(['message' => 'Error interno al eliminar especialista'], 500);
+            $especialista = Especialista::with('user')->find($id);
+
+            if (!$especialista) {
+                $codigo = 404;
+                $respuesta = ['message' => 'Especialista no encontrado'];
+                $this->registrarLog($userId, 'eliminar_especialista_fallido', 'Especialista no encontrado', $id);
+                return response()->json($respuesta, $codigo);
+            }
+
+            DB::beginTransaction();
+
+            $user = $especialista->user;
+            $nombreEspecialista = $user?->nombre . ' ' . $user?->apellidos;
+
+            // Obtener citas con sus pacientes
+            $citas = Cita::with('paciente.user')
+                ->where('id_especialista', $id)
+                ->get();
+
+            // Notificar a cada paciente
+            foreach ($citas as $cita) {
+                $pacienteUser = $cita->paciente->user ?? null;
+
+                if ($pacienteUser && filter_var($pacienteUser->email, FILTER_VALIDATE_EMAIL)) {
+                    $fechaHora = optional($cita->fecha_hora_cita)->format('d-m-Y H:i');
+                    $pacienteUser->notify(new EspecialistaBajaNotificacion($nombreEspecialista, $fechaHora));
+                }
+            }
+
+            // Eliminar citas
+            $citasIds = $citas->pluck('id_cita');
+            Cita::whereIn('id_cita', $citasIds)->delete();
+
+            // Cambiar el rol del especialista
+            if ($user && method_exists($user, 'syncRoles')) {
+                $user->syncRoles(['usuario']);
+            }
+
+            // Eliminar registro del especialista
+            method_exists($especialista, 'forceDelete')
+                ? $especialista->forceDelete()
+                : $especialista->delete();
+
+            DB::commit();
+
+            $respuesta = [
+                'message' => 'Especialista dado de baja, citas eliminadas y pacientes notificados',
+                'data' => [
+                    'especialista_id' => $id,
+                    'citas_eliminadas' => $citas->count(),
+                    'rol_nuevo' => 'usuario',
+                ],
+            ];
+
+            $this->registrarLog($userId, 'eliminar_especialista', 'Especialista eliminado y pacientes notificados', $id);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $codigo = 500;
+            $respuesta = ['message' => 'Error interno al eliminar especialista'];
+            $this->logError($userId, 'eliminar_especialista_error', $e->getMessage());
+            report($e);
         }
+
+        return response()->json($respuesta, $codigo);
     }
+
 
 
     /**
@@ -182,9 +244,19 @@ class EspecialistaController extends Controller
      */
     public function nuevoEspecialista(Request $solicitud): JsonResponse
     {
+        $codigo = 201;
+        $respuesta = [];
+        $user = null;
+
+        //Validación
         $validator = Validator::make($solicitud->all(), [
-            'user_id' => 'required|integer|exists:users,id',
-            'especialidad' => 'required|string|max:150',
+            'user_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id'),
+                Rule::unique('especialistas', 'user_id')->whereNull('deleted_at'),
+            ],
+            'especialidad' => 'required|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -196,26 +268,52 @@ class EspecialistaController extends Controller
         try {
             $user = User::findOrFail($solicitud->user_id);
 
-            $especialista = Especialista::create([
-                'user_id' => $user->id,
-                'especialidad' => $solicitud->especialidad,
-            ]);
+            //Verificar si ya fue especialista anteriormente
+            $especialista = Especialista::withTrashed()->where('user_id', $user->id)->first();
 
-            $user->assignRole('especialista');
+            if ($especialista && $especialista->trashed()) {
+                $especialista->restore();
+                $especialista->especialidad = $solicitud->especialidad;
+                $especialista->save();
 
-            $this->registrarLog(auth()->id(), 'create', "Especialista creado, user_id: {$user->id}", $especialista->id);
+                $user->syncRoles('especialista');
+
+                $this->registrarLog(auth()->id(), 'restaurar_especialista', "Especialista restaurado, user_id: {$user->id}", $especialista->id);
+
+                $respuesta = [
+                    'message' => 'Especialista restaurado correctamente',
+                    'user' => $user,
+                    'especialista' => $especialista,
+                ];
+            } else {
+                //Crear un nuevo especialista
+                $especialista = Especialista::create([
+                    'user_id' => $user->id,
+                    'especialidad' => $solicitud->especialidad,
+                ]);
+
+                $user->assignRole('especialista');
+
+                $this->registrarLog(auth()->id(), 'crear_especialista', "Especialista creado, user_id: {$user->id}", $especialista->id);
+
+                $respuesta = [
+                    'message' => 'Especialista creado correctamente',
+                    'user' => $user,
+                    'especialista' => $especialista,
+                ];
+            }
+
             DB::commit();
-
-            return response()->json([
-                'message' => 'Especialista creado correctamente',
-                'user' => $user,
-            ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError(auth()->id(), 'Error creando especialista', $e->getMessage());
-            return response()->json(['message' => 'Error interno al crear especialista'], 500);
+            $this->logError(auth()->id(), 'Error en nuevoEspecialista: ' . $e->getMessage(), $user?->id);
+            $codigo = 500;
+            $respuesta = ['message' => 'Error interno al crear/restaurar especialista'];
         }
+
+        return response()->json($respuesta, $codigo);
     }
+
 
 
     /**
@@ -288,5 +386,31 @@ class EspecialistaController extends Controller
             });
 
         return response()->json($especialistas);
+    }
+
+    /**
+     * Devuelve el perfil del especialista autenticado.
+     * Respuesta mínima compatible con tu frontend: { user: Usuario }
+     * Además incluye especialista_id para usos opcionales.
+     */
+    public function perfilEspecialista(): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->hasRole('especialista')) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $especialista = Especialista::select('id', 'user_id')
+            ->where('user_id', $user->id)
+            ->first();
+
+        // Devolvemos un objeto de usuario, Laravel oculta el password.
+        // y agregamos el especialista_id y la especialidad
+        return response()->json([
+            'user' => $user->only(['id', 'nombre', 'apellidos', 'email']),
+            'especialista_id' => $especialista?->id,
+            'especialidad' => $especialista?->especialidad,
+        ]);
     }
 }

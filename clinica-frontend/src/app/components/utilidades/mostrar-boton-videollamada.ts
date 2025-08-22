@@ -1,21 +1,41 @@
-import { CitaPorEspecialista } from '../../models/citasPorEspecialista.model';
+import { CitaGenerica } from '../../models/cita-generica.model';
+import { construirFechaHoraLocal } from './sanitizar.utils';
+
+export interface VentanaVideollamadaOpts {
+    //pasamos por parametro el tiempo que necesitamos el botón visible
+    minutosAntes?: number;
+    minutosDespues?: number;
+    requiereSala?: boolean;
+}
+
 /**
  * Determina si se debe mostrar el botón de videollamada según fecha, hora y tipo de cita.
- * Rango: desde 15 minutos antes hasta 30 minutos después del horario programado.
+ * Por defecto: desde 5 min antes hasta 30 min después del inicio.
+ * Soporta 'telemática' y 'telematica' (sin tilde).
  */
-export function mostrarBotonVideollamada(cita: CitaPorEspecialista): boolean {
-    const esTelematica = cita.tipo_cita === 'telemática';
-    const tieneSala = !!cita.nombre_sala;
+export function mostrarBotonVideollamada(
+    cita: CitaGenerica,
+    opts: VentanaVideollamadaOpts = {}
+): boolean {
+    if (!cita) return false;
+
+    const tipo = (cita.tipo_cita || '').toLowerCase();
+    const esTelematica = tipo === 'telemática' || tipo === 'telematica';
+    if (!esTelematica) return false;
+
+    const { minutosAntes = 5, minutosDespues = 30, requiereSala = false } = opts;
+
+    const fechaHoraCita = construirFechaHoraLocal(cita.fecha, cita.hora);
+    if (isNaN(fechaHoraCita.getTime())) return false;
 
     const ahora = new Date();
-    // Convertir fecha y hora a Date
-    const fechaHoraCita = new Date(`${cita.fecha}T${cita.hora}`);
+    const inicioPermitido = new Date(fechaHoraCita.getTime() - minutosAntes * 60 * 1000);
+    const finPermitido = new Date(fechaHoraCita.getTime() + minutosDespues * 60 * 1000);
 
-    //Se establece un rango de 15 minutos antes y 30 minutos después de la cita para poder realizar la videollamada
-    const inicioPermitido = new Date(fechaHoraCita.getTime() - 15 * 60 * 1000);
-    const finPermitido = new Date(fechaHoraCita.getTime() + 30 * 60 * 1000);
+    if (requiereSala) {
+        const tieneSala = Boolean((cita as any).nombre_sala);
+        if (!tieneSala) return false;
+    }
 
-    const dentroDelRango = ahora >= inicioPermitido && ahora <= finPermitido;
-
-    return esTelematica && tieneSala && dentroDelRango;
+    return ahora >= inicioPermitido && ahora <= finPermitido;
 }

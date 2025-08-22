@@ -38,13 +38,13 @@ class CitaController extends Controller
                 $respuesta = ['message' => 'No hay citas registradas'];
             } else {
                 $respuesta['citas'] = $citas->map(function ($cita) {
-                    $nombrePaciente = $cita->paciente && $cita->paciente->user
-                        ? $cita->paciente->user->nombre . ' ' . $cita->paciente->user->apellidos
-                        : 'Paciente no asignado';
+                    if (!$cita->paciente || !$cita->paciente->user) {
+                        Log::warning('Cita con id ' . $cita->id_cita . ' tiene paciente no válido');
+                    }
 
-                    $nombreEspecialista = $cita->especialista && $cita->especialista->user
-                        ? $cita->especialista->user->nombre . ' ' . $cita->especialista->user->apellidos
-                        : 'Especialista no asignado';
+                    if (!$cita->especialista || !$cita->especialista->user) {
+                        Log::warning('Cita con id ' . $cita->id_cita . ' tiene especialista no válido');
+                    }
 
                     return [
                         'id_cita' => $cita->id_cita,
@@ -54,24 +54,20 @@ class CitaController extends Controller
                         'hora' => \Carbon\Carbon::parse($cita->fecha_hora_cita)->format('H:i'),
                         'tipo_cita' => $cita->tipo_cita,
                         'estado' => $cita->estado,
-                        'nombre_paciente' => $nombrePaciente,
-                        'nombre_especialista' => $nombreEspecialista,
+                        'nombre_paciente' => $cita->paciente && $cita->paciente->user
+                            ? $cita->paciente->user->nombre . ' ' . $cita->paciente->user->apellidos
+                            : 'Paciente no asignado',
+                        'nombre_especialista' => $cita->especialista && $cita->especialista->user
+                            ? $cita->especialista->user->nombre . ' ' . $cita->especialista->user->apellidos
+                            : 'Especialista no asignado',
                         'especialidad' => optional($cita->especialista)->especialidad,
                         'comentario' => $cita->comentario,
                     ];
-                    if (!$cita->paciente || !$cita->paciente->user) {
-                        $this->logError('Cita con id ' . $cita->id_cita . ' tiene paciente no válido');
-                    }
-                    if (!$cita->especialista || !$cita->especialista->user) {
-                        $this->logError('Cita con id ' . $cita->id_cita . ' tiene especialista no válido');
-                    }
                 });
-
 
                 if ($userId) {
                     $this->registrarLog($userId, 'listar_citas', 'citas');
                 }
-
             }
 
         } catch (\Exception $e) {
@@ -182,7 +178,25 @@ class CitaController extends Controller
                 $validar['especialista_id'] = $especialista->id;
             }
 
+            // Validaciones adicionales
+            $fechaHora = Carbon::parse($validar['fecha_hora_cita']);
+            $idEspecialista = $validar['especialista_id'];
 
+            if ($this->esFinDeSemana($fechaHora)) {
+                return response()->json(['message' => 'No se pueden programar citas en fin de semana.'], 422);
+            }
+
+            if ($this->esFestivo($fechaHora)) {
+                return response()->json(['message' => 'La fecha seleccionada es un día festivo.'], 422);
+            }
+
+            if (!$this->esHoraValida($fechaHora)) {
+                return response()->json(['message' => 'La hora seleccionada no está dentro del horario permitido.'], 422);
+            }
+
+            if ($this->existeCitaEnHorario($idEspecialista, $fechaHora)) {
+                return response()->json(['message' => 'Ya existe una cita para ese especialista en ese horario.'], 422);
+            }
 
             // Mapear a columnas correctas
             $datos = [
@@ -196,18 +210,27 @@ class CitaController extends Controller
 
             $cita = Cita::create($datos);
 
-            if ($cita->tipo === 'telematica') {
+            if ($cita->tipo_cita === 'telemática') {
                 $cita->nombre_sala = $this->generarNombreSala($cita->id_cita);
                 $cita->save();
             }
 
-            $this->registrarLog($userId, 'crear_cita', 'citas', $cita->id);
+            $this->registrarLog($userId, 'crear_cita', 'citas', $cita->id_cita);
 
+            //Se mapean y formatean los campos para que coincidan con los esperados por el frontend
             $respuesta = [
                 'message' => 'Cita creada correctamente',
-                'cita' => $cita,
+                'cita' => [
+                    'id' => $cita->id_cita,
+                    'fecha' => optional($cita->fecha_hora_cita)->format('d-m-Y'),
+                    'hora' => optional($cita->fecha_hora_cita)->format('H:i'),
+                    'nombre_paciente' => $cita->paciente?->usuario?->nombreCompleto() ?? '',
+                    'dni_paciente' => $cita->paciente?->usuario?->dni_usuario ?? '',
+                    'estado' => $cita->estado,
+                    'tipo_cita' => $cita->tipo_cita,
+                    'es_primera' => (bool) $cita->es_primera,
+                ],
             ];
-
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             $codigo = 422;
@@ -215,7 +238,6 @@ class CitaController extends Controller
                 'message' => 'Los datos proporcionados no son válidos.',
                 'errors' => $e->errors(),
             ];
-
         } catch (\Exception $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno al crear la cita'];
@@ -459,7 +481,7 @@ class CitaController extends Controller
             $cita->save();
 
             $this->registrarLog($userId, 'cancelar_cita', 'citas', $id);
-            $respuesta = ['message' => 'Cita cancelada correctamente', 'id_cita' => $cita->id];
+            $respuesta = ['message' => 'Cita cancelada correctamente', 'id_cita' => $cita->id_cita];
 
         } catch (\Exception $e) {
             $codigo = 500;
@@ -499,60 +521,69 @@ class CitaController extends Controller
 
                 if (!$paciente) {
                     $this->registrarLog($userId, 'listar_mis_citas_fallido', 'pacientes', $userId);
-                    return response()->json(['message' => 'Perfil de paciente no encontrado.'], 404);
+                    $respuesta = ['citas' => [], 'message' => 'Este usuario aún no está vinculado como paciente.'];
+                } else {
+                    $citas = Cita::with(['especialista.user'])
+                        ->where('id_paciente', $paciente->id)
+                        ->get()
+                        ->map(function ($cita) {
+                            return [
+                                'id' => $cita->id_cita,
+                                'fecha' => $cita->fecha_hora_cita->format('d-m-Y'),
+                                'hora' => $cita->fecha_hora_cita->format('H:i'),
+                                'especialidad' => $cita->especialista->especialidad ?? null,
+                                'nombre_especialista' => optional($cita->especialista?->user)->nombre . ' ' . optional($cita->especialista?->user)->apellidos,
+                                'estado' => $cita->estado,
+                                'tipo_cita' => $cita->tipo_cita,
+                            ];
+                        });
+
+                    $respuesta = [
+                        'citas' => $citas,
+                        'message' => $citas->isEmpty() ? 'No hay citas registradas para este paciente.' : null
+                    ];
+
+                    $this->registrarLog($userId, 'listar_mis_citas', 'citas');
                 }
-
-                $citas = Cita::with(['especialista.user'])
-                    ->where('id_paciente', $paciente->id)
-                    ->get()
-                    ->map(function ($cita) {
-                        return [
-                            'id' => $cita->id_cita,
-                            'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
-                            'hora' => $cita->fecha_hora_cita->format('H:i'),
-                            'especialidad' => $cita->especialista->especialidad ?? null,
-                            'nombre_especialista' => $cita->especialista->user->nombre . ' ' . $cita->especialista->user->apellidos,
-                            'estado' => $cita->estado,
-                            'tipo_cita' => $cita->tipo_cita,
-                        ];
-                    });
-
-                $this->registrarLog($userId, 'listar_mis_citas', 'citas', null);
-                $respuesta = ['citas' => $citas];
 
             } elseif ($rol === 'especialista') {
                 $especialista = Especialista::where('user_id', $userId)->first();
 
                 if (!$especialista) {
                     $this->registrarLog($userId, 'listar_mis_citas_fallido', 'especialistas', $userId);
-                    return response()->json(['message' => 'Perfil de especialista no encontrado.'], 404);
+                    $respuesta = ['citas' => [], 'message' => 'Este usuario aún no está vinculado como especialista.'];
+                } else {
+                    $citas = Cita::with(['paciente.user'])
+                        ->where('id_especialista', $especialista->id)
+                        ->get()
+                        ->map(function ($cita) {
+                            return [
+                                'id' => $cita->id_cita,
+                                'fecha' => $cita->fecha_hora_cita->format('d-m-Y'),
+                                'hora' => $cita->fecha_hora_cita->format('H:i'),
+                                'nombre_paciente' => optional($cita->paciente?->user)->nombre . ' ' . optional($cita->paciente?->user)->apellidos,
+                                'dni_paciente' => optional($cita->paciente?->user)->dni_usuario,
+                                'estado' => $cita->estado,
+                                'tipo_cita' => $cita->tipo_cita,
+                                'es_primera' => $cita->es_primera,
+                            ];
+                        });
+
+                    $respuesta = [
+                        'citas' => $citas,
+                        'message' => $citas->isEmpty() ? 'No hay citas asignadas actualmente.' : null
+                    ];
+
+                    $this->registrarLog($userId, 'listar_mis_citas', 'citas');
                 }
 
-                $citas = Cita::with(['paciente.user'])
-                    ->where('id_especialista', $especialista->id)
-                    ->get()
-                    ->map(function ($cita) {
-                        return [
-                            'id' => $cita->id_cita,
-                            'fecha' => $cita->fecha_hora_cita->format('Y-m-d'),
-                            'hora' => $cita->fecha_hora_cita->format('H:i'),
-                            'nombre_paciente' => $cita->paciente->user->nombre . ' ' . $cita->paciente->user->apellidos,
-                            'dni_paciente' => $cita->paciente->user->dni_usuario,
-                            'estado' => $cita->estado,
-                            'tipo_cita' => $cita->tipo_cita,
-                            'es_primera' => $cita->es_primera,
-                        ];
-                    });
-
-                $this->registrarLog($userId, 'listar_mis_citas', 'citas', null);
-                $respuesta = ['citas' => $citas];
-
             } else {
+                $codigo = 403;
+                $respuesta = ['message' => 'No autorizado para ver citas'];
                 $this->registrarLog($userId, 'listar_mis_citas_no_autorizado', 'users', $userId);
-                return response()->json(['message' => 'No autorizado para ver citas'], 403);
             }
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['message' => 'Error interno al obtener las citas'];
             $this->logError($userId, 'Error al listar mis citas', [
@@ -564,85 +595,6 @@ class CitaController extends Controller
         return response()->json($respuesta, $codigo);
     }
 
-    /**
-     * Crea una nueva cita para un paciente, validando horarios y disponibilidad.
-     *
-     * @param Request $solicitud
-     * @param int $idPaciente
-     * @return \Illuminate\Http\JsonResponse
-     * @throws Exception devuelve error en caso de error en la base de datos
-     */
-    public function crearNuevaCita(Request $solicitud, int $idPaciente): JsonResponse
-    {
-        $userId = auth()->id();
-
-        try {
-            $paciente = Paciente::findOrFail($idPaciente);
-
-            //Verificar que el usuario autenticado corresponde al paciente
-            if ($userId !== $paciente->user_id) {
-                $this->registrarLog($userId, 'crear_cita_no_autorizado', 'pacientes', $idPaciente);
-                return response()->json(['error' => 'No autorizado'], 403);
-            }
-
-            //Validar datos de entrada
-            $validator = Validator::make($solicitud->all(), [
-                'id_especialista' => 'required|exists:especialistas,id',
-                'fecha_hora_cita' => 'required|date_format:Y-m-d H:i:s',
-                'tipo_cita' => 'required|in:presencial,telemática',
-                'comentario' => 'nullable|string|max:255',
-                'es_primera' => 'required|boolean',
-            ]);
-
-            if ($validator->fails()) {
-                $this->registrarLog($userId, 'crear_cita_validacion_fallida', 'pacientes', $idPaciente);
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-
-            $fechaHora = Carbon::parse($solicitud->fecha_hora_cita);
-
-            //Validaciones adicionales
-            if ($this->esFinDeSemana($fechaHora) || $this->esFestivo($fechaHora)) {
-                $this->registrarLog($userId, 'crear_cita_fecha_no_valida', 'pacientes', $idPaciente);
-                return response()->json(['error' => 'La fecha es fin de semana o festivo'], 422);
-            }
-
-            if (!$this->esHoraValida($fechaHora)) {
-                $this->registrarLog($userId, 'crear_cita_hora_no_valida', 'pacientes', $idPaciente);
-                return response()->json(['error' => 'La hora no está dentro de los bloques permitidos'], 422);
-            }
-
-            if ($this->existeCitaEnHorario($solicitud->id_especialista, $fechaHora)) {
-                $this->registrarLog($userId, 'crear_cita_horario_ocupado', 'pacientes', $idPaciente);
-                return response()->json(['error' => 'Ya existe una cita en ese horario para este especialista'], 422);
-            }
-
-            //Crear cita
-            $cita = new Cita();
-            $cita->id_paciente = $idPaciente;
-            $cita->id_especialista = $solicitud->id_especialista;
-            $cita->fecha_hora_cita = $fechaHora;
-            $cita->tipo_cita = $solicitud->tipo_cita;
-            $cita->comentario = $solicitud->comentario ?? null;
-            $cita->es_primera = $solicitud->es_primera;
-            $cita->estado = 'pendiente';
-            $cita->save();
-
-            $this->registrarLog($userId, 'crear_cita_exitosa', 'citas', $cita->id);
-
-            return response()->json([
-                'mensaje' => 'Cita creada correctamente',
-                'cita' => $cita
-            ], 201);
-
-        } catch (\Exception $e) {
-            $this->logError($userId, 'crear_cita_error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['error' => 'Error interno al crear la cita'], 500);
-        }
-    }
 
     /**
      * Cambia el estado de una cita a 'cancelado' si estaba 'pendiente'.
@@ -718,7 +670,7 @@ class CitaController extends Controller
             }
 
             //Validar que sea una cita telemática con sala definida
-            if ($cita->tipo_cita !== 'telemática' || !$cita->nombre_sala) {
+            if (!$this->esCitaTelematicaValida($cita)) {
                 $codigo = 400;
                 $respuesta = ['message' => 'La cita no es telemática o no tiene sala asignada'];
                 return response()->json($respuesta, $codigo);
@@ -750,97 +702,89 @@ class CitaController extends Controller
      * @param int $idEspecialista Identificador del especialista.
      * @return \Illuminate\Http\JsonResponse JSON con las horas disponibles.
      */
-    public function horasDisponibles(Request $request, ?int $idEspecialista = null): JsonResponse
+    private function calcularHorasDisponibles(string $fechaStr, ?int $idEspecialista = null): array
     {
-        $error = null;
-        $disponibles = [];
+        $respuesta = ['horas_disponibles' => []];
 
-        try {
-            // Validar fecha
-            $validated = $request->validate([
-                'fecha' => 'required|date_format:Y-m-d',
-            ]);
-            $fecha = Carbon::createFromFormat('Y-m-d', $validated['fecha'])->startOfDay();
+        $fecha = Carbon::createFromFormat('Y-m-d', $fechaStr)->startOfDay();
 
-            // Obtener usuario logueado
-            $user = Auth::user();
-
-            // Si no hay idEspecialista y usuario es especialista, obtener idEspecialista del usuario
-            if ($idEspecialista === null && $user->hasRole('especialista')) {
-                $especialista = Especialista::where('user_id', $user->id)->first();
-                if (!$especialista) {
-                    $error = 'Especialista no encontrado para el usuario.';
-                } else {
-                    $idEspecialista = $especialista->id;
-                }
-            }
-
-            // Validar que hay especialista válido
-            if ($idEspecialista === null) {
-                $error = 'ID de especialista es requerido.';
-            }
-
-            // Si no hay error aún, continuar
-            if (!$error) {
-                // Si fecha es fin de semana o festivo, disponibles queda vacío
-                if ($fecha->isWeekend()) {
-                    // $disponibles = [];
-                } else {
-                    // Días no laborables (festivos)
-                    $festivosJson = Configuracion::where('clave', 'dias_no_laborables')->value('valor');
-                    $festivos = json_decode($festivosJson, true) ?? [];
-
-                    if (in_array($fecha->toDateString(), $festivos)) {
-                        // $disponibles = [];
-                    } else {
-                        // Obtener horario laboral y duración de cita
-                        $horarioJson = Configuracion::where('clave', 'horario_laboral')->value('valor');
-                        $horario = json_decode($horarioJson, true) ?? [];
-
-                        if (isset($horario['apertura'], $horario['cierre'])) {
-                            $duracion = (int) Configuracion::where('clave', 'duracion_cita')->value('valor') ?: 30;
-
-                            $horaInicio = Carbon::createFromTimeString($horario['apertura']);
-                            $horaFin = Carbon::createFromTimeString($horario['cierre']);
-
-                            // Obtener citas ocupadas
-                            $citasOcupadas = Cita::where('id_especialista', $idEspecialista)
-                                ->whereDate('fecha_hora_cita', $fecha)
-                                ->where('estado', 'pendiente')
-                                ->pluck('fecha_hora_cita')
-                                ->map(fn($fechaHora) => Carbon::parse($fechaHora)->format('H:i'));
-
-                            $horaActual = $fecha->copy()->setTimeFromTimeString($horaInicio->format('H:i'));
-                            $horaLimite = $fecha->copy()->setTimeFromTimeString($horaFin->format('H:i'));
-
-                            while ($horaActual < $horaLimite) {
-                                $horaStr = $horaActual->format('H:i');
-                                if (!$citasOcupadas->contains($horaStr)) {
-                                    $disponibles[] = $horaStr;
-                                }
-                                $horaActual->addMinutes($duracion);
-                            }
-                        }
-                        // Si no hay horario válido, disponibles queda vacío (ya inicializado)
-                    }
-                }
-            }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            $error = 'Fecha inválida o no proporcionada.';
-        } catch (\Exception $e) {
-            $error = 'Error inesperado: ' . $e->getMessage();
+        if ($fecha->isWeekend() || in_array($fecha->toDateString(), $this->obtenerFestivos())) {
+            return $respuesta;
         }
 
-        // Respuesta final única
-        if ($error) {
-            return response()->json(['error' => $error, 'horas_disponibles' => []], 400);
-        } else {
-            return response()->json(['horas_disponibles' => $disponibles]);
+        if (is_null($idEspecialista)) {
+            $idEspecialista = $this->obtenerIdEspecialistaDesdeUsuario();
+        }
+
+        if (is_null($idEspecialista)) {
+            throw new \Exception('ID de especialista no disponible');
+        }
+
+        $horario = $this->obtenerHorarioLaboral();
+
+        if (!isset($horario['apertura'], $horario['cierre'])) {
+            throw new \Exception('Horario laboral no configurado');
+        }
+
+        $duracion = (int) Configuracion::where('clave', 'duracion_cita')->value('valor') ?: 30;
+        $horaInicio = Carbon::createFromTimeString($horario['apertura']);
+        $horaFin = Carbon::createFromTimeString($horario['cierre']);
+        $ocupadas = $this->obtenerHorasOcupadas($idEspecialista, $fecha);
+
+        $horaActual = $fecha->copy()->setTimeFromTimeString($horaInicio->format('H:i'));
+        $horaLimite = $fecha->copy()->setTimeFromTimeString($horaFin->format('H:i'));
+
+        while ($horaActual < $horaLimite) {
+            $horaStr = $horaActual->format('H:i');
+            if (!in_array($horaStr, $ocupadas)) {
+                $respuesta['horas_disponibles'][] = $horaStr;
+            }
+            $horaActual->addMinutes($duracion);
+        }
+
+        return $respuesta;
+    }
+
+    public function horasDisponiblesEspecialista(string $fecha): JsonResponse
+    {
+        try {
+            $this->validarFecha($fecha);
+            $respuesta = $this->calcularHorasDisponibles($fecha, null);
+            return response()->json($respuesta, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'horas_disponibles' => [],
+                'error' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    public function horasDisponiblesPorEspecialista(int $idEspecialista, string $fecha): JsonResponse
+    {
+        try {
+            $this->validarFecha($fecha);
+            $respuesta = $this->calcularHorasDisponibles($fecha, $idEspecialista);
+            return response()->json($respuesta, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'horas_disponibles' => [],
+                'error' => $e->getMessage()
+            ], 400);
         }
     }
 
     // --- Funciones auxiliares privadas ---
 
+    private function validarFecha(string $fecha): void
+    {
+        $validator = \Validator::make(['fecha' => $fecha], [
+            'fecha' => 'required|date_format:Y-m-d',
+        ]);
+
+        if ($validator->fails()) {
+            throw new \Exception('Fecha inválida o no proporcionada.');
+        }
+    }
     /**
      * Verifica si la fecha es un fin de semana.
      *
@@ -894,30 +838,38 @@ class CitaController extends Controller
     private function esHoraValida(Carbon $fechaHora): bool
     {
         try {
-            $configuracion = Configuracion::where('clave', 'horario_laboral')->first();
+            $configuracionHorario = Configuracion::where('clave', 'horario_laboral')->first();
+            $configuracionDuracion = Configuracion::where('clave', 'duracion_cita')->first();
 
-            if (!$configuracion) {
-                Log::warning('Configuración horario_laboral no encontrada');
+            if (!$configuracionHorario || !$configuracionDuracion) {
+                Log::warning('Configuración incompleta: horario_laboral o duracion_cita no encontrada');
                 return false;
             }
 
-            $horario = json_decode($configuracion->valor, true);
+            $horario = json_decode($configuracionHorario->valor, true);
+            $duracion = (int) $configuracionDuracion->valor;
 
-            if (!is_array($horario) || !isset($horario['apertura'], $horario['cierre'])) {
-                Log::warning('Valor de horario_laboral no es válido');
+            if (!is_array($horario) || !isset($horario['apertura'], $horario['cierre']) || $duracion <= 0) {
+                Log::warning('Valor de configuración inválido');
                 return false;
             }
 
-            $horaInicio = Carbon::createFromFormat('H:i', $horario['apertura']);
-            $horaFin = Carbon::createFromFormat('H:i', $horario['cierre']);
+            // Asignar la misma fecha para asegurar la comparación correcta
+            $horaInicio = $fechaHora->copy()->setTimeFromTimeString($horario['apertura']);
+            $horaFin = $fechaHora->copy()->setTimeFromTimeString($horario['cierre']);
 
-            // Validar si la hora está dentro del rango y en múltiplos de 30 minutos
-            $esMinutoValido = in_array($fechaHora->minute, [0, 30]);
-            $esHoraDentroRango = $fechaHora->between($horaInicio, $horaFin, false); // false = no inclusivo
+            // Verificar si la hora está en múltiplos de la duración
+            $minutosDesdeInicio = $horaInicio->diffInMinutes($fechaHora, false);
 
-            return $esMinutoValido && $esHoraDentroRango;
+            $esMultiplo = $minutosDesdeInicio >= 0 && $minutosDesdeInicio % $duracion === 0;
+
+            // Validar que la cita completa no exceda el cierre
+            $horaFinCita = $fechaHora->copy()->addMinutes($duracion);
+            $noExcedeHorario = $horaFinCita->lte($horaFin);
+
+            return $esMultiplo && $noExcedeHorario;
         } catch (\Exception $e) {
-            Log::error('Error al validar horario laboral: ' . $e->getMessage());
+            Log::error('Error al validar horario: ' . $e->getMessage());
             return false;
         }
     }
@@ -983,6 +935,57 @@ class CitaController extends Controller
     }
 
     /**
+     * Verifica si una cita es telemática válida (tipo y nombre de sala definidos).
+     *
+     * @param Cita $cita
+     * @return bool
+     */
+    private function esCitaTelematicaValida(Cita $cita): bool
+    {
+        return $cita->tipo_cita === 'telemática' && !empty($cita->nombre_sala);
+    }
+
+    /**
+     * Devuelve el ID del especialista asociado al usuario autenticado.
+     */
+    private function obtenerIdEspecialistaDesdeUsuario(): ?int
+    {
+        $especialista = Especialista::where('user_id', auth()->id())->first();
+        return $especialista?->id;
+    }
+
+    /**
+     * Devuelve un array con los días festivos desde la configuración.
+     */
+    private function obtenerFestivos(): array
+    {
+        $json = Configuracion::where('clave', 'dias_no_laborables')->value('valor');
+        return json_decode($json, true) ?? [];
+    }
+
+    /**
+     * Devuelve un array con los valores de horario laboral configurado.
+     */
+    private function obtenerHorarioLaboral(): array
+    {
+        $json = Configuracion::where('clave', 'horario_laboral')->value('valor');
+        return json_decode($json, true) ?? [];
+    }
+
+    /**
+     * Devuelve las horas ya ocupadas para un especialista y una fecha concreta.
+     */
+    private function obtenerHorasOcupadas(int $idEspecialista, Carbon $fecha): array
+    {
+        return Cita::where('id_especialista', $idEspecialista)
+            ->whereDate('fecha_hora_cita', $fecha)
+            ->where('estado', 'pendiente')
+            ->pluck('fecha_hora_cita')
+            ->map(fn($dt) => Carbon::parse($dt)->format('H:i'))
+            ->toArray();
+    }
+
+    /**
      * Función para generar los nombres de las salas para Jetsi Meet
      */
     public function generarNombreSala($idCita): string
@@ -998,6 +1001,63 @@ class CitaController extends Controller
         }
 
         return 'clinicaDietetica-cita-' . $idCita;
+    }
+
+
+    /**
+     * Método para cambiar el estado de la cita siempre que el usuario autenticado sea un especialista o paciente y donde, en el caso del paciente, solo puede cancelar la cita
+     * @param \Illuminate\Http\Request $request estado al que cambiaremos la cita
+     * @param int $id de la cita
+     * @return JsonResponse respuesta con el estado de la solicitud
+     */
+    public function cambiarEstadoCita(Request $request, int $id): JsonResponse
+    {
+        $usuario = auth()->user();
+        $rol = $usuario->getRoleNames()->first();
+        $userId = $usuario->id;
+
+        $estadoNuevo = $request->input('estado');
+
+        $request->validate([
+            'estado' => 'required|string|in:pendiente,realizada,cancelada,ausente,reasignada,finalizada',
+        ]);
+
+        $cita = Cita::find($id);
+        if (!$cita) {
+            return response()->json(['message' => 'Cita no encontrada.'], 404);
+        }
+
+        $puedeActualizar = false;
+
+        if ($rol === 'administrador') {
+            $puedeActualizar = true;
+        } elseif ($rol === 'especialista') {
+            $especialista = Especialista::where('user_id', $userId)->first();
+            if ($especialista && $especialista->id === $cita->id_especialista) {
+                $puedeActualizar = true;
+            }
+        } elseif ($rol === 'paciente') {
+            $paciente = Paciente::where('user_id', $userId)->first();
+            if ($paciente && $paciente->id === $cita->id_paciente && $estadoNuevo === 'cancelada') {
+                $puedeActualizar = true;
+            }
+        }
+
+        if (!$puedeActualizar) {
+            return response()->json(['message' => 'No autorizado para cambiar el estado de esta cita.'], 403);
+        }
+
+        $estadoAnterior = $cita->estado;
+        $cita->estado = $estadoNuevo;
+        $cita->save();
+
+        $this->registrarLog($userId, "cambiar_estado_cita ($estadoAnterior → $estadoNuevo)", 'citas', $id);
+
+        return response()->json([
+            'message' => 'Estado de la cita actualizado correctamente.',
+            'estado_anterior' => $estadoAnterior,
+            'estado_nuevo' => $estadoNuevo,
+        ]);
     }
 
 

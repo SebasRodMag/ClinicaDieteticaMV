@@ -19,6 +19,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     @Output() cerrado = new EventEmitter<void>();
 
     pacientes: Paciente[] = [];
+    pacientesCargados: boolean = false;
 
     pacienteSeleccionado: number | null = null;
     fecha: string = '';
@@ -38,8 +39,8 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     ngOnInit(): void {
         this.limiteCalendario();
         this.ConfiguracionService.colorTema$.subscribe(color => {
-        this.colorSistema = color || '#28a745';
-    });
+            this.colorSistema = color || '#28a745';
+        });
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -51,13 +52,19 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     }
 
     private cargarPacientes(): void {
+        this.pacientesCargados = false;
         this.UserService.listarPacientes().subscribe({
             next: (data) => {
-                this.pacientes = data.pacientes || [];
-                console.log('Pacientes en modal especialista:', this.pacientes);
+                this.pacientes = (data.pacientes || []).sort((a: Paciente, b: Paciente) => {
+                    const nombreA = `${a.user?.nombre ?? ''} ${a.user?.apellidos ?? ''}`.toLowerCase();
+                    const nombreB = `${b.user?.nombre ?? ''} ${b.user?.apellidos ?? ''}`.toLowerCase();
+                    return nombreA.localeCompare(nombreB);
+                });
+                this.pacientesCargados = true;
             },
             error: () => {
                 this.snackBar.open('Error al cargar pacientes', 'Cerrar', { duration: 3000 });
+                this.pacientesCargados = true;
             }
         });
     }
@@ -179,6 +186,8 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             complete: () => this.cargando = false
         });
     }
+
+
 
     cerrar(): void {
         this.cerrado.emit();

@@ -211,7 +211,11 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
         }
 
         this.cargando = true;
-        const fechaHora = `${this.fecha} ${this.hora}:00`;
+
+        //probando la verificación de la hora local, en lugar de UTC
+        const [year, month, day] = this.fecha.split('-');
+        const [hour, minute] = this.hora.split(':');
+        const fechaHora = `${year}-${month}-${day} ${hour}:${minute}:00`;
 
         this.UserService.crearCita({
             especialista_id: this.especialistaSeleccionado,
@@ -219,13 +223,42 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
             fecha_hora_cita: fechaHora,
             tipo_cita: this.tipoCita,
             comentario: this.comentarios || null
+
+
         }).subscribe({
             next: () => {
                 this.snackBar.open('Cita creada correctamente', 'Cerrar', { duration: 3000 });
                 this.creada.emit();
+                console.log('Creando cita con:', {
+                    especialista_id: this.especialistaSeleccionado,
+                    paciente_id: this.pacienteSeleccionado,
+                    fecha_hora_cita: fechaHora,
+                    tipo_cita: this.tipoCita,
+                });
             },
-            error: () => {
-                this.snackBar.open('Error al crear la cita', 'Cerrar', { duration: 3000 });
+            error: (error) => {
+                console.log('Creando cita con:', {
+                    especialista_id: this.especialistaSeleccionado,
+                    paciente_id: this.pacienteSeleccionado,
+                    fecha_hora_cita: fechaHora,
+                    tipo_cita: this.tipoCita,
+                });
+                let mensaje = 'Error al crear la cita';
+                const errores = error.error?.errors;
+
+                //Para mostrar el mensaje completo de error, en caso de que ocurra
+                if (errores && typeof errores === 'object') {
+                    const primeraClave = Object.keys(errores)[0];
+                    if (errores[primeraClave]?.length) {
+                        mensaje = errores[primeraClave][0];
+                    }
+                } else if (error.error?.message) {
+                    mensaje = error.error.message;
+                }
+
+                this.snackBar.open(mensaje, 'Cerrar', { duration: 4000 });
+                console.error('Errores de validación:', error.error?.errors);
+                this.cargando = false;
             },
             complete: () => {
                 this.cargando = false;

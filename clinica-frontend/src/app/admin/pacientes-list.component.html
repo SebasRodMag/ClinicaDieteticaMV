@@ -1,8 +1,14 @@
 <div class="mb-3">
-    <h2 class="text-2xl font-bold mb-4">Listado de pacientes</h2>
-    <input type="text" [(ngModel)]="filtro" placeholder="Buscar pacientes o especialistas" class="form-control" />
-</div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-2xl font-bold mb-0">Listado de pacientes</h2>
+        <button class="btn btn-outline-primary" (click)="abrirModalAsignarRolPaciente()">
+            Nuevo paciente
+        </button>
+    </div>
 
+    <input type="text" [(ngModel)]="filtro" (ngModelChange)="onFiltroChange()"
+        placeholder="Buscar pacientes, historial, especialista, estado o comentario" class="form-control" />
+</div>
 
 <app-tabla-datos [datosTotales]="pacientesFiltrados" [columnas]="columnas" [templatesMap]="templatesMap"
     [columnaOrden]="columnaOrden" [direccionOrdenAsc]="direccionOrdenAsc" [paginaActual]="paginaActual"
@@ -12,17 +18,17 @@
 <!-- Mensaje si no hay resultados por filtro -->
 <div *ngIf="!loading && pacientes.length > 0 && pacientesFiltrados.length === 0 && !huboError"
     class="alert alert-info mt-3 text-center">
-    No hay especialistas que coincidan con el filtro aplicado.
+    No hay pacientes que coincidan con el filtro aplicado.
 </div>
 
-<!-- Mensaje si no hay ningún especialista en la base de datos -->
+<!-- Mensaje si no hay ningún paciente en la base de datos -->
 <div *ngIf="!loading && pacientes.length === 0 && !huboError" class="alert alert-warning mt-3 text-center">
-    No hay especialistas registrados actualmente.
+    No hay pacientes registrados actualmente.
 </div>
 
-<!-- Mensaje si hubo un error al cargar especialistas -->
+<!-- Mensaje si hubo un error al cargar pacientes -->
 <div *ngIf="!loading && huboError" class="alert alert-danger mt-3 text-center">
-    Ocurrió un error al cargar los especialistas. Inténtalo nuevamente más tarde.
+    Ocurrió un error al cargar los pacientes. Inténtalo nuevamente más tarde.
 </div>
 
 <div *ngIf="loading" class="text-center my-5">
@@ -31,8 +37,13 @@
     </div>
 </div>
 
+<!-- Templates de columnas -->
 <ng-template #nombrePacienteTemplate let-paciente>
-    {{ paciente.usuario?.nombre }} {{ paciente.usuario?.apellidos }}
+    {{ paciente.nombre_paciente }}
+</ng-template>
+
+<ng-template #numeroHistorialTemplate let-paciente>
+    {{ paciente.numero_historial || 'No asignado' }}
 </ng-template>
 
 <ng-template #fechaAltaTemplate let-paciente>
@@ -48,15 +59,11 @@
 </ng-template>
 
 <ng-template #nombreEspecialistaTemplate let-paciente>
-    {{ paciente.ultima_cita?.especialista?.usuario?.nombre }} {{ paciente.ultima_cita?.especialista?.usuario?.apellidos
-    }}
+    {{ paciente.nombre_especialista }}
 </ng-template>
 
 <ng-template #especialidadTemplate let-paciente>
     {{ paciente.ultima_cita?.especialista?.especialidad ?? 'Sin especialidad' }}
-</ng-template>
-<ng-template #especialistaTemplate let-paciente>
-    {{ paciente.especialista?.usuario?.nombre }} {{ paciente.especialista?.usuario?.apellidos }}
 </ng-template>
 
 <ng-template #accionesTemplate let-paciente>
@@ -64,3 +71,8 @@
         Dar de baja
     </button>
 </ng-template>
+
+<!-- Modal para asignar rol Paciente a un usuario -->
+<app-modal-nuevo-paciente [visible]="modalNuevoPacienteVisible" (cerrar)="cerrarModalNuevoPaciente()"
+    (pacienteCreado)="recargarPacientes()">
+</app-modal-nuevo-paciente>

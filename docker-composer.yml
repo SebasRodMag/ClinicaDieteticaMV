@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: clinica_db
+    environment:
+      MYSQL_DATABASE: clinica
+      MYSQL_USER: clinica
+      MYSQL_PASSWORD: clinica
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  php:
+    build:
+      context: ./clinica-backend
+      target: php
+    container_name: clinica_php
+    env_file:
+      - ./clinica-backend/.env
+    environment:
+      DB_HOST: db
+      DB_DATABASE: clinica
+      DB_USERNAME: clinica
+      DB_PASSWORD: clinica
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:8080
+    depends_on:
+      - db
+
+  api:
+    build:
+      context: ./clinica-backend
+      target: nginx
+    container_name: clinica_api
+    depends_on:
+      - php
+    ports:
+      - "8081:80" # API en http://localhost:8081, Acordarse de cambiarla en las variables de entorno de Laravel y Angular
+
+  frontend:
+    build: ./clinica-frontend
+    container_name: clinica_frontend
+    environment:
+      API_BASE_URL: http://localhost:8081
+    ports:
+      - "8080:80" # Web en http://localhost:8080
+
+volumes:
+  db_data:

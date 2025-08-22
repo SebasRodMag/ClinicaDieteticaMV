@@ -18,12 +18,12 @@ class RolePacienteMiddlewareTest extends TestCase
 
         $response = $this->actingAs($usuario)->getJson("/api/pacientes/{$paciente->id}/citas");
 
-        $response->assertStatus(200); // Asumiendo que hay lógica implementada
+        $response->assertStatus(200);
     }
 
     public function test_usuario_con_rol_no_autorizado_es_rechazado()
     {
-        $usuario = User::factory()->create(['rol' => 'admin']); // o 'especialista'
+        $usuario = User::factory()->create(['rol' => 'admin']); //o 'especialista'
         $paciente = Paciente::factory()->create();
 
         $response = $this->actingAs($usuario)->getJson("/api/pacientes/{$paciente->id}/citas");
@@ -37,6 +37,6 @@ class RolePacienteMiddlewareTest extends TestCase
 
         $response = $this->getJson("/api/pacientes/{$paciente->id}/citas");
 
-        $response->assertStatus(401); // No autenticado
+        $response->assertStatus(401); //No autenticado
     }
 }

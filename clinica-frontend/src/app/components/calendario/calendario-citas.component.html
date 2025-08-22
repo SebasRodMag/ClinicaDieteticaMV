@@ -1,0 +1,23 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-md-8 mx-auto">
+            <div class="calendario-reducido mb-3">
+
+                <full-calendar [options]="calendarOptions"></full-calendar>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Spinner mientras actualiza estado -->
+<div *ngIf="cargandoActualizarEstado"
+    class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+    style="z-index: 2000;">
+    <div class="text-center">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Actualizando estado...</span>
+        </div>
+        <p class="mt-2">Actualizando estado de la cita...</p>
+    </div>
+</div>

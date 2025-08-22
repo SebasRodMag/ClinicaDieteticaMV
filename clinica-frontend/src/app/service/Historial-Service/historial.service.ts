@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, of, map, catchError } from 'rxjs';
 import { Historial } from '../../models/historial.model';
 import { Paciente } from '../../models/paciente.model';
 import { urlApiServicio } from '../../components/utilidades/variable-entorno';
@@ -60,6 +60,32 @@ export class HistorialService {
     obtenerPacientesEspecialista(): Observable<Paciente[]> {
         return this.http.get<{ data: Paciente[] }>(`${this.apiUrl}/paciente-por-especialista/`)
             .pipe(map(response => response.data));
+    }
+
+    /**
+     * Obtener el historial del paciente según el id facilitado
+     * @param pacienteId 
+     * @returns 
+     */
+    obtenerUltimoHistorialPorPaciente(pacienteId: number) {
+        return this.obtenerHistorialesEspecialista().pipe(
+            map((historiales: Historial[]) => {
+                const delPaciente = historiales.filter(h => h.paciente?.id === pacienteId);
+                if (delPaciente.length === 0) return null;
+
+                // Ordena por fecha desc (YYYY-MM-DD) y, de empate, por id desc
+                delPaciente.sort((a, b) => {
+                    const fa = a.fecha ?? '';
+                    const fb = b.fecha ?? '';
+                    if (fa < fb) return 1;
+                    if (fa > fb) return -1;
+                    return (b.id ?? 0) - (a.id ?? 0);
+                });
+
+                return delPaciente[0] ?? null;
+            }),
+            catchError(() => of(null))
+        );
     }
 
 }

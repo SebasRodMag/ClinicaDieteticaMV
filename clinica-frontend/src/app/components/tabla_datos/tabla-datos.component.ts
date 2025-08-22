@@ -21,6 +21,8 @@ export class TablaDatosComponent {
     @Output() ordenar = new EventEmitter<string>();
     @Output() cambiarPagina = new EventEmitter<number>();
 
+    trackById = (_: number, item: any) => item?.id ?? item;
+
 
     //Método que emite el número de página cuando el usuario cambia la página
     cambiarPaginaEmitida(nuevaPagina: number): void {

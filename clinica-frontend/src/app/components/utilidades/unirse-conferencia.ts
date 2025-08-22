@@ -11,7 +11,7 @@ export function unirseConferencia(
     snackBar: MatSnackBar,
     apiUrl: string
 ): void {
-    http.get<{ nombre_sala: string }>(`${apiUrl}/citas/${idCita}/sala`).subscribe({
+    http.get<{ nombre_sala: string }>(`${apiUrl}/citas/${idCita}/sala-segura`).subscribe({
         next: (response) => {
             const url = `https://meet.jit.si/${response.nombre_sala}`;
             window.open(url, '_blank');
