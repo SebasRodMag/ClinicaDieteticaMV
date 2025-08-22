@@ -1,33 +1,40 @@
-# --- Stage 1: dependencias de Composer (capa caché) ---
-FROM composer:2 AS vendor
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-progress --no-interaction
-
-# --- Stage 2: PHP-FPM con extensiones necesarias ---
+# --- PHP-FPM con extensiones necesarias + Composer ---
 FROM php:8.2-fpm-alpine AS php
 WORKDIR /var/www
 
-RUN apk add --no-cache icu-dev libzip-dev oniguruma-dev git bash nano \
-    && docker-php-ext-install pdo pdo_mysql intl bcmath opcache
+# Paquetes del sistema
+RUN apk add --no-cache bash git unzip icu-dev libzip-dev oniguruma-dev
 
-# Opcional: timezone
+# Extensiones PHP (incluye bcmath que necesita tu dependencia)
+RUN docker-php-ext-configure intl \
+ && docker-php-ext-install -j$(nproc) intl pdo_mysql bcmath zip opcache
+
+# (Opcional) Zona horaria
 RUN echo "date.timezone=UTC" > /usr/local/etc/php/conf.d/date.ini
 
-COPY --from=vendor /app/vendor ./vendor
+# Añadimos Composer a esta imagen
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Instalar dependencias de PHP con Composer (aprovecha cache si COPY selectivo)
+COPY composer.json composer.lock ./
+RUN composer install \
+  --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader \
+  --no-scripts
+
+# Copiamos el resto del proyecto
 COPY . .
 
-# Permisos de Laravel
+# Permisos Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Script de arranque para key:generate y optimizaciones
+# Entrypoint (key:generate, caches, migrate…)
 COPY .docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["sh", "/entrypoint.sh"]
 CMD ["php-fpm"]
 
-# --- Stage 3: Nginx para la API (sirve /public y pasa PHP a FPM) ---
+# --- Nginx para la API (sirve /public y pasa PHP a FPM) ---
 FROM nginx:1.25-alpine AS nginx
 WORKDIR /var/www
 COPY --from=php /var/www/public ./public
