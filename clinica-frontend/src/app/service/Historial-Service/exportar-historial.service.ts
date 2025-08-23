@@ -1,8 +1,4 @@
 import { Injectable } from '@angular/core';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as Papa from 'papaparse';
-import { saveAs } from 'file-saver';
 import { Historial } from '../../models/historial.model';
 import { UserService } from '../User-Service/user.service';
 import { ConfiguracionService } from '../Config-Service/configuracion.service';
@@ -16,60 +12,94 @@ export class ExportadorHistorialService {
         private configuracionService: ConfiguracionService
     ) { }
 
+    /**
+     * 
+     * Los métodos para la exportación a PDF o CSV se cargaban directamente al cargar la página aunque estos no se utilizaran.
+     * Esto, hacia la página muy pesada y provocaba desbordamiento de memoria al compilar el contenedor. Para solucionarlo, se movió la llamada
+     * a estos métodos al botón de exportación, de esta forma, solo se carga si es necesario. Esto es conocido como Lazy import.
+     */
+    // ========= PDF =========
     exportarPDF(historial: Historial | Historial[], idEspecialista?: number): void {
         const historiales = Array.isArray(historial) ? historial : [historial];
 
-        this.configuracionService.colorTema$.pipe(take(1)).subscribe(colorHex => {
-            if (idEspecialista && historiales.length === 1) {
-                // Obtener nombre desde el backend (cuando el ID sea necesario)
-                this.UserService.obtenerEspecialistaPorId(idEspecialista).subscribe({
-                    next: (especialista) => {
-                        this.generarPDF(historiales, colorHex);
-                    },
-                    error: () => {
+        this.configuracionService.colorTema$.pipe(take(1)).subscribe((colorHex) => {
+            // IIFE async para poder usar await dentro manteniendo firma void
+            (async () => {
+                if (idEspecialista && historiales.length === 1) {
+                    try {
+                        await this.UserService.obtenerEspecialistaPorId(idEspecialista).pipe(take(1)).toPromise();
+                    } catch {
                         console.warn('No se pudo obtener el especialista');
                     }
-                });
-            } else {
-                // No es necesario buscar especialista (ya vienen en el historial)
-                this.generarPDF(historiales, colorHex);
-            }
+                }
+                await this.generarPDFLazy(historiales, colorHex);
+            })();
         });
     }
 
+    // ========= CSV =========
     exportarCSV(historial: Historial | Historial[]): void {
         const historiales = Array.isArray(historial) ? historial : [historial];
-        
 
-        const encabezado = ['Fecha', 'Paciente', 'Especialista', 'Especialidad', 'Observaciones', 'Recomendaciones', 'Dieta', 'Lista de compra'];
-        const filas = historiales.map(h => [
-            formatearFecha(h.fecha ?? ''),
-            `${h.paciente?.user?.nombre ?? ''} ${h.paciente?.user?.apellidos ?? ''}`.trim(),
-            `${h.especialista?.user?.nombre ?? ''} ${h.especialista?.user?.apellidos ?? ''}`.trim(),
-            h.especialista?.especialidad ?? '',
-            h.observaciones_especialista ?? '',
-            h.recomendaciones ?? '',
-            h.dieta ?? '',
-            h.lista_compra ?? ''
-        ]);
+        (async () => {
+            const papaMod = await import('papaparse');
+            const { saveAs } = await import('file-saver');
 
-        const datos = [encabezado, ...filas];
-        const csv = Papa.unparse(datos, { quotes: true });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const nombreArchivo = historiales.length > 1
-            ? `Historiales_${new Date().toISOString().slice(0, 10)}.csv`
-            : `Historial_${filas[0][1]}_${new Date().toISOString().slice(0, 10)}.csv`;
+            // Papaparse puede exportar como default o como objeto con .unparse
+            const unparse =
+                (papaMod as any).unparse ??
+                (papaMod as any).default?.unparse ??
+                null;
 
-        saveAs(blob, nombreArchivo);
+            if (!unparse) {
+                console.error('No se pudo cargar Papaparse.unparse');
+                return;
+            }
+
+            const encabezado = [
+                'Fecha',
+                'Paciente',
+                'Especialista',
+                'Especialidad',
+                'Observaciones',
+                'Recomendaciones',
+                'Dieta',
+                'Lista de compra',
+            ];
+
+            const filas = historiales.map((h) => [
+                formatearFecha(h.fecha ?? ''),
+                `${h.paciente?.user?.nombre ?? ''} ${h.paciente?.user?.apellidos ?? ''}`.trim(),
+                `${h.especialista?.user?.nombre ?? ''} ${h.especialista?.user?.apellidos ?? ''}`.trim(),
+                h.especialista?.especialidad ?? '',
+                h.observaciones_especialista ?? '',
+                h.recomendaciones ?? '',
+                h.dieta ?? '',
+                h.lista_compra ?? '',
+            ]);
+
+            const datos = [encabezado, ...filas];
+            const csv: string = unparse(datos, { quotes: true });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const nombreArchivo =
+                historiales.length > 1
+                    ? `Historiales_${new Date().toISOString().slice(0, 10)}.csv`
+                    : `Historial_${filas[0][1]}_${new Date().toISOString().slice(0, 10)}.csv`;
+
+            saveAs(blob, nombreArchivo);
+        })();
     }
 
-    // debe ser async para 
-    private async generarPDF(historiales: Historial[], colorHex: string): Promise<void> {
+    // ========= Llamadas =========
+
+    private async generarPDFLazy(historiales: Historial[], colorHex: string): Promise<void> {
+        const { jsPDF } = await import('jspdf');
+
         const doc = new jsPDF();
         const colorRGB = this.hexToRgb(colorHex);
-        
+
         const logoBase64 = await this.convertirImagenABase64('assets/images/Imagen1.png');
-        let pagina = 1;
 
         for (let i = 0; i < historiales.length; i++) {
             const historial = historiales[i];
@@ -77,16 +107,21 @@ export class ExportadorHistorialService {
 
             if (i > 0) {
                 doc.addPage();
-                pagina++;
             }
 
+            // Encabezado
             doc.addImage(logoBase64, 'PNG', 14, 10, 30, 30);
             doc.setFont('times', 'bold');
             doc.setFontSize(16);
             doc.text('Clínica Dietética - Historial del Paciente', 105, 20, { align: 'center' });
             doc.setFont('times', 'normal');
             doc.setFontSize(13);
-            doc.text(`Paciente: ${historial.paciente?.user?.nombre ?? ''} ${historial.paciente?.user?.apellidos ?? ''}`.trim(), 105, 27, { align: 'center' });
+            doc.text(
+                `Paciente: ${historial.paciente?.user?.nombre ?? ''} ${historial.paciente?.user?.apellidos ?? ''}`.trim(),
+                105,
+                27,
+                { align: 'center' }
+            );
 
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
@@ -95,15 +130,18 @@ export class ExportadorHistorialService {
 
             const campos = [
                 { label: 'Fecha', valor: formatearFecha(historial.fecha ?? '') },
-                { label: 'Paciente', valor: `${historial.paciente?.user?.nombre ?? ''} ${historial.paciente?.user?.apellidos ?? ''}`.trim() },
+                {
+                    label: 'Paciente',
+                    valor: `${historial.paciente?.user?.nombre ?? ''} ${historial.paciente?.user?.apellidos ?? ''}`.trim(),
+                },
                 { label: 'Observaciones', valor: historial.observaciones_especialista ?? '' },
                 { label: 'Recomendaciones', valor: historial.recomendaciones ?? '' },
                 { label: 'Dieta', valor: historial.dieta ?? '' },
-                { label: 'Lista de la compra', valor: historial.lista_compra ?? '' }
+                { label: 'Lista de la compra', valor: historial.lista_compra ?? '' },
             ];
 
             doc.setFontSize(11);
-            campos.forEach(campo => {
+            for (const campo of campos) {
                 doc.setFillColor(...colorRGB);
                 doc.setTextColor(255);
                 doc.setFont('helvetica', 'bold');
@@ -117,7 +155,7 @@ export class ExportadorHistorialService {
                 const contenido = doc.splitTextToSize(campo.valor, 180);
                 doc.text(contenido, 18, y);
                 y += contenido.length * 6 + 6;
-            });
+            }
 
             // Firma
             const firmaY = 250;
@@ -136,7 +174,7 @@ export class ExportadorHistorialService {
             }
         }
 
-        const totalPaginas = (doc.internal as any).getNumberOfPages();
+        const totalPaginas = (doc.internal as any).getNumberOfPages?.() ?? 1;
         for (let i = 1; i <= totalPaginas; i++) {
             doc.setPage(i);
             doc.setFontSize(9);
@@ -145,9 +183,10 @@ export class ExportadorHistorialService {
         }
 
         const nombrePaciente = `${historiales[0].paciente?.user?.nombre ?? 'paciente'}`;
-        const nombreArchivo = historiales.length > 1
-            ? `Historiales_${nombrePaciente}_${new Date().toISOString().slice(0, 10)}.pdf`
-            : `Historial_${nombrePaciente}_${new Date().toISOString().slice(0, 10)}.pdf`;
+        const nombreArchivo =
+            historiales.length > 1
+                ? `Historiales_${nombrePaciente}_${new Date().toISOString().slice(0, 10)}.pdf`
+                : `Historial_${nombrePaciente}_${new Date().toISOString().slice(0, 10)}.pdf`;
 
         doc.save(nombreArchivo);
     }
