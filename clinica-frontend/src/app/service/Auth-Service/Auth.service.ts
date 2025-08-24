@@ -14,6 +14,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { urlApiServicio } from '../../components/utilidades/variable-entorno';
 
 // Interfaces
 export interface User {
@@ -33,7 +34,7 @@ export interface LoginResponse {
     providedIn: 'root'
 })
 export class AuthService {
-    private apiUrl = 'http://127.0.0.1:8000/api';
+    private apiUrl = urlApiServicio.apiUrl;
     private tokenKey = 'auth_token';
     private userKey = 'user';
 
