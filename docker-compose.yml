@@ -18,8 +18,10 @@ services:
     build:
       context: ./clinica-backend
       dockerfile: Dockerfile
+      target: php
     container_name: clinica_php
     environment:
+      DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
       DB_DATABASE: clinica
@@ -28,6 +30,7 @@ services:
       APP_ENV: production
       APP_KEY: base64:xxxxx
       APP_URL: http://localhost:8081
+      SEED_ON_START: "true"   # "true" solo cuando se necesite sembrar datos
     depends_on:
       - db
 
