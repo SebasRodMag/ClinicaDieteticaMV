@@ -13,6 +13,11 @@ services:
       - db_data:/var/lib/mysql
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
   php:
     build:
@@ -32,7 +37,8 @@ services:
       APP_URL: http://localhost:8081
       SEED_ON_START: "true"   # "true" solo cuando se necesite sembrar datos
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   api-nginx:
     image: nginx:1.25-alpine
