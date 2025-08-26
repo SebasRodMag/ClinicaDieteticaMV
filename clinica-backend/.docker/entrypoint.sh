@@ -3,10 +3,6 @@ set -e
 
 cd /var/www
 
-# Copia .env si no existe (útil en despliegues)
-if [ ! -f .env ] && [ -f .env.example ]; then
-  cp .env.example .env
-fi
 
 # Espera a que MySQL acepte conexiones para ejecutar las migraciones
 until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Exception $e) { exit(1);}"; do
