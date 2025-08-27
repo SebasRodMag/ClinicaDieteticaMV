@@ -24,6 +24,7 @@ services:
       context: ./clinica-backend
       dockerfile: Dockerfile
       target: php
+    image: clinica/php:dev
     container_name: clinica_php
     environment:
       DB_CONNECTION: mysql
