@@ -3,16 +3,17 @@ set -e
 
 cd /var/www
 
-# Copia .env si no existe (útil en despliegues)
-if [ ! -f .env ] && [ -f .env.example ]; then
-  cp .env.example .env
-fi
-
 # Espera a que MySQL acepte conexiones para ejecutar las migraciones
 until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Exception $e) { exit(1);}"; do
   echo "⏳ Esperando a la base de datos (${DB_HOST}:${DB_PORT})..."
   sleep 2
 done
+
+# si no existe .env, copiar .env.example
+[ ! -f .env ] && [ -f .env.example ] && cp .env.example .env
+
+# si falta la línea APP_KEY, añadirla
+grep -q '^APP_KEY=' .env || echo 'APP_KEY=' >> .env
 
 # Genera clave si falta, si ya existe, no falla
 php artisan key:generate --force || true
