@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: mysql:8.0
@@ -24,7 +22,8 @@ services:
       context: ./clinica-backend
       dockerfile: Dockerfile
       target: php
-    image: clinica/php:dev
+    image: clinicadieteticamv-php
+    pull_policy: build
     container_name: clinica_php
     environment:
       DB_CONNECTION: mysql

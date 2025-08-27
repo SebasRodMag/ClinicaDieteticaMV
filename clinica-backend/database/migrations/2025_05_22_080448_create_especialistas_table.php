@@ -15,7 +15,7 @@ return new class extends Migration {
     {
         Schema::create('especialistas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade')->index();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('especialidad')->nullable();
             $table->timestamps();
             $table->softDeletes();
