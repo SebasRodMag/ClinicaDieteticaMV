@@ -17,7 +17,7 @@ class CreateDocumentosTable extends Migration
         Schema::create('documentos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('historial_id')->nullable()->constrained('historial')->onDelete('set null');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade')->index();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('nombre');
             $table->string('archivo');
             $table->string('tipo');
