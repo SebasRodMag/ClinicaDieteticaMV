@@ -13,7 +13,7 @@ class ConfiguracionSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('Configuracion')->insert([
+        DB::table('configuracion')->insert([
             [
                 'clave' => 'duracion_cita',
                 'valor' => '30',//tiempo en minutos
