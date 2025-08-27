@@ -15,7 +15,8 @@ done
 # si falta la línea APP_KEY, añadirla
 grep -q '^APP_KEY=' .env || echo 'APP_KEY=' >> .env
 
-# Genera clave si falta, si ya existe, no falla
+# Limpia cache de config antes de generar la key
+php artisan config:clear || true
 php artisan key:generate --force || true
 
 # Cache de configuración/ROUTES/views para prod
