@@ -142,6 +142,8 @@ export class UserService {
 
     /**
      * getUsuariosSinRolEspecialistaNiPaciente() obtiene un array de usuarios que no son ni especialistas ni pacientes.
+     * noCache: boolean opcional para evitar el cacheo de la respuesta.(Esta generando un error 500 en el backend al dar lugar 
+     * a enviar solicitudes con con datos antiguos al no actualizar).
      * Devuelve un json con un array de usuarios con la siguiente estructura:
      * {
      *   "data": [
@@ -154,8 +156,17 @@ export class UserService {
      * }
      * @returns Observable con un array de usuarios disponibles.
      */
-    getUsuariosSinRolEspecialistaNiPaciente(): Observable<{ data: UsuarioDisponible[] }> {
-        return this.http.get<{ data: UsuarioDisponible[] }>(`${this.apiUrl}/usuarios/listar/usuarios`);
+    getUsuariosSinRolEspecialistaNiPaciente(noCache = false) {
+        const headers = noCache
+            ? { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+            : undefined;
+
+        const params = noCache ? { t: Date.now().toString() } : undefined;
+
+        return this.http.get<{ data: UsuarioDisponible[] }>(
+            `${this.apiUrl}/usuarios/listar/usuarios`,
+            { headers, params }
+        );
     }
 
     /**
