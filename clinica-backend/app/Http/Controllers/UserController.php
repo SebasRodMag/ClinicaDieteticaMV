@@ -341,61 +341,72 @@ class UserController extends Controller
      */
     public function cambiarRol($id): JsonResponse
     {
+
         $codigo = 200;
         $respuesta = [];
 
         if (!is_numeric($id)) {
-            $codigo = 400;
+            $codigo = 422; //datos inválidos
             $respuesta = ['errors' => ['id' => ['El ID proporcionado no es válido.']]];
-            return response()->json($respuesta, $codigo);
-        }
+        } else {
+            $usuario = User::find($id);
 
-        $usuario = User::find($id);
+            if (!$usuario) {
+                $codigo = 404;
+                $respuesta = ['errors' => ['general' => ['El usuario no existe.']]];
+            } else {
+                try {
+                    DB::transaction(function () use ($usuario) {
 
-        if (!$usuario) {
-            $codigo = 404;
-            $respuesta = ['errors' => ['general' => ['El usuario no existe.']]];
-            return response()->json($respuesta, $codigo);
-        }
+                        // Si tiene rol especialista se borran citas pendientes por id de ESPECIALISTA y soft delete
+                        if ($usuario->hasRole('especialista')) {
+                            $esp = Especialista::where('user_id', $usuario->id)->first();
+                            if ($esp) {
+                                Cita::where('id_especialista', $esp->id)
+                                    ->where('estado', 'pendiente')
+                                    ->delete();
 
-        try {
-            if ($usuario->hasRole('especialista')) {
-                Especialista::where('user_id', $usuario->id)->delete();
+                                $esp->delete(); // softDelete
+                                \Log::info("El usuario {$usuario->id} dejó de ser especialista. Citas pendientes eliminadas.");
+                            }
+                        }
 
-                Cita::where('especialista_id', $usuario->id)
-                    ->where('estado', 'pendiente')
-                    ->delete();
+                        // Si tiene rol paciente se borran citas pendientes por id de PACIENTE y soft delete
+                        if ($usuario->hasRole('paciente')) {
+                            $pac = Paciente::where('user_id', $usuario->id)->first();
+                            if ($pac) {
+                                Cita::where('id_paciente', $pac->id)
+                                    ->where('estado', 'pendiente')
+                                    ->delete();
 
-                \Log::info("El usuario {$usuario->id} dejó de ser especialista. Se eliminaron citas pendientes.");
+                                $pac->delete(); // softDelete
+                                \Log::info("El usuario {$usuario->id} dejó de ser paciente. Citas pendientes eliminadas.");
+                            }
+                        }
+
+                        //Dejarlo solo el rol "usuario"
+                        $usuario->syncRoles(['usuario']);
+
+                        $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $usuario->id);
+                    });
+
+                    $respuesta = [
+                        'mensaje' => 'El rol del usuario ha sido cambiado a "usuario" y se eliminaron sus citas pendientes.'
+                    ];
+                    $codigo = 200;
+
+                } catch (QueryException $e) {
+                    $codigo = 500;
+                    $respuesta = ['errors' => ['general' => ['Error al cambiar el rol del usuario.']]];
+                    $this->logError(auth()->id(), 'Error DB al cambiar rol del usuario', $e->getMessage());
+
+                } catch (\Throwable $e) {
+                    $codigo = 500;
+                    $respuesta = ['errors' => ['general' => ['Ocurrió un error inesperado al cambiar el rol del usuario.']]];
+                    $this->logError(auth()->id(), 'Error inesperado al cambiar rol del usuario', $e->getMessage());
+                }
             }
-
-            if ($usuario->hasRole('paciente')) {
-                Paciente::where('user_id', $usuario->id)->delete();
-
-                Cita::where('paciente_id', $usuario->id)
-                    ->where('estado', 'pendiente')
-                    ->delete();
-
-                \Log::info("El usuario {$usuario->id} dejó de ser paciente. Se eliminaron citas pendientes.");
-            }
-
-            $usuario->syncRoles(['usuario']);
-
-            $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $usuario->id);
-
-            $respuesta = ['mensaje' => 'El rol del usuario ha sido cambiado a "usuario" y se eliminaron sus citas pendientes.'];
-
-        } catch (QueryException $e) {
-            $codigo = 500;
-            $respuesta = ['errors' => ['general' => ['Error al cambiar el rol del usuario.']]];
-            $this->logError(auth()->id(), 'Error DB al cambiar rol del usuario', $e->getMessage());
-
-        } catch (\Exception $e) {
-            $codigo = 500;
-            $respuesta = ['errors' => ['general' => ['Ocurrió un error inesperado al cambiar el rol del usuario.']]];
-            $this->logError(auth()->id(), 'Error inesperado al cambiar rol del usuario', $e->getMessage());
         }
-
         return response()->json($respuesta, $codigo);
     }
 
