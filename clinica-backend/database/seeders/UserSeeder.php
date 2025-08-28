@@ -14,9 +14,6 @@ class UserSeeder extends Seeder
 {
     use GenerarDniTelfUnico;
 
-    private $dniUsados = [];
-    private $telefonoUsados = [];
-
 
     /**
      * Ejecuta el seeder para crear usuarios con diferentes roles.
@@ -55,40 +52,30 @@ class UserSeeder extends Seeder
      * @param string $rol Rol del usuario (ej. 'usuario', 'administrador', 'paciente', 'especialista').
      * @param \Faker\Generator $faker Instancia de Faker para generar datos aleatorios.
      */
-    private function crearUsuariosConRol(int $cantidad, string $rol, $faker)
+    private function crearUsuariosConRol(int $cantidad, string $rol, $faker): void
     {
         for ($i = 1; $i <= $cantidad; $i++) {
-            $dni = $this->generarDniUnico();
-            $telefono = $this->generarTelefonoUnico();
+            $email = "{$rol}{$i}@correo.com";
 
-            $nombre = $faker->firstName();
-            $apellidos = $faker->lastName();
+            // Se crear solo si no existe, si exite, no se tocan los demás campos
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'nombre'            => $faker->firstName(),
+                    'apellidos'         => $faker->lastName(),
+                    'dni_usuario'       => $this->generarDniUnico(),
+                    'fecha_nacimiento'  => $faker->dateTimeBetween('-50 years', '-18 years'),
+                    'telefono'          => $this->generarTelefonoUnico(),
+                    'direccion'         => $faker->address(),
+                    'email_verified_at' => now(),
+                    'password'          => bcrypt('password'),
+                    'remember_token'    => Str::random(10),
+                ]
+            );
 
-            $user = User::factory()->create([
-                'nombre' => $nombre,
-                'apellidos' => $apellidos,
-                'email' => "{$rol}{$i}@correo.com",
-                'dni_usuario' => $dni,
-                'telefono' => $telefono,
-                'direccion' => $faker->address,
-            ]);
-
-            $user->assignRole($rol);
-
-            if ($rol === 'paciente') {
-                // Removed creation of Paciente here to avoid overlap with PacienteSeeder
-                // Paciente::create([
-                //     'user_id' => $user->id,
-                //     'numero_historial' => strtoupper(Str::random(10)),
-                //     'fecha_alta' => $faker->dateTimeBetween('-2 years', 'now'),
-                //     'fecha_baja' => null,
-                // ]);
-            } elseif ($rol === 'especialista') {
-                // Removed creation of Especialista here to avoid overlap with EspecialistaSeeder
-                // Especialista::create([
-                //     'user_id' => $user->id,
-                //     'especialidad' => $faker->randomElement(['Nutrición', 'Endocrinología', 'Medicina General'])
-                // ]);
+            // Asegurar el rol sin duplicar
+            if (!$user->hasRole($rol)) {
+                $user->assignRole($rol);
             }
         }
     }
