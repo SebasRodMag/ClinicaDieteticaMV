@@ -428,19 +428,21 @@ class UserController extends Controller
         }
 
         try {
-            $usuarios = User::role('usuario')
-                ->whereDoesntHave('paciente')
-                ->whereDoesntHave('especialista')
+            //solo usuarios SIN relación activa de paciente/especialista
+            $usuarios = User::query()
+                ->whereDoesntHave('paciente', fn($q) => $q->whereNull('deleted_at'))
+                ->whereDoesntHave('especialista', fn($q) => $q->whereNull('deleted_at'))
                 ->select('id', 'nombre', 'apellidos')
+                ->orderBy('nombre')
                 ->get()
                 ->map(fn($user) => [
                     'id' => $user->id,
-                    'nombre_apellidos' => $user->nombre . ' ' . $user->apellidos,
+                    'nombre_apellidos' => trim($user->nombre . ' ' . $user->apellidos),
                 ]);
 
             $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
             $respuesta = ['data' => $usuarios];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $codigo = 500;
             $respuesta = ['errors' => ['general' => ['Ocurrió un error al obtener los usuarios.']]];
             $this->logError(auth()->id(), 'Error al listar usuarios sin rol paciente/especialista', $e->getMessage());
