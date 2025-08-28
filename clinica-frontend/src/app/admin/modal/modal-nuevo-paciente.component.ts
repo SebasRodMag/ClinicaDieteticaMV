@@ -13,9 +13,19 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     templateUrl: './modal-nuevo-paciente.component.html'
 })
 export class ModalNuevoPacienteComponent implements OnInit {
-    @Input() visible: boolean = false;
     @Output() cerrar = new EventEmitter<void>();
     @Output() pacienteCreado = new EventEmitter<void>();
+
+    private _visible = false;
+    @Input() set visible(v: boolean) {
+        // cuando se abre (true), resetea y recarga
+        if (v && !this._visible) {
+            this.resetearEstado();
+            this.cargarUsuariosDisponibles();
+        }
+        this._visible = v;
+    }
+    get visible(): boolean { return this._visible; }
 
     private _filtroUsuario: string = '';
 
@@ -28,6 +38,13 @@ export class ModalNuevoPacienteComponent implements OnInit {
         private userService: UserService,
         private snackBar: MatSnackBar
     ) { }
+
+    private resetearEstado() {
+        this.user_idSeleccionado = null;
+        this._filtroUsuario = '';
+        this.mensajeErrorBusqueda = '';
+        this.cargando = false;
+    }
 
     ngOnInit(): void {
         this.cargarUsuariosDisponibles();
