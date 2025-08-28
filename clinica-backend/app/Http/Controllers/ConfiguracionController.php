@@ -155,7 +155,7 @@ class ConfiguracionController extends Controller
             $totalUsuarios = User::count();
             $totalEspecialistas = Especialista::whereHas('user')->count();
             $totalPacientes = Paciente::whereHas('user')->count();
-            $citasHoy = Cita::whereDate('fecha', Carbon::today())->count();
+            $citasHoy = Cita::whereDate('fecha_hora_cita', Carbon::today())->count();
 
             return response()->json([
                 'total_usuarios' => $totalUsuarios,
