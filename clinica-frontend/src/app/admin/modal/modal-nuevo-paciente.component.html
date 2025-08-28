@@ -28,7 +28,7 @@
                                 {{ usuariosFiltrados.length > 0 ? 'Seleccione un usuario' : 'No se encontraron usuarios'
                                 }}
                             </option>
-                            <option *ngFor="let usuario of usuariosFiltrados" [value]="usuario.id">
+                            <option *ngFor="let usuario of usuariosFiltrados; trackBy: trackById" [value]="usuario.id">
                                 {{ usuario.nombre_apellidos }} — ID: {{ usuario.id }}
                             </option>
                         </select>

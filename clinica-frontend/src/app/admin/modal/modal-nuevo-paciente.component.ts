@@ -21,7 +21,7 @@ export class ModalNuevoPacienteComponent implements OnInit {
         // cuando se abre (true), resetea y recarga
         if (v && !this._visible) {
             this.resetearEstado();
-            this.cargarUsuariosDisponibles();
+            this.cargarUsuariosDisponibles(true);//se pasa por parámetro true para evitar el cacheo
         }
         this._visible = v;
     }
@@ -33,6 +33,8 @@ export class ModalNuevoPacienteComponent implements OnInit {
     user_idSeleccionado: number | null = null;
     cargando = false;
     mensajeErrorBusqueda: string = '';
+    //filtro el usuario seleccionado de la lista hasta que se recargue la página
+    trackById(_index: number, item: UsuarioDisponible) { return item.id; }
 
     constructor(
         private userService: UserService,
@@ -50,8 +52,8 @@ export class ModalNuevoPacienteComponent implements OnInit {
         this.cargarUsuariosDisponibles();
     }
 
-    cargarUsuariosDisponibles(): void {
-        this.userService.getUsuariosSinRolEspecialistaNiPaciente().subscribe({
+    cargarUsuariosDisponibles(noCache = false): void {
+        this.userService.getUsuariosSinRolEspecialistaNiPaciente(noCache).subscribe({
             next: (res) => {
                 this.usuariosDisponibles = res.data.sort((a, b) =>
                     a.nombre_apellidos.localeCompare(b.nombre_apellidos)
@@ -71,6 +73,7 @@ export class ModalNuevoPacienteComponent implements OnInit {
     guardar(): void {
         console.log('user_idSeleccionado:', this.user_idSeleccionado);
         const usuario = this.usuariosDisponibles.find(u => u.id === Number(this.user_idSeleccionado));
+
 
         if (!usuario) {
             this.snackBar.open('Debe seleccionar un usuario válido', 'Cerrar', {
@@ -95,6 +98,9 @@ export class ModalNuevoPacienteComponent implements OnInit {
 
             this.userService.crearPaciente(paciente).subscribe({
                 next: () => {
+                    //quitamos al usuario seleccionado del array
+                    this.usuariosDisponibles = this.usuariosDisponibles.filter(u => u.id !== usuario.id);
+                    this.user_idSeleccionado = null;
                     this.snackBar.open('Paciente creado correctamente', 'Cerrar', {
                         duration: 3000,
                         panelClass: ['snackbar-success']
