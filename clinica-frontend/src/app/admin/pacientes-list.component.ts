@@ -11,7 +11,6 @@ import { formatearFecha } from '../components/utilidades/sanitizar.utils';
 import { ModalNuevoPacienteComponent } from './modal/modal-nuevo-paciente.component';
 import { Usuario } from '../models/usuario.model';
 
-// 🧩 Tipo extendido con propiedades planas para filtros/ordenación/plantillas
 type PacienteExtendido = Paciente & {
     nombre_paciente: string;
     nombre_especialista: string;
@@ -31,8 +30,7 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
 
     // Modal “Nuevo paciente”
     modalNuevoPacienteVisible = false;
-
-    // Tabla / filtro / ordenación / paginado
+    // Variables para paginación, ordenación y filtro
     filtro = '';
     columnaOrden: string | null = null;
     direccionOrdenAsc = true;
