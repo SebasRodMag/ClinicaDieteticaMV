@@ -73,6 +73,6 @@
 </ng-template>
 
 <!-- Modal para asignar rol Paciente a un usuario -->
-<app-modal-nuevo-paciente [visible]="modalNuevoPacienteVisible" (cerrar)="cerrarModalNuevoPaciente()"
+<app-modal-nuevo-paciente *ngIf="modalNuevoPacienteVisible" [visible]="true" (cerrar)="cerrarModalNuevoPaciente()"
     (pacienteCreado)="recargarPacientes()">
 </app-modal-nuevo-paciente>
