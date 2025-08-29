@@ -21,7 +21,7 @@ export class ModalNuevoPacienteComponent implements OnInit {
         // cuando se abre (true), resetea y recarga
         if (v && !this._visible) {
             this.resetearEstado();
-            this.cargarUsuariosDisponibles(true);//se pasa por parámetro true para evitar el cacheo
+            this.cargarUsuariosDisponibles(true);//para evitar el cacheo
         }
         this._visible = v;
     }

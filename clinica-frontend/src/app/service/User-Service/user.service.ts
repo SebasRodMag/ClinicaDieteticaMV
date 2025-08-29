@@ -157,16 +157,21 @@ export class UserService {
      * @returns Observable con un array de usuarios disponibles.
      */
     getUsuariosSinRolEspecialistaNiPaciente(noCache = false) {
-        const headers = noCache
-            ? { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
-            : undefined;
+        const url = `${this.apiUrl}/usuarios-disponibles`;
+        const params: any = {};
 
-        const params = noCache ? { t: Date.now().toString() } : undefined;
+        if (noCache) {
+            params._ts = Date.now().toString(); // cache-buster
+        }
 
-        return this.http.get<{ data: UsuarioDisponible[] }>(
-            `${this.apiUrl}/usuarios/listar/usuarios`,
-            { headers, params }
-        );
+        return this.http.get<{ data: UsuarioDisponible[] }>(url, {
+            params,
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            },
+        });
     }
 
     /**
