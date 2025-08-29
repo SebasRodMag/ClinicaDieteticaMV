@@ -426,36 +426,58 @@ class UserController extends Controller
                 $codigo = 403;
                 $respuesta = ['errors' => ['autorizacion' => ['No autorizado.']]];
             } else {
-                $guard = config('auth.defaults.guard', 'web');
+                // Query a prueba de bombas ya que spatie no me esta funcionando
                 $usuarios = User::query()
                     ->select('users.id', 'users.nombre', 'users.apellidos')
                     ->whereNull('users.deleted_at')
-                    ->role('usuario', $guard)
-                    ->withoutRole(['paciente', 'especialista'], $guard)
                     ->doesntHave('paciente')
                     ->doesntHave('especialista')
+
+                    // Debe tener rol 'usuario'
+                    ->whereExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('model_has_roles as mhr')
+                            ->join('roles as r', 'r.id', '=', 'mhr.role_id')
+                            ->whereColumn('mhr.model_id', 'users.id')
+                            ->where('mhr.model_type', User::class)
+                            ->where('r.name', 'usuario');
+                    })
+
+                    // Nn debe tener roles 'paciente' ni 'especialista'
+                    ->whereNotExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('model_has_roles as mhr2')
+                            ->join('roles as r2', 'r2.id', '=', 'mhr2.role_id')
+                            ->whereColumn('mhr2.model_id', 'users.id')
+                            ->where('mhr2.model_type', User::class)
+                            ->whereIn('r2.name', ['paciente', 'especialista']);
+                    })
+
                     ->orderBy('users.nombre')
                     ->get()
                     ->map(fn($user) => [
                         'id' => $user->id,
                         'nombre_apellidos' => trim(($user->nombre ?? '') . ' ' . ($user->apellidos ?? '')),
                     ]);
+                try {
+                    $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
+                } catch (\Throwable $error) {
+                    \Log::warning('Fallo registrarLog en listar usuarios: ' . $error->getMessage());
+                }
 
-                $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
                 $respuesta = ['data' => $usuarios];
             }
-        } catch (\Throwable $e) {
-            \Log::error('getUsuariosSinRolEspecialistaNiPaciente: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
+        } catch (\Throwable $error) {
+            \Log::error('getUsuariosSinRolEspecialistaNiPaciente: ' . $error->getMessage(), [
+                'trace' => $error->getTraceAsString(),
             ]);
-
             $codigo = 500;
             $respuesta = [
                 'errors' => [
                     'general' => [
-                        config('app.debug') ? $e->getMessage() : 'Ocurrió un error al obtener los usuarios.'
-                    ]
-                ]
+                        config('app.debug') ? $error->getMessage() : 'Ocurrió un error al obtener los usuarios.'
+                    ],
+                ],
             ];
         }
 
