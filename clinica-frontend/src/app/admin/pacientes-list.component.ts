@@ -23,6 +23,7 @@ type PacienteExtendido = Paciente & {
     templateUrl: './pacientes-list.component.html',
 })
 export class PacientesListComponent implements OnInit, AfterViewInit {
+    idsUsuariosExcluidos: number[] = [];//Para excluir de la lista de usuarios disponibles en el modal
     pacientes: PacienteExtendido[] = [];
     loading = true;
     huboError = false;
@@ -268,6 +269,13 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
 
     cambiarPagina(pagina: number): void {
         this.paginaActual = pagina;
+    }
+
+    onPacienteCreado(userId: number) {
+        if (!this.idsUsuariosExcluidos.includes(userId)) {
+            this.idsUsuariosExcluidos.push(userId);
+        }
+        this.recargarPacientes();
     }
 
     abrirModalAsignarRolPaciente(): void {

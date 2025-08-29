@@ -14,7 +14,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class ModalNuevoPacienteComponent implements OnInit {
     @Output() cerrar = new EventEmitter<void>();
-    @Output() pacienteCreado = new EventEmitter<void>();
+    @Output() pacienteCreado = new EventEmitter<number>();
+
+    @Input() excluirUserIds: number[] = []; //ID de usuario a excluir
 
     private _visible = false;
     @Input() set visible(v: boolean) {
@@ -55,9 +57,9 @@ export class ModalNuevoPacienteComponent implements OnInit {
     cargarUsuariosDisponibles(noCache = false): void {
         this.userService.getUsuariosSinRolEspecialistaNiPaciente(noCache).subscribe({
             next: (res) => {
-                this.usuariosDisponibles = res.data.sort((a, b) =>
-                    a.nombre_apellidos.localeCompare(b.nombre_apellidos)
-                );
+                // Filtra lo que venga del backend con la lista del padre
+                const filtrados = (res.data ?? []).filter(u => !this.excluirUserIds.includes(u.id));
+                this.usuariosDisponibles = filtrados.sort((a, b) => a.nombre_apellidos.localeCompare(b.nombre_apellidos));
             },
             error: (error) => {
                 console.error('Error al cargar usuarios:', error);
@@ -105,7 +107,7 @@ export class ModalNuevoPacienteComponent implements OnInit {
                         duration: 3000,
                         panelClass: ['snackbar-success']
                     });
-                    this.pacienteCreado.emit();
+                    this.pacienteCreado.emit(usuario.id);
                     this.cerrarModal();
                 },
                 error: (error) => {
@@ -131,11 +133,12 @@ export class ModalNuevoPacienteComponent implements OnInit {
 
     get usuariosFiltrados(): UsuarioDisponible[] {
         const filtro = this._filtroUsuario.trim().toLowerCase();
-
-        return this.usuariosDisponibles.filter(usuario =>
-            usuario.nombre_apellidos.toLowerCase().includes(filtro) ||
-            usuario.id.toString().includes(filtro)
-        );
+        return this.usuariosDisponibles
+            .filter(u => !this.excluirUserIds.includes(u.id))
+            .filter(u =>
+                u.nombre_apellidos.toLowerCase().includes(filtro) ||
+                u.id.toString().includes(filtro)
+            );
     }
 
     get filtroUsuario(): string {
