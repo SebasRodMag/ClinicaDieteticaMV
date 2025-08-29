@@ -427,33 +427,36 @@ class UserController extends Controller
                 $respuesta = ['errors' => ['autorizacion' => ['No autorizado.']]];
             } else {
                 $guard = config('auth.defaults.guard', 'web');
-
                 $usuarios = User::query()
+                    ->select('users.id', 'users.nombre', 'users.apellidos')
                     ->whereNull('users.deleted_at')
-                    ->whereDoesntHave('paciente', fn($q) => $q->whereNull('pacientes.deleted_at'))
-                    ->whereDoesntHave('especialista', fn($q) => $q->whereNull('especialistas.deleted_at'))
-                    ->whereDoesntHave('roles', function ($q) use ($guard) {
-                        $q->whereIn('name', ['paciente', 'especialista'])
-                            ->where('guard_name', $guard);
-                    })
-                    ->whereHas('roles', function ($q) use ($guard) {
-                        $q->where('name', 'usuario')->where('guard_name', $guard);
-                    })
-                    ->select('id', 'nombre', 'apellidos')
-                    ->orderBy('nombre')
+                    ->role('usuario', $guard)
+                    ->withoutRole(['paciente', 'especialista'], $guard)
+                    ->doesntHave('paciente')
+                    ->doesntHave('especialista')
+                    ->orderBy('users.nombre')
                     ->get()
-                    ->map(fn($u) => [
-                        'id' => $u->id,
-                        'nombre_apellidos' => trim(($u->nombre ?? '') . ' ' . ($u->apellidos ?? '')),
+                    ->map(fn($user) => [
+                        'id' => $user->id,
+                        'nombre_apellidos' => trim(($user->nombre ?? '') . ' ' . ($user->apellidos ?? '')),
                     ]);
 
                 $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
                 $respuesta = ['data' => $usuarios];
             }
         } catch (\Throwable $e) {
+            \Log::error('getUsuariosSinRolEspecialistaNiPaciente: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             $codigo = 500;
-            $respuesta = ['errors' => ['general' => ['Ocurrió un error al obtener los usuarios.']]];
-            $this->logError(auth()->id(), 'Error al listar usuarios sin rol paciente/especialista', $e->getMessage());
+            $respuesta = [
+                'errors' => [
+                    'general' => [
+                        config('app.debug') ? $e->getMessage() : 'Ocurrió un error al obtener los usuarios.'
+                    ]
+                ]
+            ];
         }
 
         return response()
