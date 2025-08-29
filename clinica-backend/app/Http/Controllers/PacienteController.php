@@ -677,7 +677,7 @@ class PacienteController extends Controller
                 $paciente->fecha_alta = now()->toDateString();
                 $paciente->save();
 
-                $user->assignRole('paciente');
+                $user->syncRoles('paciente');
 
                 $this->registrarLog(auth()->id(), 'restaurar_paciente', "Paciente restaurado, user_id: {$user->id}", $paciente->id);
 
@@ -696,7 +696,7 @@ class PacienteController extends Controller
                     'fecha_alta' => now()->toDateString(),
                 ]);
 
-                $user->assignRole('paciente');
+                $user->syncRoles('paciente');
 
                 // Determinar quién crea al paciente (Administrador o Especialista)
                 $especialistaNombre = auth()->user()?->nombre ?? 'uno de nuestros especialistas';
