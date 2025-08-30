@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, TemplateRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -67,6 +68,7 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
         private userService: UserService,
         private snackBar: MatSnackBar,
         private cdr: ChangeDetectorRef,
+        private router: Router
     ) { }
 
     ngOnInit(): void {
@@ -271,11 +273,14 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
         this.paginaActual = pagina;
     }
 
-    onPacienteCreado(userId: number) {
-        if (!this.idsUsuariosExcluidos.includes(userId)) {
-            this.idsUsuariosExcluidos.push(userId);
-        }
+    onPacienteCreado(_userId?: number) {
+        this.cerrarModalNuevoPaciente();
         this.recargarPacientes();
+
+        const url = this.router.url;
+        this.router.navigateByUrl('/', { skipLocationChange: true })
+            .then(() => this.router.navigateByUrl(url));
+        //Fuerzo a que vuelva a hacer la solicitud de usuarios destruyendo el componente para volver a crearlo
     }
 
     abrirModalAsignarRolPaciente(): void {

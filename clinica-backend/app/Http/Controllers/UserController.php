@@ -421,70 +421,32 @@ class UserController extends Controller
         $codigo = 200;
         $respuesta = [];
 
-        try {
-            if (!auth()->check() || !auth()->user()->hasRole('administrador')) {
-                $codigo = 403;
-                $respuesta = ['errors' => ['autorizacion' => ['No autorizado.']]];
-            } else {
-                // Query a prueba de bombas ya que spatie no me esta funcionando
-                $usuarios = User::query()
-                    ->select('users.id', 'users.nombre', 'users.apellidos')
-                    ->whereNull('users.deleted_at')
-                    ->doesntHave('paciente')
-                    ->doesntHave('especialista')
-
-                    // Debe tener rol 'usuario'
-                    ->whereExists(function ($query) {
-                        $query->select(DB::raw(1))
-                            ->from('model_has_roles as mhr')
-                            ->join('roles as r', 'r.id', '=', 'mhr.role_id')
-                            ->whereColumn('mhr.model_id', 'users.id')
-                            ->where('mhr.model_type', User::class)
-                            ->where('r.name', 'usuario');
-                    })
-
-                    // Nn debe tener roles 'paciente' ni 'especialista'
-                    ->whereNotExists(function ($query) {
-                        $query->select(DB::raw(1))
-                            ->from('model_has_roles as mhr2')
-                            ->join('roles as r2', 'r2.id', '=', 'mhr2.role_id')
-                            ->whereColumn('mhr2.model_id', 'users.id')
-                            ->where('mhr2.model_type', User::class)
-                            ->whereIn('r2.name', ['paciente', 'especialista']);
-                    })
-
-                    ->orderBy('users.nombre')
-                    ->get()
-                    ->map(fn($user) => [
-                        'id' => $user->id,
-                        'nombre_apellidos' => trim(($user->nombre ?? '') . ' ' . ($user->apellidos ?? '')),
-                    ]);
-                try {
-                    $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
-                } catch (\Throwable $error) {
-                    \Log::warning('Fallo registrarLog en listar usuarios: ' . $error->getMessage());
-                }
-
-                $respuesta = ['data' => $usuarios];
-            }
-        } catch (\Throwable $error) {
-            \Log::error('getUsuariosSinRolEspecialistaNiPaciente: ' . $error->getMessage(), [
-                'trace' => $error->getTraceAsString(),
-            ]);
-            $codigo = 500;
-            $respuesta = [
-                'errors' => [
-                    'general' => [
-                        config('app.debug') ? $error->getMessage() : 'Ocurrió un error al obtener los usuarios.'
-                    ],
-                ],
-            ];
+        if (!auth()->check() || !auth()->user()->hasRole('administrador')) {
+            $codigo = 403;
+            $respuesta = ['errors' => ['autorizacion' => ['No autorizado.']]];
+            return response()->json($respuesta, $codigo);
         }
 
-        return response()
-            ->json($respuesta, $codigo)
-            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-            ->header('Pragma', 'no-cache');
+        try {
+            $usuarios = User::role('usuario')
+                ->whereDoesntHave('paciente')
+                ->whereDoesntHave('especialista')
+                ->select('id', 'nombre', 'apellidos')
+                ->get()
+                ->map(fn($user) => [
+                    'id' => $user->id,
+                    'nombre_apellidos' => $user->nombre . ' ' . $user->apellidos,
+                ]);
+
+            $this->registrarLog(auth()->id(), 'listar_usuarios_para_asignar_especialista', 'users');
+            $respuesta = ['data' => $usuarios];
+        } catch (\Exception $e) {
+            $codigo = 500;
+            $respuesta = ['errors' => ['general' => ['Ocurrió un error al obtener los usuarios.']]];
+            $this->logError(auth()->id(), 'Error al listar usuarios sin rol paciente/especialista', $e->getMessage());
+        }
+
+        return response()->json($respuesta, $codigo);
     }
 
 }
