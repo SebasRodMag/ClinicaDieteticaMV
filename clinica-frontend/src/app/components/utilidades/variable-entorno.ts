@@ -1,4 +1,4 @@
 /*URL del servicio*/
 export const urlApiServicio = {
-    apiUrl: '/api',
+    apiUrl: '/http://localhost:8081/api',
 };
