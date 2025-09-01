@@ -208,7 +208,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
     guardarUsuario(usuario: Usuario) {
         this.erroresModal = {};
         if (usuario.id === 0) {
-            this.userService.crearUsuario(usuario).subscribe({
+            this.userService.crearUsuarioConRolUsuario(usuario).subscribe({
                 next: (nuevoUsuario) => {
                     this.cargarUsuarios();
                     this.mostrarMensaje('Usuario creado correctamente.', 'success');

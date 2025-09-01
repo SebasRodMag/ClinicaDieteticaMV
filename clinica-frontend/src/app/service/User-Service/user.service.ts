@@ -105,6 +105,10 @@ export class UserService {
         return this.http.post<Usuario>(`${this.apiUrl}/usuarios`, usuario);
     }
 
+    crearUsuarioConRolUsuario(usuario: Usuario): Observable<Usuario> {
+        return this.http.post<Usuario>(`${this.apiUrl}/usuarios-rol-usuario`, usuario);
+    }
+
     actualizarUsuario(usuario: Usuario): Observable<Usuario> {
         return this.http.put<Usuario>(`${this.apiUrl}/usuarios/${usuario.id}`, usuario);
     }
