@@ -105,6 +105,10 @@ export class UserService {
         return this.http.post<Usuario>(`${this.apiUrl}/usuarios`, usuario);
     }
 
+    crearUsuarioConRolUsuario(usuario: Usuario): Observable<Usuario> {
+        return this.http.post<Usuario>(`${this.apiUrl}/usuarios-rol-usuario`, usuario);
+    }
+
     actualizarUsuario(usuario: Usuario): Observable<Usuario> {
         return this.http.put<Usuario>(`${this.apiUrl}/usuarios/${usuario.id}`, usuario);
     }
@@ -157,20 +161,13 @@ export class UserService {
      * @returns Observable con un array de usuarios disponibles.
      */
     getUsuariosSinRolEspecialistaNiPaciente(noCache = false) {
-        const url = `${this.apiUrl}/usuarios-disponibles`;
+        const url = `${this.apiUrl}/usuarios/listar/usuarios`;
         const params: any = {};
-
-        if (noCache) {
-            params._ts = Date.now().toString(); // cache-buster
-        }
+        if (noCache) params._ts = Date.now().toString();
 
         return this.http.get<{ data: UsuarioDisponible[] }>(url, {
             params,
-            headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                'Expires': '0',
-            },
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0' },
         });
     }
 
@@ -287,7 +284,7 @@ export class UserService {
     }
 
     getPacientes(): Observable<Paciente[]> {
-        return this.http.get<Paciente[]>('/api/pacientes/listado-minimo');
+        return this.http.get<Paciente[]>(`${this.apiUrl}/pacientes/listado-minimo`);
     }
 
     getEspecialistas(): Observable<Especialista[]> {
@@ -308,11 +305,11 @@ export class UserService {
      * @returns Observable con un array de pacientes con sus nombres y apellidos.
      */
     getPacientesPorNombre(): Observable<PacienteNombre[]> {
-        return this.http.get<PacienteNombre[]>('/pacientespornombre');
+        return this.http.get<PacienteNombre[]>(`${this.apiUrl}/pacientespornombre`);
     }
 
     getEspecialistaPorNombre(): Observable<EspecialistaNombre[]> {
-        return this.http.get<EspecialistaNombre[]>('/especialistapornombre');
+        return this.http.get<EspecialistaNombre[]>(`${this.apiUrl}/especialistapornombre`);
     }
 
     /**

@@ -94,22 +94,38 @@ class UserController extends Controller
         return response()->json($respuesta, $codigo);
     }
 
+    /**
+     * Crea un usuario con rol "usuario".
+     */
+    public function crearUsuarioRolUsuario(Request $request): JsonResponse
+    {
+        return $this->crearUsuarioGenerico($request, 'usuario', false);
+    }
+
+    /**
+     * Crea un usuario con rol "paciente" y su modelo Paciente.
+     */
+    public function crearUsuario(Request $request): JsonResponse
+    {
+        return $this->crearUsuarioGenerico($request, 'paciente', true);
+    }
+
 
     /**
      * 
-     * Función para crear un nuevo usuario.
+     * Función privada genérica para para crear un nuevo usuario y asignar un rol.
      * Valida los datos de entrada y crea un nuevo usuario en la base de datos.
      * 
      * @param Request $solicitud datos del usuario nuevo
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los datos del usuario creado o un mensaje de error.
      * @throws \Illuminate\Validation\ValidationException si la validación falla.
      */
-    public function crearUsuario(Request $solicitud): JsonResponse
+    private function crearUsuarioGenerico(Request $request, string $rolObjetivo, bool $crearPaciente): JsonResponse
     {
         $codigo = 201;
         $respuesta = [];
 
-        $validar = Validator::make($solicitud->all(), [
+        $validar = Validator::make($request->all(), [
             'nombre' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -127,53 +143,63 @@ class UserController extends Controller
             $codigo = 422;
             $respuesta = ['errors' => $validar->errors()];
         } else {
+            DB::beginTransaction();
             try {
                 $usuario = User::create([
-                    'nombre' => $solicitud->input('nombre'),
-                    'apellidos' => $solicitud->input('apellidos'),
-                    'email' => $solicitud->input('email'),
-                    'password' => Hash::make($solicitud->input('password')),
-                    'dni_usuario' => $solicitud->input('dni_usuario'),
+                    'nombre' => $request->input('nombre'),
+                    'apellidos' => $request->input('apellidos'),
+                    'email' => $request->input('email'),
+                    'password' => Hash::make($request->input('password')),
+                    'dni_usuario' => $request->input('dni_usuario'),
                 ]);
 
-                //Asignar el rol a usuario.
-                $usuario->assignRole('paciente');
+                //un solo rol a la vez
+                $usuario->syncRoles([$rolObjetivo]);
 
-                // Crear el modelo Paciente
-                $paciente = Paciente::create([
-                    'user_id' => $usuario->id,
-                    'numero_historial' => $this->generarNumeroHistorialUnico(),
-                    'fecha_alta' => now(),
-                ]);
+                if ($crearPaciente) {
+                    $paciente = Paciente::create([
+                        'user_id' => $usuario->id,
+                        'numero_historial' => $this->generarNumeroHistorialUnico(),
+                        'fecha_alta' => now(),
+                    ]);
 
-                // Determinar quién crea al paciente (Administrador o Especialista)
-                $especialistaNombre = auth()->user()?->nombre ?? 'uno de nuestros especialistas';
+                    // para que un fallo de mail no rompa la creación
+                    try {
+                        $especialistaNombre = auth()->user()?->nombre ?? 'uno de nuestros especialistas';
+                        Notification::send($usuario, new PacienteAltaNotificacion(
+                            nombreEspecialista: $especialistaNombre,
+                            numeroHistorial: $paciente->numero_historial,
+                        ));
+                    } catch (\Throwable $e) {
+                        Log::warning('No se pudo enviar notificación de alta de paciente: ' . $e->getMessage());
+                    }
 
-                // Notificar al nuevo paciente por email
-                Notification::send($usuario, new PacienteAltaNotificacion(
-                    nombreEspecialista: $especialistaNombre,
-                    numeroHistorial: $paciente->numero_historial,
-                ));
+                    $respuesta = ['user' => $usuario->load('roles'), 'paciente' => $paciente];
+                } else {
+                    $respuesta = ['user' => $usuario->load('roles')];
+                }
 
-                $this->registrarLog(auth()->id(), 'crear_usuario', 'users', $usuario->id);
+                $this->registrarLog(auth()->id(), 'crear_usuario_' . $rolObjetivo, 'users', $usuario->id);
 
-                $respuesta = $usuario->load('roles');
+                DB::commit();
             } catch (QueryException $e) {
+                DB::rollBack();
                 $codigo = 500;
                 $respuesta = [
                     'errors' => [
-                        'general' => ['Error en la base de datos. Revisa que el email o DNI no estén duplicados.']
+                        'general' => ['Error en la base de datos. Revisa duplicados o constraints.']
                     ]
                 ];
-                $this->logError(auth()->id(), 'Error al crear usuario (DB)', $e->getMessage());
+                $this->logError(auth()->id(), 'Error DB crear usuario (' . $rolObjetivo . ')', $e->getMessage());
             } catch (\Exception $e) {
+                DB::rollBack();
                 $codigo = 500;
                 $respuesta = [
                     'errors' => [
                         'general' => ['Ocurrió un error inesperado al crear el usuario.']
                     ]
                 ];
-                $this->logError(auth()->id(), 'Error inesperado al crear usuario', $e->getMessage());
+                $this->logError(auth()->id(), 'Error inesperado crear usuario (' . $rolObjetivo . ')', $e->getMessage());
             }
         }
 
