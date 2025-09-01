@@ -101,12 +101,12 @@ export class UserService {
         return this.http.get<{ pacientes: Paciente[] }>(`${this.apiUrl}/pacientes`);
     }
 
-    crearUsuario(usuario: Usuario): Observable<Usuario> {
-        return this.http.post<Usuario>(`${this.apiUrl}/usuarios`, usuario);
+    crearUsuario(usuario: Usuario): Observable<{ user: Usuario }> {
+        return this.http.post<{ user: Usuario }>(`${this.apiUrl}/usuarios`, usuario);
     }
 
-    crearUsuarioConRolUsuario(usuario: Usuario): Observable<Usuario> {
-        return this.http.post<Usuario>(`${this.apiUrl}/usuarios-rol-usuario`, usuario);
+    crearUsuarioConRolUsuario(usuario: Usuario): Observable<{ user: Usuario }> {
+        return this.http.post<{ user: Usuario }>(`${this.apiUrl}/usuarios-rol-usuario`, usuario);
     }
 
     actualizarUsuario(usuario: Usuario): Observable<Usuario> {

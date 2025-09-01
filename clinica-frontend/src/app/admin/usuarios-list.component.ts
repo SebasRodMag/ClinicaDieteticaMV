@@ -218,6 +218,7 @@ export class UsuariosListComponent implements OnInit, AfterViewInit {
                 error: (error) => {
                     if(error.status === 422) {
                         this.erroresModal = error.error.errors || {};
+                        this.mostrarMensaje('Revisa los campos del formulario.', 'error');
                     }else{
                         this.mostrarMensaje('Error al crear usuario.', 'error');
                         console.warn('Error al crear usuario:', error);

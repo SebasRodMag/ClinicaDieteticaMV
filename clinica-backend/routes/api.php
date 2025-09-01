@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('pacienteslistado', [PacienteController::class, 'pacientesConEspecialista']);
         Route::get('usuarios/{id}', [UserController::class, 'verUsuario']);
         Route::post('usuarios', [UserController::class, 'crearUsuario']);
-        Route::post('usuarios-rol-usuario', [UserController::class, 'usuarioConRolUsuario']);
+        Route::post('usuarios-rol-usuario', [UserController::class, 'crearUsuarioRolUsuario']);
         Route::put('usuarios/{id}', [UserController::class, 'actualizarUsuario']);
         Route::delete('usuarios/{id}', [UserController::class, 'borrarUsuario']);
         Route::get('usuarios/listar/usuarios', [UserController::class, 'getUsuariosSinRolEspecialistaNiPaciente']);
