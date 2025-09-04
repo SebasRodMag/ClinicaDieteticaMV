@@ -33,24 +33,44 @@ export class ModalEditHistorialComponent implements OnChanges, OnInit {
         private snackBar: MatSnackBar
     ) { }
 
-    ngOnInit(): void {}
+    ngOnInit(): void { }
 
     ngOnChanges(changes: SimpleChanges): void {
-        //Cuando se abre el modal, si no hay fecha se pone hoy
         if (changes['visible'] && this.visible) {
             if (!this.historial.fecha) {
                 this.historial.fecha = this.fechaActual;
             }
-            if (this.listaPacientes  && this.listaPacientes .length) {
-                // Usar los pacientes que vinieron del padre (modal abre listo)
-                this.pacientes = this.listaPacientes ;
+            // Si es nuevo y viene id_paciente, se pre selecciona y evita carga completa
+            const id = this.historial.id_paciente != null ? Number(this.historial.id_paciente) : NaN;
+            if (this.esNuevo && Number.isFinite(id)) {
+                // construimos una lista mínima con sólo ese paciente
+                const etiqueta = (this.pacienteNombre || 'Paciente seleccionado').trim();
+                this.pacientes = [{ id, nombreCompleto: etiqueta }];
+                this.cargandoPacientes = false;
+                // Asegura selección y resumen
+                this.preseleccionarPaciente();
+                this.mostrarResumenPaciente();
+                return;
+            }
+
+            if (this.listaPacientes && this.listaPacientes.length) {
+                this.pacientes = this.listaPacientes.map((p: any) => ({
+                    id: Number(p.id),
+                    nombreCompleto: p.nombreCompleto ?? `${p.nombre ?? ''} ${p.apellidos ?? ''}`.trim()
+                }));
+                this.aseguraseIdPacientePresente();
                 this.cargandoPacientes = false;
                 this.preseleccionarPaciente();
                 this.mostrarResumenPaciente();
             } else {
-                // Fallback: se carga desde el modal
                 this.cargarPacientes();
             }
+        }
+
+        // Si cambia el historial con el modal visible, reintenta preselect
+        if (changes['historial'] && this.visible && this.pacientes.length) {
+            this.preseleccionarPaciente();
+            this.mostrarResumenPaciente();
         }
     }
 
@@ -59,9 +79,10 @@ export class ModalEditHistorialComponent implements OnChanges, OnInit {
         this.historialService.obtenerPacientesEspecialista().subscribe({
             next: (data) => {
                 this.pacientes = (data as any[]).map(p => ({
-                    ...p,
-                    nombreCompleto: `${p.nombre} ${p.apellidos}`.trim()
+                    id: Number(p.id),
+                    nombreCompleto: `${p.nombre ?? ''} ${p.apellidos ?? ''}`.trim()
                 }));
+                this.aseguraseIdPacientePresente();
                 this.preseleccionarPaciente();
                 this.mostrarResumenPaciente();
                 this.cargandoPacientes = false;
@@ -74,22 +95,28 @@ export class ModalEditHistorialComponent implements OnChanges, OnInit {
     }
 
     private preseleccionarPaciente(): void {
-        if (this.historial.id_paciente && this.pacientes.some(p => p.id === this.historial.id_paciente)) {
+        const nestedId = (this.historial as any)?.paciente?.id;
+        if (nestedId) this.historial.id_paciente = Number(nestedId);
+
+        const id = this.historial.id_paciente != null ? Number(this.historial.id_paciente) : null;
+        if (id && this.pacientes.some(p => Number(p.id) === id)) {
+            this.historial.id_paciente = id;
             return;
         }
 
-        //Si no tenemos el id, se busca por nombre
         const nombre = (this.pacienteNombre || '').trim().toLowerCase();
         if (nombre) {
-            const encontrado = this.pacientes.find(p => p.nombreCompleto.trim().toLowerCase() === nombre);
+            const encontrado = this.pacientes.find(p => (p.nombreCompleto || '').trim().toLowerCase() === nombre);
             if (encontrado) {
-                this.historial.id_paciente = encontrado.id;
+                this.historial.id_paciente = Number(encontrado.id);
+                return;
             }
         }
     }
 
     mostrarResumenPaciente(): void {
-        this.pacienteSeleccionado = this.pacientes.find(p => p.id === this.historial.id_paciente) ?? null;
+        const id = this.historial.id_paciente ? Number(this.historial.id_paciente) : null;
+        this.pacienteSeleccionado = id ? this.pacientes.find(p => Number(p.id) === id) ?? null : null;
     }
 
     calcularEdad(fechaNacimiento: string): number {
@@ -123,6 +150,19 @@ export class ModalEditHistorialComponent implements OnChanges, OnInit {
         ].some(campo => campo.length > 0);
 
         return !!id_paciente && fechaValida && hayContenido;
+    }
+
+    /** Asegura que el id_paciente del historial esté en this.pacientes */
+    private aseguraseIdPacientePresente(): void {
+        const id = this.historial.id_paciente != null ? Number(this.historial.id_paciente) : NaN;
+        if (!Number.isFinite(id)) return;
+
+        const yaEsta = this.pacientes.some(p => Number(p.id) === id);
+        if (!yaEsta) {
+            // Usa pacienteNombre como etiqueta si no tenemos más info
+            const etiqueta = (this.pacienteNombre || 'Paciente seleccionado').trim();
+            this.pacientes.push({ id, nombreCompleto: etiqueta });
+        }
     }
 
 }

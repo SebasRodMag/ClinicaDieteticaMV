@@ -46,6 +46,10 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     pacientesPrecargados: any[] = [];
     formatearFecha = formatearFecha;
 
+    listaPacientesParaModal: Array<{ id: number; nombreCompleto: string }> = [];
+    historialSeleccionado: Partial<Historial> = {};
+    modalVisible = false;
+    esNuevo = true;
     filtroTexto: string = '';
 
     loading: boolean = false;
@@ -222,6 +226,11 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         this.citaSeleccionada = null;
     }
 
+    cerrarModalInfo(): void {
+        this.modalInfoCitaVisible = false;
+        this.citaSeleccionada = null;
+    }
+
     cancelarCitaDesdeCalendario(idCita: number): void {
         const cita = this.citas.find(c => c.id === idCita);
         if (!cita) return;
@@ -286,6 +295,13 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
                     });
                     idPaciente = encontrado?.id ?? null;
                 }
+
+                // ✨ nombre para el ng-select, sacado de la lista real
+                const encontradoEnLista = (pacientes || []).find((p: any) => Number(p.id) === Number(idPaciente));
+                const nombreCompleto = encontradoEnLista
+                    ? `${encontradoEnLista.nombre} ${encontradoEnLista.apellidos}`.trim()
+                    : (evt.nombre_paciente || 'Paciente');
+
                 this.borradorHistorial = {
                     id_paciente: idPaciente ?? undefined,
                     fecha: evt.fecha,
@@ -295,8 +311,12 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
                     lista_compra: '',
                     id_especialista: this.especialistaId ?? undefined
                 };
+                this.listaPacientesParaModal = idPaciente ? [{ id: Number(idPaciente), nombreCompleto }] : [];
 
-                this.pacientesPrecargados = pacientes;
+                // (opcional) si usas borradorHistorial para crear, puedes hacer:
+                this.historialSeleccionado = { ...this.borradorHistorial };
+
+                this.pacientesPrecargados = pacientes; // por si lo necesitas en otro sitio
                 this.modalHistorialVisible = true;
                 this.cargandoModalHistorial = false;
             },
@@ -324,5 +344,27 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
             return;
         }
         this.cancelarCita(cita);
+    }
+
+    abrirEdicionDesdeCalendario(payload: {
+        id_paciente: number | null;
+        id_cita: number;
+        fecha: string;
+        nombre_paciente?: string;
+        dni_paciente?: string;
+    }) {
+        const id = payload.id_paciente != null ? Number(payload.id_paciente) : null;
+        const nombre = (payload.nombre_paciente || '').trim();
+
+        // 1) Historial con el paciente de la cita
+        this.historialSeleccionado = { id_paciente: id ?? undefined, fecha: payload.fecha,
+        };
+
+        // 2) Lista mínima para el ng-select (evita fallback)
+        this.listaPacientesParaModal = id ? [{ id, nombreCompleto: nombre || 'Paciente' }] : [];
+
+        // 3) Abre el modal correcto
+        this.esNuevo = true;
+        this.modalHistorialVisible = true;
     }
 }

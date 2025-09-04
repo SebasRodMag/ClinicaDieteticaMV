@@ -39,7 +39,7 @@ export class HistorialListComponent implements OnInit {
     public colorSistema: string = '#28a745';
 
     columnas = ['fecha', 'paciente', 'observaciones', 'acciones'];
-    templatesMap: { [key: string]: any } = {};
+    listaPacientesParaModal: Array<{ id: number; nombreCompleto: string }> = [];
 
 
 
@@ -223,6 +223,31 @@ export class HistorialListComponent implements OnInit {
         this.pacientesUnicos = Array.from(pacientesMap.entries()).map(([id, nombre]) => ({ id, nombre }));
     }
 
+    private normalizarIdPacienteDePayload(payload: {
+        id_paciente: number | null | string | undefined;
+        nombre_paciente?: string;
+    }): { id: number | null; nombre: string } {
+        let id: number | null = null;
+        if (payload.id_paciente !== undefined && payload.id_paciente !== null && payload.id_paciente !== '') {
+            const posible = Number(payload.id_paciente);
+            id = Number.isFinite(posible) ? posible : null;
+        }
+        const nombre = (payload.nombre_paciente || '').trim();
+        return { id, nombre };
+    }
+
+    private buildListaPacientesBase(): Array<{ id: number; nombreCompleto: string }> {
+        // Puedes construirla desde pacientesUnicos…
+        return (this.pacientesUnicos || []).map(p => ({ id: p.id, nombreCompleto: p.nombre }));
+    }
+
+    private ensurePacienteEnLista(id: number | null, nombre: string) {
+        if (!this.listaPacientesParaModal) this.listaPacientesParaModal = [];
+        if (id && !this.listaPacientesParaModal.some(p => p.id === id)) {
+            this.listaPacientesParaModal.push({ id, nombreCompleto: nombre || 'Paciente seleccionado' });
+        }
+    }
+
     get historialesFiltrados(): Historial[] {
         const filtroLower = this.filtro.toLowerCase().trim();
 
@@ -245,5 +270,14 @@ export class HistorialListComponent implements OnInit {
 
             return coincideFiltroTexto && coincideFecha && coincidePaciente;
         });
+    }
+
+    get pacientesUnicosMapeados(): Array<{ id: number; nombreCompleto: string }> {
+        return this.pacientesUnicos.map(p => ({ id: p.id, nombreCompleto: p.nombre }));
+    }
+
+    get pacienteNombreSeleccionado(): string {
+        const p = this.historialSeleccionado?.paciente;
+        return p ? `${p.user?.nombre ?? ''} ${p.user?.apellidos ?? ''}`.trim() : '';
     }
 }

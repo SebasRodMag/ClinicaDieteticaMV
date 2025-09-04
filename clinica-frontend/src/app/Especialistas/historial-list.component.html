@@ -44,7 +44,10 @@
         </div>
     </div>
 </div>
-
+<div class="alert alert-info small py-2">
+    <i class="bi bi-info-circle-fill me-1"></i>
+    Para exportar un historial, debes seleccionarlo en la tabla haciendo clic en él.
+</div>
 <!-- Tabla -->
 <app-tabla-historial [historiales]="historialesFiltrados" [historialSeleccionadoId]="historialSeleccionadoId"
     (editar)="abrirModalEditar($event)" (eliminar)="eliminarHistorial($event)" (ver)="abrirModalVer($event)"
@@ -52,7 +55,8 @@
 </app-tabla-historial>
 
 <app-modal-edit-historial *ngIf="modalVisible" [visible]="modalVisible" [historial]="historialSeleccionado"
-    [esNuevo]="esNuevo" [color]="colorSistema" (cerrar)="cerrarModal()" (guardar)="guardarHistorial($event)">
+    [esNuevo]="esNuevo" [color]="colorSistema" [listaPacientes]="pacientesUnicosMapeados"
+    [pacienteNombre]="pacienteNombreSeleccionado"(cerrar)="cerrarModal()" (guardar)="guardarHistorial($event)">
 </app-modal-edit-historial>
 
 <app-modal-ver-historial *ngIf="modalVerVisible && esHistorialValido(historialSeleccionado)" [visible]="modalVerVisible"
