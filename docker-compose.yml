@@ -36,7 +36,7 @@ services:
       DB_PASSWORD: clinica
       APP_ENV: local
       APP_URL: http://localhost:8081
-      SEED_ON_START: "true" # Cambiar a "true" si quieres que se ejecuten los seeders al iniciar
+      SEED_ON_START: "false" # Cambiar a "true" si quieres que se ejecuten los seeders al iniciar
     depends_on:
       db:
         condition: service_healthy
