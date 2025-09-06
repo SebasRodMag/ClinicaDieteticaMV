@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Documento;
+use App\Models\Paciente;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\Historial;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -125,43 +127,73 @@ class DocumentoController extends Controller
      * @throws \Exception lanza una excepción si ocurre un error al eliminar el documento.
      * 
      */
-    public function eliminarDocumento(int $id): JsonResponse
+    public function eliminarDocumento(int $id): \Illuminate\Http\JsonResponse
     {
-        $respuesta = [];
         $codigo = 200;
+        $payload = [];
+        $userId = auth()->id();
 
-        if (!is_numeric($id)) {
-            $this->registrarLog(auth()->id(), 'eliminar_documento_fallido', "ID inválido (no numérico): $id");
-            $respuesta = ['message' => 'ID inválido'];
-            $codigo = 400;
-        }
+        try {
+            // Validación de ID (por si el tipo no viene forzado por la ruta)
+            if (!is_numeric($id)) {
+                $this->registrarLog($userId, 'eliminar_documento_fallido', "ID inválido (no numérico): $id");
+                $codigo = 400;
+                $payload = ['message' => 'ID inválido'];
+            } else {
+                $documento = Documento::find($id);
 
-        $documento = Documento::find($id);
+                if (!$documento) {
+                    $this->registrarLog($userId, 'eliminar_documento_fallido', "Documento ID $id no encontrado");
+                    $codigo = 404;
+                    $payload = ['message' => 'Documento no encontrado'];
+                } else {
+                    $usuario = auth()->user();
+                    $esPropietario = $documento->user_id === $userId;
+                    $esAdmin = $usuario->hasRole('administrador');
 
-        if (!$documento) {
-            $this->registrarLog(auth()->id(), 'eliminar_documento_fallido', "Documento ID $id no encontrado");
-            $respuesta = ['message' => 'Documento no encontrado'];
-            $codigo = 404;
-        } elseif ($documento->user_id !== auth()->id() && !auth()->user()->hasRole('administrador')) {
-            $this->registrarLog(auth()->id(), 'eliminar_documento_denegado', "Acceso denegado a documento ID $id");
-            $respuesta = ['message' => 'No tienes permiso para eliminar este documento'];
-            $codigo = 403;
-        } else {
-            try {
-                Storage::disk('public')->delete($documento->archivo);
-                $documento->delete();
+                    if (!$esPropietario && !$esAdmin) {
+                        // solo propietario o admin pueden eliminar
+                        $this->registrarLog($userId, 'eliminar_documento_denegado', "Acceso denegado a documento ID $id");
+                        $codigo = 403;
+                        $payload = ['message' => 'No tienes permiso para eliminar este documento'];
+                    } else {
+                        //Intentamos borrar el archivo físico si existe
+                        $disk = Storage::disk('public');
+                        $archivoExiste = $documento->archivo && $disk->exists($documento->archivo);
 
-                $this->registrarLog(auth()->id(), 'eliminar_documento', "Documento ID $id eliminado");
+                        if ($archivoExiste) {
+                            try {
+                                $disk->delete($documento->archivo);
+                            } catch (\Throwable $e) {
+                                //Si falla el borrado físico, se registra pero continuamos con el borrado lógico
+                                $this->registrarLog(
+                                    $userId,
+                                    'eliminar_documento_aviso',
+                                    "No se pudo borrar el archivo físico para documento ID $id: {$e->getMessage()}"
+                                );
+                            }
+                        } else {
+                            $this->registrarLog(
+                                $userId,
+                                'eliminar_documento_aviso',
+                                "Archivo físico no encontrado para documento ID $id"
+                            );
+                        }
 
-                $respuesta = ['message' => 'Documento eliminado correctamente'];
-            } catch (\Exception $e) {
-                $this->registrarLog(auth()->id(), 'eliminar_documento_error', "Error eliminando documento: {$e->getMessage()}");
-                $respuesta = ['message' => 'Error al eliminar el documento'];
-                $codigo = 500;
+                        $documento->delete();
+
+                        $this->registrarLog($userId, 'eliminar_documento', "Documento ID $id eliminado");
+                        $payload = ['message' => 'Documento eliminado correctamente'];
+                    }
+                }
             }
+        } catch (\Throwable $e) {
+            $codigo = 500;
+            $payload = ['message' => 'Error al eliminar el documento'];
+            $this->registrarLog($userId, 'eliminar_documento_error', "Error eliminando documento ID $id: {$e->getMessage()}");
         }
 
-        return response()->json($respuesta, $codigo);
+        return response()->json($payload, $codigo);
     }
 
     /**
@@ -291,43 +323,132 @@ class DocumentoController extends Controller
      * @return JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse devuelve una respuesta JSON con el estado de la operación o un archivo descargable.
      * @throws \Exception lanza una excepción si ocurre un error al descargar el documento.
      */
-    public function descargarDocumento(int $id): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    public function descargarDocumento(int $id): JsonResponse|StreamedResponse
     {
+        $codigo = 200;
+        $respuesta = null; //puede ser JSON o StreamedResponse
+
         $documento = Documento::find($id);
 
         if (!$documento) {
             $this->registrarLog(auth()->id(), 'descargar_documento_fallido', "Documento ID $id no encontrado");
-            return response()->json(['message' => 'Documento no encontrado'], 404);
-        }
+            $codigo = 404;
+            $respuesta = response()->json(['message' => 'Documento no encontrado'], $codigo);
+        } else {
+            $usuario = auth()->user();
+            $esPropietario = $documento->user_id === $usuario->id;
+            $esEspecialistaRelacionado = false;
 
-        $usuario = auth()->user();
-        $esPropietario = $documento->user_id === $usuario->id;
-        $esEspecialistaRelacionado = false;
+            if ($usuario->hasRole('especialista')) {
+                $especialista = $usuario->especialista;
+                if ($especialista) {
+                    $pacienteId = Paciente::where('user_id', $documento->user_id)->value('id');
+                    $esEspecialistaRelacionado = $pacienteId
+                        ? $especialista->citas()
+                            ->where('id_paciente', $pacienteId)
+                            ->whereIn('estado', ['pendiente', 'confirmada', 'finalizada'])
+                            ->exists()
+                        : false;
+                }
+            }
 
-        if ($usuario->hasRole('especialista')) {
-            $especialista = $usuario->especialista;
-            if ($especialista) {
-                $esEspecialistaRelacionado = $especialista->citas()
-                    ->where('paciente_id', $documento->user_id)
-                    ->whereIn('estado', ['pendiente', 'confirmada', 'finalizada'])
-                    ->exists();
+            if (!$esPropietario && !$usuario->hasRole('administrador') && !$esEspecialistaRelacionado) {
+                $this->registrarLog($usuario->id, 'descargar_documento_denegado', "Acceso denegado a documento ID $id");
+                $codigo = 403;
+                $respuesta = response()->json(['message' => 'No tienes permiso para descargar este documento'], $codigo);
+            } elseif (!Storage::disk('public')->exists($documento->archivo)) {
+                $this->registrarLog($usuario->id, 'descargar_documento_fallido', "Archivo físico no encontrado para documento ID $id");
+                $codigo = 404;
+                $respuesta = response()->json(['message' => 'Archivo no encontrado en el servidor'], $codigo);
+            } else {
+                $this->registrarLog($usuario->id, 'descargar_documento', "Descarga del documento ID $id");
+                $respuesta = Storage::disk('public')->download(
+                    $documento->archivo,
+                    $documento->nombre ?? basename($documento->archivo)
+                );
             }
         }
 
-        if (!$esPropietario && !$esEspecialistaRelacionado) {
-            $this->registrarLog($usuario->id, 'descargar_documento_denegado', "Acceso denegado a documento ID $id");
-            return response()->json(['message' => 'No tienes permiso para descargar este documento'], 403);
-        }
-
-        if (!Storage::disk('public')->exists($documento->archivo)) {
-            $this->registrarLog($usuario->id, 'descargar_documento_fallido', "Archivo físico no encontrado para documento ID $id");
-            return response()->json(['message' => 'Archivo no encontrado en el servidor'], 404);
-        }
-
-        $this->registrarLog($usuario->id, 'descargar_documento', "Descarga del documento ID $id");
-
-        return Storage::disk('public')->download($documento->archivo, $documento->nombre);
+        return $respuesta;
     }
+
+    //Método para recuperar los documentos de un paciente especifico recibiendo su ID
+    public function obtenerDocumentosPorPaciente(int $pacienteId): JsonResponse
+    {
+        $user = auth()->user();
+        $codigo = 200;
+        $respuesta = [];
+
+        // Solo admin o especialista pueden consultar
+        if (!$user->hasRole('administrador') && !$user->hasRole('especialista')) {
+            $codigo = 403;
+            $respuesta = ['message' => 'No autorizado para ver estos documentos'];
+            $this->registrarLog($user->id, 'obtener_documentos_paciente_denegado', "Acceso denegado a documentos del paciente ID $pacienteId");
+
+            return response()->json($respuesta, $codigo);
+        }
+
+        // Buscar paciente y su user_id
+        $paciente = Paciente::select('id', 'user_id')->find($pacienteId);
+        if (!$paciente) {
+            $codigo = 404;
+            $respuesta = ['message' => 'Paciente no encontrado'];
+            $this->registrarLog($user->id, 'obtener_documentos_paciente', "Paciente ID $pacienteId no encontrado");
+
+            return response()->json($respuesta, $codigo);
+        }
+
+        // (Esto no esta implementado, pero cabía la posibilidad que un especialista comparta documentos con paciente) si es especialista, validar que tenga relación con el paciente
+        // por ejemplo, que exista al menos una cita entre ambos
+        // if ($user->hasRole('especialista')) {
+        //     $tieneRelacion = $user->especialista?->citas()
+        //         ->where('id_paciente', $pacienteId)
+        //         ->exists();
+        //     if (!$tieneRelacion) {
+        //         $codigo = 403;
+        //         $respuesta = ['message' => 'No autorizado para ver documentos de este paciente'];
+        //         $this->registrarLog($user->id, 'obtener_documentos_paciente_denegado', "Especialista sin relación con paciente ID $pacienteId");
+        //         return response()->json($respuesta, $codigo);
+        //     }
+        // }
+
+        //Query para obtener los documentos del user del paciente
+        $query = Documento::query()
+            ->where(function ($q) use ($pacienteId, $paciente) {
+                $q->where('user_id', $paciente->user_id)
+                    ->orWhereHas('historial', function ($h) use ($pacienteId) {
+                        $h->where('id_paciente', $pacienteId);
+                    });
+            });
+
+        // Si es especialista, solo lo que está marcado como "compartido"
+        if ($user->hasRole('especialista')) {
+            $query->where('visible_para_especialista', 1);
+        }
+
+        $documentos = $query
+            ->with([
+                'historial:id,id_paciente',
+                'historial.paciente:id,user_id',
+            ])
+            ->orderByDesc('created_at')
+            ->get();
+
+        if ($documentos->isEmpty()) {
+            $respuesta = [
+                'message' => 'No hay documentos disponibles para este paciente',
+                'documentos' => [],
+            ];
+            $this->registrarLog($user->id, 'obtener_documentos_paciente', "Sin documentos para paciente ID $pacienteId");
+        } else {
+            $respuesta = ['documentos' => $documentos];
+            $this->registrarLog($user->id, 'obtener_documentos_paciente', "Documentos del paciente ID $pacienteId listados correctamente");
+        }
+
+        return response()->json($respuesta, $codigo);
+    }
+
+
 
 
 }

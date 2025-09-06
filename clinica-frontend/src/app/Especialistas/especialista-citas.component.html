@@ -53,14 +53,15 @@
 
 <!-- Modal para ver detalles de la cita -->
 <app-modal-info-cita *ngIf="modalInfoCitaVisible && citaSeleccionada" [citaSeleccionada]="citaSeleccionada"
-    [esEspecialista]="true" (cerrado)="modalInfoCitaVisible = false" (irACita)="abrirHistorialParaCita($event)"
+    [esEspecialista]="true" (cerrado)="modalInfoCitaVisible = false" (irACita)="abrirEdicionDesdeCalendario($event)"
     (estadoActualizado)="actualizarEstadoCita($event)" (cancelar)="cancelarCitaDesdeModal($event)">
 </app-modal-info-cita>
 
 <!-- Modal de historial -->
 <app-modal-edit-historial *ngIf="modalHistorialVisible" [visible]="modalHistorialVisible" [esNuevo]="true"
-    [historial]="borradorHistorial" [pacienteNombre]="pacienteNombre" [listaPacientes]="pacientesPrecargados"
-    (cerrar)="modalHistorialVisible = false" (guardar)="guardarHistorial($event)">
+    [historial]="historialSeleccionado" [pacienteNombre]="pacienteNombreParaModal"
+    [listaPacientes]="listaPacientesParaModal" (cerrar)="modalHistorialVisible = false"
+    (guardar)="guardarHistorial($event)">
 </app-modal-edit-historial>
 
 <div *ngIf="modalInfoCitaVisible || modalHistorialVisible" class="modal-backdrop fade show"></div>

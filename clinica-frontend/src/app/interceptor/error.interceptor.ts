@@ -47,6 +47,11 @@ export class ErrorInterceptor implements HttpInterceptor {
                     case 404:
                         errorMessage = 'Recurso no encontrado.';
                         break;
+                    case 422:
+                        // Error de validación de datos
+                        errorMessage = 'Error de validación de datos.';
+                        // Dejo que el componente muestre errores de formulario.
+                        return throwError(() => error);
                     case 500:
                         errorMessage = 'Error interno del servidor.';
                         break;

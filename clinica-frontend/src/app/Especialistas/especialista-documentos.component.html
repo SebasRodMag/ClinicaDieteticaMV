@@ -1,0 +1,45 @@
+<div class="container mt-4">
+    <h2 class="mb-3">Documentos compartidos por pacientes</h2>
+
+    <ng-container *ngIf="cargandoPacientes; else contenido">
+        <div class="text-center my-3" role="status" aria-busy="true">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando pacientes...</span>
+            </div>
+        </div>
+    </ng-container>
+
+    <ng-template #contenido>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Paciente</label>
+                <ng-select [items]="pacientes" bindLabel="nombreCompleto" bindValue="id"
+                    placeholder="Selecciona un paciente" [(ngModel)]="pacienteSeleccionadoId"
+                    (ngModelChange)="seleccionarPaciente($event)" [searchable]="true" [loading]="cargandoPacientes"
+                    [notFoundText]="'No se encontraron pacientes'" [disabled]="cargandoPacientes || !pacientes.length">
+                </ng-select>
+            </div>
+        </div>
+
+        <div *ngIf="cargarDocumentos" class="text-center my-3" role="status" aria-busy="true">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando documentos...</span>
+            </div>
+        </div>
+
+        <div *ngIf="!cargarDocumentos && pacienteSeleccionadoId && documentosTabla.length === 0"
+            class="alert alert-info mt-3">
+            El paciente no ha compartido documentos.
+        </div>
+
+        <div *ngIf="!cargarDocumentos && documentosTabla.length > 0" class="mt-3">
+            <app-tabla-documentos [documentos]="documentosTabla" [mostrarDescargar]="true"
+                (descargar)="onDescargar($event)">
+            </app-tabla-documentos>
+        </div>
+
+        <div *ngIf="!cargarDocumentos && !pacienteSeleccionadoId" class="alert alert-secondary mt-3">
+            Selecciona un paciente para ver sus documentos.
+        </div>
+    </ng-template>
+</div>

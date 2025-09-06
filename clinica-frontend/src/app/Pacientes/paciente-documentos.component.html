@@ -44,31 +44,11 @@
 
 <h3 class="text-lg font-bold mb-2">Mis documentos subidos</h3>
 
-<div *ngIf="cargandoLista">Cargando documentos...</div>
-<!-- <div *ngIf="!cargandoLista && documentos.length === 0" class="text-muted">No tienes documentos subidos.</div> De este mensaje se encarga tabla-documentos-->
-
-<app-tabla-documentos [documentos]="documentos" [mostrarDescargar]="true" [mostrarEliminar]="true"
-    (descargar)="descargar($event)" (eliminar)="eliminar($event)">
-    <!-- Spinner de carga centralizado -->
-    <div *ngIf="cargandoLista"
-        class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
-        style="z-index: 2000;">
-        <div class="text-center">
-            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            <p class="mt-2">Cargando documentos...</p>
-        </div>
-    </div>
-    <!-- Spinner mientras se elimina un documento -->
-    <div *ngIf="cargandoEliminacion"
-        class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
-        style="z-index: 2000;">
-        <div class="text-center">
-            <div class="spinner-border text-danger" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Eliminando...</span>
-            </div>
-            <p class="mt-2">Eliminando documento...</p>
-        </div>
-    </div>
-</app-tabla-documentos>
+<div *ngIf="cargandoLista" class="text-center my-3">
+    <div class="spinner-border" role="status"><span class="visually-hidden">Cargando documentos...</span></div>
+</div>
+<div *ngIf="!cargandoLista" class="text-center my-3">
+    <app-tabla-documentos [documentos]="documentos" [mostrarDescargar]="true" [mostrarEliminar]="true"
+        (descargar)="descargar($event)" (eliminar)="eliminar($event)">
+    </app-tabla-documentos>
+</div>

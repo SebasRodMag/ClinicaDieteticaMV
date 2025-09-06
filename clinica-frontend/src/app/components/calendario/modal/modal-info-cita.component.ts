@@ -34,6 +34,7 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
     mensajeEstadoActualizado: string = '';
     tiposEstado: string[] = [];
     cargando: boolean = true;
+    listaPacientesParaModal: Array<{ id: number; nombreCompleto: string }> = [];
 
     private temporizadorUi: any;
 
@@ -239,4 +240,6 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
 
         return ahora >= cincoMinAntes && ahora <= noventaMinDespues;
     }
+
+    
 }

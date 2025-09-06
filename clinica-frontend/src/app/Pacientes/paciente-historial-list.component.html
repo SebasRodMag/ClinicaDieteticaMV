@@ -16,7 +16,10 @@
     </div>
 
 </div>
-
+<div class="alert alert-info small py-2">
+    <i class="bi bi-info-circle-fill me-1"></i>
+    Para exportar un historial debes seleccionarlo en la tabla haciendo clic en él.
+</div>
 
 <app-tabla-datos [datosTotales]="historialesFiltrados"
     [columnas]="['fecha', 'especialistaNombre', 'especialidad', 'acciones']" [columnaOrden]="columnaOrden"
@@ -52,9 +55,9 @@
 
 <!-- Plantilla para acciones -->
 <ng-template #accionesTemplate let-h>
-    <div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-primary" (click)="verHistorial(h)">Ver</button>
-        <button class="btn btn-outline-danger" (click)="exportarPDF(h)">PDF</button>
-        <button class="btn btn-outline-success" (click)="exportarCSV(h)">CSV</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" (click)="verHistorial(h)">Ver</button>
+        <button class="btn btn-outline-danger btn-sm" (click)="exportarPDF(h)">PDF</button>
+        <button class="btn btn-outline-success btn-sm" (click)="exportarCSV(h)">CSV</button>
     </div>
 </ng-template>

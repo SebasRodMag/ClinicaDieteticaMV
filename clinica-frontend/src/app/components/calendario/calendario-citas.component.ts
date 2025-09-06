@@ -4,7 +4,7 @@ import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { ConfiguracionService } from '../../service/Config-Service/configuracion.service';
-import { CitaGenerica } from '../../models/cita-generica.model';
+import { CitaGenerica, CitaGenericaExtendida } from '../../models/cita-generica.model';
 import { convertirFechaAISO } from '../utilidades/sanitizar.utils';
 
 @Component({
@@ -20,7 +20,7 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
     @Output() citaCancelada = new EventEmitter<number>();
     @Output() recargarCitas = new EventEmitter<void>();
 
-    
+
 
     colorSistema: string = '#b7bbc2ff';  //<-----Color por defecto #b7bbc2ff
     cargandoActualizarEstado: boolean = false;
@@ -70,7 +70,6 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
 
     private actualizarEventos(): void {
         if (!this.citas || this.citas.length === 0) {
-            console.warn('No hay citas para mostrar en el calendario.');
             this.calendarOptions.events = [];
             return;
         }
@@ -78,17 +77,31 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
         const eventos = this.citas.map((cita) => {
             const fechaISO = convertirFechaAISO(cita.fecha);
             const hora = cita.hora?.slice(0, 5) || '12:00';
+            const idPaciente = this.extraerIdPaciente(cita);
+
+            const citaExtendida: CitaGenericaExtendida = {
+                ...cita,
+                id_paciente: idPaciente ?? undefined,
+                paciente_id: idPaciente ?? undefined,
+                paciente: idPaciente ? { id: idPaciente } : undefined,
+            };
 
             return {
                 id: String(cita.id),
                 title: this.generarTituloCita(cita),
                 start: `${fechaISO}T${hora}`,
                 allDay: false,
-                extendedProps: cita,
+                extendedProps: citaExtendida,
             };
         });
 
         this.calendarOptions.events = eventos;
+
+        //Emitimos la cita extendido con id_paciente
+        this.calendarOptions.eventClick = (event) => {
+            const cita: CitaGenericaExtendida = event.event.extendedProps as CitaGenericaExtendida;
+            this.citaClick.emit(cita);
+        };
     }
 
     private generarTituloCita(cita: CitaGenerica): string {
@@ -100,4 +113,14 @@ export class CalendarioCitasComponent implements OnInit, OnChanges {
     private obtenerCitaPorId(id: number): CitaGenerica | null {
         return this.citas.find(c => c.id === id) || null;
     }
+
+    private extraerIdPaciente(cita: CitaGenerica): number | null {
+        const c: any = cita;
+        if (typeof c.id_paciente === 'number') return c.id_paciente;
+        if (typeof c.paciente_id === 'number') return c.paciente_id;
+        if (c.paciente && typeof c.paciente.id === 'number') return c.paciente.id;
+        return null; // CitaPorPaciente no trae id
+    }
+
+
 }

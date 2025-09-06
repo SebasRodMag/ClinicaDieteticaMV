@@ -16,6 +16,7 @@ import { EspecialistaCitasComponent } from './Especialistas/especialista-citas.c
 import { PacienteHistorialListComponent } from './Pacientes/paciente-historial-list.component';
 import { PacientesCitasComponent } from './Pacientes/pacientes-citas.component';
 import { PacienteDocumentosComponent } from './Pacientes/paciente-documentos.component';
+import { EspecialistaDocumentosComponent } from './Especialistas/especialista-documentos.component';
 
 import { PacienteDashboardComponent } from './Pacientes/paciente-dashboard.component';
 import { EspecialistaDashboardComponent } from './Especialistas/especialista-dashboard.component';
@@ -80,6 +81,7 @@ export const routes: Routes = [
         children: [
             { path: 'citas', component: EspecialistaCitasComponent },
             { path: 'historiales', component: HistorialListComponent },
+            { path: 'documentos', component: EspecialistaDocumentosComponent },
             { path: '', redirectTo: 'citas', pathMatch: 'full' },
 
         ],

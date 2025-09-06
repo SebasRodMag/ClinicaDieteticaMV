@@ -4,10 +4,24 @@
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
         <div class="mb-3">
             <label for="email" class="form-label">Correo electrónico</label>
-            <input type="email" id="email" formControlName="email" class="form-control"
-                [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
-                placeholder="usuario@ejemplo.com" (keydown.enter)="focusPasswordInput()" #emailInput />
-            <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="invalid-feedback">
+
+            <div class="position-relative">
+                <input type="email" id="email" formControlName="email" class="form-control pe-5"
+                    [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+                    placeholder="usuario@ejemplo.com" (keydown.enter)="focoEnPassword()" #emailInput
+                    autocomplete="username" />
+
+                <!-- Botón limpiar -->
+                <button type="button"
+                    class="btn btn-outline-secondary btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
+                    style="height: 32px; width: 32px; padding: 0;" (click)="limpiarEmail()" aria-label="Borrar correo"
+                    tabindex="-1">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+
+            <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+                class="invalid-feedback d-block">
                 <div *ngIf="loginForm.get('email')?.errors?.['required']">El correo es obligatorio.</div>
                 <div *ngIf="loginForm.get('email')?.errors?.['email']">Debe ser un correo válido.</div>
             </div>
@@ -16,20 +30,22 @@
         <div class="mb-3">
             <label for="password" class="form-label">Contraseña</label>
 
-            <div class="input-group">
+            <!-- Igual que en el modal -->
+            <div class="position-relative">
                 <input [type]="mostrarPassword ? 'text' : 'password'" id="password" formControlName="password"
-                    class="form-control"
+                    class="form-control pe-5"
                     [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-                    placeholder="*****" #passwordInput (keydown.enter)="onSubmit()" />
+                    placeholder="*****" #passwordInput (keydown.enter)="onSubmit()" autocomplete="current-password" />
 
-                <button type="button" class="btn btn-outline-secondary" (mousedown)="mostrarPassword = true"
-                    (mouseup)="mostrarPassword = false" (mouseleave)="mostrarPassword = false" [disabled]="loading"
-                    aria-label="Mostrar contraseña mientras se mantenga pulsado">
+                <button type="button"
+                    class="btn btn-outline-secondary btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
+                    style="height: 32px; width: 32px; padding: 0;" (click)="ocultarPassword()" [disabled]="loading"
+                    [attr.aria-pressed]="mostrarPassword" aria-label="Mostrar/Ocultar contraseña" tabindex="-1">
                     <i class="bi" [ngClass]="mostrarPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
                 </button>
             </div>
 
-            <!-- Feedback debajo del input-group -->
+            <!-- Feedback debajo como ya tienes -->
             <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
                 class="invalid-feedback d-block">
                 <div *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es obligatoria.</div>

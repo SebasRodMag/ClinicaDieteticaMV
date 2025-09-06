@@ -40,7 +40,7 @@ export class LoginComponent implements OnInit {
   }
 
   //Método para enfocar el input en la contraseña al presionar Enter en el input de email
-  focusPasswordInput(): void {
+  focoEnPassword(): void {
     if (this.passwordInput) {
       this.passwordInput.nativeElement.focus();
     }
@@ -90,4 +90,13 @@ export class LoginComponent implements OnInit {
   volverLanding() {
     this.router.navigate(['/']);
   }
+
+  ocultarPassword(): void {
+  this.mostrarPassword = !this.mostrarPassword;
+}
+
+limpiarEmail(): void {
+  this.loginForm.get('email')?.setValue('');
+  this.emailInput?.nativeElement.focus();
+}
 }
