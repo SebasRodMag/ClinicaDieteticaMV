@@ -59,7 +59,7 @@
 
 <!-- Modal de historial -->
 <app-modal-edit-historial *ngIf="modalHistorialVisible" [visible]="modalHistorialVisible" [esNuevo]="true"
-    [historial]="historialSeleccionado" [pacienteNombre]="listaPacientesParaModal[0].nombreCompleto || ''"
+    [historial]="historialSeleccionado" [pacienteNombre]="pacienteNombreParaModal"
     [listaPacientes]="listaPacientesParaModal" (cerrar)="modalHistorialVisible = false"
     (guardar)="guardarHistorial($event)">
 </app-modal-edit-historial>

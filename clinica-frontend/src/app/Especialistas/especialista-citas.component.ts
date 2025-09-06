@@ -264,7 +264,6 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         dni_paciente?: string;
     }) {
         this.pacienteNombre = evt.nombre_paciente ?? '';
-        // Cierra el modal-info
         this.modalInfoCitaVisible = false;
         this.cargandoModalHistorial = true;
 
@@ -295,8 +294,6 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
                     });
                     idPaciente = encontrado?.id ?? null;
                 }
-
-                // ✨ nombre para el ng-select, sacado de la lista real
                 const encontradoEnLista = (pacientes || []).find((p: any) => Number(p.id) === Number(idPaciente));
                 const nombreCompleto = encontradoEnLista
                     ? `${encontradoEnLista.nombre} ${encontradoEnLista.apellidos}`.trim()
@@ -313,10 +310,9 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
                 };
                 this.listaPacientesParaModal = idPaciente ? [{ id: Number(idPaciente), nombreCompleto }] : [];
 
-                // (opcional) si usas borradorHistorial para crear, puedes hacer:
                 this.historialSeleccionado = { ...this.borradorHistorial };
 
-                this.pacientesPrecargados = pacientes; // por si lo necesitas en otro sitio
+                this.pacientesPrecargados = pacientes;
                 this.modalHistorialVisible = true;
                 this.cargandoModalHistorial = false;
             },
@@ -355,16 +351,16 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     }) {
         const id = payload.id_paciente != null ? Number(payload.id_paciente) : null;
         const nombre = (payload.nombre_paciente || '').trim();
-
-        // 1) Historial con el paciente de la cita
-        this.historialSeleccionado = { id_paciente: id ?? undefined, fecha: payload.fecha,
+        this.historialSeleccionado = {
+            id_paciente: id ?? undefined, fecha: payload.fecha,
         };
-
-        // 2) Lista mínima para el ng-select (evita fallback)
         this.listaPacientesParaModal = id ? [{ id, nombreCompleto: nombre || 'Paciente' }] : [];
-
-        // 3) Abre el modal correcto
         this.esNuevo = true;
         this.modalHistorialVisible = true;
+    }
+
+    //Para facilitar el nombre del paciente en el modal ya que varia dependiendo desde donde se accede al mismo
+    get pacienteNombreParaModal(): string {
+        return this.listaPacientesParaModal[0]?.nombreCompleto || this.pacienteNombre || '';
     }
 }

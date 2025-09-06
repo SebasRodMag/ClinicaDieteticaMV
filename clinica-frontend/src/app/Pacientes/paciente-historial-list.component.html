@@ -55,9 +55,9 @@
 
 <!-- Plantilla para acciones -->
 <ng-template #accionesTemplate let-h>
-    <div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-primary" (click)="verHistorial(h)">Ver</button>
-        <button class="btn btn-outline-danger" (click)="exportarPDF(h)">PDF</button>
-        <button class="btn btn-outline-success" (click)="exportarCSV(h)">CSV</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" (click)="verHistorial(h)">Ver</button>
+        <button class="btn btn-outline-danger btn-sm" (click)="exportarPDF(h)">PDF</button>
+        <button class="btn btn-outline-success btn-sm" (click)="exportarCSV(h)">CSV</button>
     </div>
 </ng-template>

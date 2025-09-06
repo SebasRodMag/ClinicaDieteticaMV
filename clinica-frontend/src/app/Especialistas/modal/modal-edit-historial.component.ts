@@ -67,7 +67,6 @@ export class ModalEditHistorialComponent implements OnChanges, OnInit {
             }
         }
 
-        // Si cambia el historial con el modal visible, reintenta preselect
         if (changes['historial'] && this.visible && this.pacientes.length) {
             this.preseleccionarPaciente();
             this.mostrarResumenPaciente();
@@ -152,14 +151,15 @@ export class ModalEditHistorialComponent implements OnChanges, OnInit {
         return !!id_paciente && fechaValida && hayContenido;
     }
 
-    /** Asegura que el id_paciente del historial esté en this.pacientes */
+    //Asegurar que el id_paciente del historial esté en this.pacientes
+    //Esto depende desde donde se esta pasando, ya que el mismo modal puede usarse en varios contextos
     private aseguraseIdPacientePresente(): void {
         const id = this.historial.id_paciente != null ? Number(this.historial.id_paciente) : NaN;
         if (!Number.isFinite(id)) return;
 
         const yaEsta = this.pacientes.some(p => Number(p.id) === id);
         if (!yaEsta) {
-            // Usa pacienteNombre como etiqueta si no tenemos más info
+            //Se usa pacienteNombre como etiqueta si no tenemos más info
             const etiqueta = (this.pacienteNombre || 'Paciente seleccionado').trim();
             this.pacientes.push({ id, nombreCompleto: etiqueta });
         }

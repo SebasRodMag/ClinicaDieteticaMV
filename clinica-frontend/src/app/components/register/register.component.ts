@@ -1,21 +1,28 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../service/Auth-Service/Auth.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
+type RegisterPayload = {
+  nombre: string;
+  apellidos: string;
+  email: string;
+  dni_usuario: string;
+  password: string;
+  password_confirmation: string;
+};
 
-//Interfaz con tipos explícitos para los controles del formulario
 interface RegisterFormControls {
-  nombre: FormControl;
-  apellidos: FormControl;
-  email: FormControl;
-  password: FormControl;
-  password_confirmation: FormControl;
-  dni_usuario: FormControl;
-
+  nombre: FormControl<string | null>;
+  apellidos: FormControl<string | null>;
+  email: FormControl<string | null>;
+  password: FormControl<string | null>;
+  password_confirmation: FormControl<string | null>;
+  dni_usuario: FormControl<string | null>;
 }
+
 @Component({
   standalone: true,
   selector: 'app-register',
@@ -23,9 +30,8 @@ interface RegisterFormControls {
   styleUrls: ['./register.component.css'],
   imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule, RouterModule],
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent implements OnInit, AfterViewInit {
 
-  //Se declaran los ViewChild para cada input que quiere enfocar
   @ViewChild('nombreInput') nombreInput!: ElementRef;
   @ViewChild('apellidosInput') apellidosInput!: ElementRef;
   @ViewChild('emailInput') emailInput!: ElementRef;
@@ -33,7 +39,6 @@ export class RegisterComponent implements OnInit {
   @ViewChild('passwordInput') passwordInput!: ElementRef;
   @ViewChild('passwordConfirmationInput') passwordConfirmationInput!: ElementRef;
 
-  //Se crea un mapa para asociar los nombres de los campos con sus referencias de ElementRef
   private mapaCampos: { [key: string]: ElementRef | undefined } = {};
 
   registerForm: FormGroup;
@@ -48,33 +53,32 @@ export class RegisterComponent implements OnInit {
     private router: Router,
     private snackBar: MatSnackBar
   ) {
-    this.registerForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      apellidos: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      dni_usuario: ['', [Validators.required, Validators.pattern(/^[0-9]{8}[A-Za-z]$/)]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      password_confirmation: ['', [Validators.required]],
-    }, { validators: this.confirmarContraseña });
+    this.registerForm = this.fb.group(
+      {
+        nombre: ['', [Validators.required, Validators.minLength(2)]],
+        apellidos: ['', [Validators.required, Validators.minLength(2)]],
+        email: ['', [Validators.required, Validators.email]],
+        dni_usuario: ['', [Validators.required, Validators.pattern(/^[0-9]{8}[A-Za-z]$/)]],
+        password: ['', [Validators.required, Validators.minLength(6)]],
+        password_confirmation: ['', [Validators.required]],
+      },
+      { validators: this.confirmarContraseña }
+    );
   }
 
   ngOnInit(): void {
-    // Limpia los errores cuando el formulario cambia
+    // Para limpia errores al escribir
     this.registerForm.valueChanges.subscribe(() => {
       this.errorMessages = {};
     });
 
-    //Por las dudas que los inputs no estén cargados al momento de ejecutar ngOnInit,
-    //usamos setTimeout para darle un margen de tiempo hasta que los elementos estén disponibles.
+    //Enfocar primer campo
     setTimeout(() => {
-      if (this.nombreInput) {
-        this.nombreInput.nativeElement.focus();
-      }
+      if (this.nombreInput) this.nombreInput.nativeElement.focus();
     }, 0);
   }
 
   ngAfterViewInit(): void {
-    //Se asignan las referencias al mapa de mapaCampos para acceder a los inputs más fácil
     this.mapaCampos = {
       nombre: this.nombreInput,
       apellidos: this.apellidosInput,
@@ -85,12 +89,10 @@ export class RegisterComponent implements OnInit {
     };
   }
 
-  //Método para enfocar el campo siguiente
+  //Enfoca siguiente campo
   focusCampoSig(fieldName: string): void {
     const nextField = this.mapaCampos[fieldName];
-    if (nextField && nextField.nativeElement) {
-      nextField.nativeElement.focus();
-    }
+    if (nextField?.nativeElement) nextField.nativeElement.focus();
   }
 
   get formulario(): RegisterFormControls {
@@ -112,37 +114,55 @@ export class RegisterComponent implements OnInit {
     this.loading = true;
     this.errorMessages = {};
 
-    this.authService.register(this.registerForm.value).subscribe({
-      next: () => {
+    //Payload para crear usuario
+    const payload: RegisterPayload = {
+      nombre: this.formulario['nombre'].value ?? '',
+      apellidos: this.formulario['apellidos'].value ?? '',
+      email: this.formulario['email'].value ?? '',
+      dni_usuario: this.formulario['dni_usuario'].value ?? '',
+      password: this.formulario['password'].value ?? '',
+      password_confirmation: this.formulario['password_confirmation'].value ?? '',
+    };
+
+    this.authService.register(payload).subscribe({
+      next: (resp: any) => {
         this.loading = false;
-        this.snackBar.open('Registro exitoso. ¡Bienvenido!', 'Cerrar', {
+
+        if (resp?.access_token && resp?.user) {
+          this.snackBar.open('Registro exitoso. ¡Bienvenido!', 'Cerrar', {
+            duration: 3000,
+            panelClass: ['snackbar-success'],
+          });
+          this.router.navigate(['/']);
+          return;
+        }
+
+        //si el backend NO devuelve token, redirige a login
+        this.snackBar.open('Registro exitoso. Ahora inicia sesión.', 'Cerrar', {
           duration: 3000,
           panelClass: ['snackbar-success'],
         });
-        this.router.navigate(['/']);
+        this.router.navigate(['/login']);
       },
       error: (error) => {
         this.loading = false;
         console.error('[Register] Error:', error);
 
-        if (error.error?.errors) {
+        //Para mostrar errores de validación 422 bajo los campos
+        if (error?.error?.errors) {
           this.errorMessages = error.error.errors;
-
-          if (this.errorMessages['general']) {
-            this.snackBar.open(this.errorMessages['general'][0], 'Cerrar', {
-              duration: 4000,
-              panelClass: ['snackbar-error'],
-            });
-          }
-        } else {
-          this.snackBar.open('Error inesperado al registrarse.', 'Cerrar', {
-            duration: 4000,
-            panelClass: ['snackbar-error'],
-          });
         }
+
+        // Para mostrar los errores generales del backend
+        this.snackBar.open(
+          error?.error?.message || 'Los datos proporcionados no son válidos.',
+          'Cerrar',
+          { duration: 4000, panelClass: ['snackbar-error'] }
+        );
       }
     });
   }
+
   devolverError(): boolean {
     return this.errorMessages && Object.keys(this.errorMessages).length > 0;
   }

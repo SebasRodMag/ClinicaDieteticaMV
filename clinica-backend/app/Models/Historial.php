@@ -11,6 +11,7 @@ class Historial extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'historial';
+    protected $primaryKey = 'id';
 
     protected $fillable = [
         'id_paciente',
@@ -26,7 +27,7 @@ class Historial extends Model
 
     public function paciente()
     {
-        return $this->belongsTo(Paciente::class, 'id_paciente');
+        return $this->belongsTo(Paciente::class, 'id_paciente', 'id');
     }
 
     public function especialista()

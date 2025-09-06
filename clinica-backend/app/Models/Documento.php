@@ -23,6 +23,8 @@ class Documento extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'documentos';
+    protected $primaryKey = 'id';
+    public $timestamps = true;
 
     protected $fillable = [
         'historial_id',
@@ -46,7 +48,7 @@ class Documento extends Model
      */
     public function historial()
     {
-        return $this->belongsTo(Historial::class, 'historial_id');
+        return $this->belongsTo(Historial::class, 'historial_id', 'id');
     }
 
     /**

@@ -237,7 +237,6 @@ export class HistorialListComponent implements OnInit {
     }
 
     private buildListaPacientesBase(): Array<{ id: number; nombreCompleto: string }> {
-        // Puedes construirla desde pacientesUnicos…
         return (this.pacientesUnicos || []).map(p => ({ id: p.id, nombreCompleto: p.nombre }));
     }
 
@@ -279,5 +278,9 @@ export class HistorialListComponent implements OnInit {
     get pacienteNombreSeleccionado(): string {
         const p = this.historialSeleccionado?.paciente;
         return p ? `${p.user?.nombre ?? ''} ${p.user?.apellidos ?? ''}`.trim() : '';
+    }
+    //Para activar o desactivar los botones de exportar
+    get puedeExportar(): boolean {
+        return this.historialSeleccionadoId !== null;
     }
 }

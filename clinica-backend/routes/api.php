@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('mis-documentos', [DocumentoController::class, 'listarMisDocumentos']);
         Route::get('documentos/{id}', [DocumentoController::class, 'verDocumento']);
         Route::get('documentos/{id}/descargar', [DocumentoController::class, 'descargarDocumento']);
+        Route::get('/pacientes/{paciente}/documentos', [DocumentoController::class, 'obtenerDocumentosPorPaciente']);
         Route::delete('documentos/{id}', [DocumentoController::class, 'eliminarDocumento']);
         Route::get('citas/{id}/sala-segura', [CitaController::class, 'obtenerSalaSegura']);
         Route::post('nuevo-paciente', [PacienteController::class, 'nuevoPaciente']);
