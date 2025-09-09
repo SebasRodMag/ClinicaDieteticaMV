@@ -1,25 +1,35 @@
+<!-- Backdrop -->
 <div class="modal-backdrop fade show" *ngIf="visible"></div>
 
-<div class="modal d-block" *ngIf="visible" style="z-index: 2000;">
-    <div class="modal-dialog">
+<!-- Spinner overlay mientras carga -->
+<div *ngIf="visible && cargando" class="overlay-cargando">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<!-- Modal SOLO si !cargando -->
+<div *ngIf="visible && !cargando" class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white modal-header-sistema">
                 <h5 class="modal-title">Nuevo paciente</h5>
-                <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+                <button type="button" class="btn-close ms-auto" aria-label="Cerrar" (click)="cerrarModal()"></button>
             </div>
 
             <div class="modal-body">
                 <form (ngSubmit)="guardar()">
-                    <!-- Campo de búsqueda separado del select -->
+                    <!-- Campo de búsqueda -->
                     <div class="mb-3">
                         <label>Buscar usuario</label>
                         <input type="text" class="form-control mb-2" [(ngModel)]="filtroUsuario" name="filtroUsuario"
-                            placeholder="Buscar por nombre o ID" />
+                            placeholder="Buscar por nombre o ID" autocomplete="off" />
                     </div>
                     <div *ngIf="mensajeErrorBusqueda" class="text-danger small mt-1">
                         {{ mensajeErrorBusqueda }}
                     </div>
 
+                    <!-- Select de usuarios -->
                     <div class="mb-3">
                         <label>Seleccionar usuario sin rol</label>
                         <select class="form-select" [(ngModel)]="user_idSeleccionado" name="usuario" required
@@ -35,8 +45,7 @@
                     </div>
 
                     <div class="text-end">
-                        <button type="submit" class="btn btn-primary me-2"
-                            [disabled]="cargando || !user_idSeleccionado">
+                        <button type="submit" class="btn btn-primary me-2" [disabled]="!user_idSeleccionado">
                             Seleccionar
                         </button>
                         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>

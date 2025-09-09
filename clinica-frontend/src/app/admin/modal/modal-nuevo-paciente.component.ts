@@ -5,6 +5,7 @@ import { UsuarioDisponible } from '../../models/usuarioDisponible.model';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../service/User-Service/user.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 
 @Component({
     selector: 'app-modal-nuevo-paciente',
@@ -18,15 +19,17 @@ export class ModalNuevoPacienteComponent implements OnInit {
 
     @Input() excluirUserIds: number[] = []; //ID de usuario a excluir
 
-    private _visible = false;
+
     @Input() set visible(v: boolean) {
-        // cuando se abre (true), resetea y recarga
         if (v && !this._visible) {
             this.resetearEstado();
-            this.cargarUsuariosDisponibles(true);//para evitar el cacheo
+            this.cargando = true;
+            this.cargarUsuariosDisponibles(true);
         }
         this._visible = v;
     }
+
+    private _visible = false;
     get visible(): boolean { return this._visible; }
 
     private _filtroUsuario: string = '';
@@ -50,12 +53,13 @@ export class ModalNuevoPacienteComponent implements OnInit {
         this.cargando = false;
     }
 
-    ngOnInit(): void {
-        this.cargarUsuariosDisponibles();
-    }
+    ngOnInit(): void { }
+
+
 
     cargarUsuariosDisponibles(noCache = false): void {
-        this.userService.getUsuariosSinRolEspecialistaNiPaciente(noCache).subscribe({
+        this.cargando = true;
+        this.userService.getUsuariosSinRolEspecialistaNiPaciente(noCache).pipe(finalize(() => { this.cargando = false; })).subscribe({
             next: (res) => {
                 // Filtra lo que venga del backend con la lista del padre
                 const filtrados = (res.data ?? []).filter(u => !this.excluirUserIds.includes(u.id));

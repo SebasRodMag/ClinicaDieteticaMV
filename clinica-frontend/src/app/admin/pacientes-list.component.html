@@ -1,11 +1,17 @@
 <div class="mb-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="text-2xl font-bold mb-0">Listado de pacientes</h2>
-        <button class="btn btn-outline-primary" (click)="abrirModalAsignarRolPaciente()">
-            Nuevo paciente
-        </button>
+        <button class="btn btn-outline-primary" (click)="abrirModalAsignarRolPaciente()" [disabled]="loading">Nuevo
+            paciente</button>
     </div>
-
+    <div class="alert alert-info small py-2">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Se muestra el listado de pacientes registrados en el sistema. Puedes buscar pacientes por nombre, historial,
+        especialista, estado o comentario.
+        <br>Estos son usuarios que tienen el rol de "paciente" asignado.
+        <br>Para crear un nuevo paciente, haz clic en "Nuevo paciente" y asigna el rol de paciente a un usuario
+        existente.
+    </div>
     <input type="text" [(ngModel)]="filtro" (ngModelChange)="onFiltroChange()"
         placeholder="Buscar pacientes, historial, especialista, estado o comentario" class="form-control" />
 </div>
@@ -73,6 +79,6 @@
 </ng-template>
 
 <!-- Modal para asignar rol Paciente a un usuario -->
-<app-modal-nuevo-paciente *ngIf="modalNuevoPacienteVisible" [visible]="true" (cerrar)="cerrarModalNuevoPaciente()"
-    (pacienteCreado)="onPacienteCreado($event)">
+<app-modal-nuevo-paciente *ngIf="modalNuevoPacienteVisible" [visible]="true" [excluirUserIds]="idsUsuariosExcluidos"
+    (cerrar)="cerrarModalNuevoPaciente()" (pacienteCreado)="onPacienteCreado($event)">
 </app-modal-nuevo-paciente>

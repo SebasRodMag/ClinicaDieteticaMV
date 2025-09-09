@@ -1,5 +1,17 @@
-<h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
-
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-2xl font-bold mb-0">Listado de especialistas</h2>
+        <button class="btn btn-outline-primary" (click)="nuevaCita()">Nueva cita</button>
+    </div>
+    <div class="alert alert-info small py-2">
+    <i class="bi bi-info-circle-fill me-1"></i>
+    Al buscar una cita por nombre, recordar que se esta aplicando el filtro por fecha, por esta razón solo se mostrarán las citas del día seleccionado.
+    <br>Para crear una nueva cita, haz clic en "Nueva cita" y rellena el formulario.
+    <br>Debes seleccionar un paciente y las especialidad. A continuación te permitirá seleccionar un especialista disponible para esa especialidad. 
+    <br>A continuación, el tipo de cita y la fecha y hora disponibles para esa especialidad y especialista.
+    <br>Finalmente, puedes añadir un comentario adicional si lo deseas.
+    <br>Para editar una cita, haz clic en el botón "Editar" correspondiente a la cita que deseas modificar. No se pueden editar citas que ya han sido realizadas.
+</div>
 <!-- Filtros -->
 <div class="d-flex align-items-center gap-2 mb-3">
     <input type="text" [(ngModel)]="filtro" placeholder="Buscar citas" class="form-control ms-2"
@@ -15,23 +27,7 @@
         <i class="bi bi-arrow-right"></i>
     </button>
 </div>
-
-<!-- Filtrado por especialidad -->
-<!-- <div class="mb-3 d-flex align-items-center gap-2">
-    <label for="selectEspecialidad" class="form-label mb-0">Especialidad:</label>
-    <select id="selectEspecialidad" [(ngModel)]="especialidadSeleccionada" (change)="onEspecialidadSeleccionada()" class="form-select w-auto">
-    <option value="">Todas</option>
-    <option *ngFor="let especialidad of especialidades" [value]="especialidad">{{ especialidad }}</option>
-</select> -->
-
-<!--     <label for="selectEspecialista" class="form-label mb-0">Especialista:</label>
-    <select id="selectEspecialista" [(ngModel)]="filtroEspecialista" (change)="filtrarCitas()" class="form-select w-auto">
-    <option value="">Todos</option>
-    <option *ngFor="let especialista of especialistas" [value]="especialista.id">
-        {{ especialista.usuario.nombre }} {{ especialista.usuario.apellidos }}
-    </option>
-</select>
-</div> -->
+<h2 class="text-2xl font-bold mb-4">Listado de citas</h2>
 
 <!-- Tabla de citas -->
 <app-tabla-datos *ngIf="!loading && citasFiltradas.length > 0" [columnas]="columnas" [datosTotales]="citasFiltradas"
@@ -53,10 +49,6 @@
 <ng-template #especialidad let-cita>{{ cita.especialidad }}</ng-template>
 <ng-template #tipo_cita let-cita>{{ cita.tipo_cita }}</ng-template>
 <ng-template #estado let-cita>{{ cita.estado }}</ng-template>
-
-<button (click)="nuevaCita()" class="btn btn-primary">
-    Nueva cita
-</button>
 
 <!-- Sin resultados -->
 <div *ngIf="!loading && citasFiltradas.length === 0 && !huboError" class="alert alert-info mt-3 text-center">

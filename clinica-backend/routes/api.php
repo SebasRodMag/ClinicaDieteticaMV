@@ -13,7 +13,7 @@ use App\Http\Controllers\LogController;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
 // Rutas públicas (sin autenticación)
-Route::post('/register', [AuthController::class, 'registrar']);
+Route::post('/register', [UserController::class, 'crearUsuario']);//Existe un método register en AuthController, pero utilizo el implementado en UserController porque contempla más casuísticas
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/color-tema', [ConfiguracionController::class, 'obtenerColorTema']);
 
