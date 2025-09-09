@@ -1,4 +1,9 @@
 <h2 class="text-2xl font-bold mb-4">Listado de Logs</h2>
+<div class="alert alert-info small py-2">
+    <i class="bi bi-info-circle-fill me-1"></i>
+    Se muestra el listado de logs de actividad del sistema. Puedes buscar logs por usuario, email, acción o tabla afectada.
+    <br>Utiliza el filtro de fecha para ver los logs de un día específico.
+</div>
 <!-- Filtros -->
 <div class="d-flex align-items-center gap-2 mb-3">
     <input type="text" [(ngModel)]="filtro" placeholder="Buscar por usuario, email, acción o tabla"

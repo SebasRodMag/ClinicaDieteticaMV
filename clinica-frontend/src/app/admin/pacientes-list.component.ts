@@ -30,9 +30,8 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
     huboError = false;
     error = '';
 
-    // Modal “Nuevo paciente”
     modalNuevoPacienteVisible = false;
-    // Variables para paginación, ordenación y filtro
+    // Variables para paginar, ordenar y filtrar
     filtro = '';
     columnaOrden: string | null = null;
     direccionOrdenAsc = true;
@@ -76,7 +75,7 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit(): void {
-        // Mapeo de plantillas a las columnas
+        // Mapeo de plantillas en las columnas
         this.templatesMap = {
             nombre_paciente: this.nombrePacienteTemplate,
             numero_historial: this.numeroHistorialTemplate,
@@ -88,7 +87,6 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
             fecha_alta: this.fechaAltaTemplate,
         };
 
-        // Asegura que Angular aplique los templates después de crearlos
         this.cdr.detectChanges();
     }
 
@@ -104,21 +102,18 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
         this.error = '';
         this.huboError = false;
 
-        // 👇 Usa any[] aquí porque la API puede traer `usuario` en lugar de `user`
         this.userService.pacientesConEspecialista()
             .pipe(finalize(() => (this.loading = false)))
             .subscribe({
                 next: (data: any[]) => {
                     this.pacientes = data.map((raw): PacienteExtendido => {
-                        // Normaliza el usuario del paciente: acepta `user` o `usuario`
+                        //Para saltar un error al crear la base de datos, ya esta corregido en migraciones
                         const pacienteUser = (raw.user ?? raw.usuario) as Usuario | null;
-
-                        // Normaliza el usuario del especialista: acepta `user` o `usuario` anidado
                         const especialistaUser = raw.ultima_cita?.especialista
                             ? (raw.ultima_cita.especialista.user ?? raw.ultima_cita.especialista.usuario) as Usuario | null
                             : null;
 
-                        // Reconstruye el objeto Paciente conforme a tu interfaz
+                        //Se construye el objeto Paciente para seguir la interfaz
                         const pacienteBase: Paciente = {
                             ...raw,
                             user: pacienteUser,
@@ -135,7 +130,7 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
                                 : null,
                         };
 
-                        // Propiedades planas para filtros y ordenación
+                        //Propiedades planas para filtros y ordenación
                         const nombre_paciente = pacienteUser
                             ? `${pacienteUser.nombre ?? ''} ${pacienteUser.apellidos ?? ''}`.trim()
                             : 'Paciente desconocido';
@@ -196,7 +191,7 @@ export class PacientesListComponent implements OnInit, AfterViewInit {
         this.paginaActual = 1;
     }
 
-    // Filtro sobre TODO el dataset + orden actual + sin paginar (la tabla pagina)
+    //filtro sobre todos los datos
     get pacientesFiltrados(): PacienteExtendido[] {
         const f = this.filtro.trim().toLowerCase();
 

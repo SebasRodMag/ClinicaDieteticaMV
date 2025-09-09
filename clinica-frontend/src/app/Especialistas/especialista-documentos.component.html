@@ -1,6 +1,10 @@
 <div class="container mt-4">
     <h2 class="mb-3">Documentos compartidos por pacientes</h2>
-
+    <div class="alert alert-info small py-2">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Aquí puedes ver y gestionar los documentos que los pacientes han compartido con el especialista. Selecciona un paciente para ver sus documentos.
+        <br>Utiliza el botón de descarga para obtener una copia local del documento.
+    </div>
     <ng-container *ngIf="cargandoPacientes; else contenido">
         <div class="text-center my-3" role="status" aria-busy="true">
             <div class="spinner-border" role="status">

@@ -42,8 +42,10 @@ class AuthController extends Controller
                 'password.required' => 'La contraseña es obligatoria.',
             ]);
 
-            if (!Auth::attempt($solicitud->only('email', 'password'))) {
-                // Login fallido
+            $user = User::where('email', $solicitud->input('email'))->first();
+
+            if (!$user || !Hash::check($solicitud->input('password'), $user->password)) {
+                //Login fallido
                 $codigoRespuesta = 401;
                 $respuesta = ['message' => 'Credenciales inválidas'];
 
@@ -52,45 +54,40 @@ class AuthController extends Controller
                     'ip' => $solicitud->ip(),
                     'user_agent' => $solicitud->userAgent(),
                 ]);
-            } else {
-                // Login exitoso
-                $user = Auth::user();
-                $token = $user->createToken('auth_token')->plainTextToken;
 
-                $this->registrarLog($user->id, 'login', 'users', $user->id);
-
-                $respuesta = [
-                    'access_token' => $token,
-                    'user' => [
-                        'id' => $user->id,
-                        'nombre' => $user->nombre,
-                        'apellidos' => $user->apellidos,
-                        'email' => $user->email,
-                        'rol' => $user->getRoleNames()->first(),
-                    ],
-                ];
+                return response()->json($respuesta, $codigoRespuesta);
             }
 
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            $this->registrarLog($user->id, 'login', 'users', $user->id);
+
+            return response()->json([
+                'access_token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'nombre' => $user->nombre,
+                    'apellidos' => $user->apellidos,
+                    'email' => $user->email,
+                    'rol' => $user->getRoleNames()->first(),
+                ],
+            ], 200);
+
         } catch (ValidationException $e) {
-            $codigoRespuesta = 422;
-            $respuesta = [
+            return response()->json([
                 'message' => 'Los datos enviados no son válidos.',
                 'errors' => $e->errors(),
-            ];
+            ], 422);
 
         } catch (\Exception $e) {
-            $codigoRespuesta = 500;
-            $respuesta = [
-                'message' => 'Ha ocurrido un error inesperado al intentar iniciar sesión.',
-            ];
-
             $this->logError(null, 'Error inesperado en login', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+            return response()->json([
+                'message' => 'Ha ocurrido un error inesperado al intentar iniciar sesión.',
+            ], 500);
         }
-
-        return response()->json($respuesta, $codigoRespuesta);
     }
 
 
@@ -110,7 +107,7 @@ class AuthController extends Controller
             $user = auth()->user();
 
             if ($user) {
-                $user->tokens()->delete(); // Revoca todos los tokens
+                $user->tokens()->delete(); //Se revoca todos los tokens
                 $this->registrarLog($user->id, 'logout', 'users', $user->id);
             } else {
                 $codigoRespuesta = 401;
@@ -200,7 +197,7 @@ class AuthController extends Controller
             $user->assignRole('paciente');
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            // Crear entrada en la tabla 'pacientes'
+            // Se crea la entrada en la tabla 'pacientes'
             Paciente::create([
                 'user_id' => $user->id,
                 'numero_historial' => $this->generarNumeroHistorialUnico(),

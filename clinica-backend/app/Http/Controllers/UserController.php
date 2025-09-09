@@ -179,27 +179,30 @@ class UserController extends Controller
                     $respuesta = ['user' => $usuario->load('roles')];
                 }
 
-                $this->registrarLog(auth()->id(), 'crear_usuario_' . $rolObjetivo, 'users', $usuario->id);
+                $UsuarioEnCuestion = auth()->id() ?? $usuario->id;
+                $this->registrarLog($UsuarioEnCuestion, 'crear_usuario_' . $rolObjetivo, 'users', $usuario->id);
 
                 DB::commit();
             } catch (QueryException $e) {
                 DB::rollBack();
+                $UsuarioEnCuestion = auth()->id() ?? $usuario->id;//asigna dependiendo si es un usuario autenticado o el mismo usuario que se está creando
                 $codigo = 500;
                 $respuesta = [
                     'errors' => [
                         'general' => ['Error en la base de datos. Revisa duplicados o constraints.']
                     ]
                 ];
-                $this->logError(auth()->id(), 'Error DB crear usuario (' . $rolObjetivo . ')', $e->getMessage());
+                $this->logError($UsuarioEnCuestion, 'Error DB crear usuario (' . $rolObjetivo . ')', $e->getMessage());
             } catch (\Exception $e) {
                 DB::rollBack();
+                $UsuarioEnCuestion = auth()->id() ?? ($usuario->id ?? 0);
                 $codigo = 500;
                 $respuesta = [
                     'errors' => [
                         'general' => ['Ocurrió un error inesperado al crear el usuario.']
                     ]
                 ];
-                $this->logError(auth()->id(), 'Error inesperado crear usuario (' . $rolObjetivo . ')', $e->getMessage());
+                $this->logError($UsuarioEnCuestion, 'Error inesperado crear usuario (' . $rolObjetivo . ')', $e->getMessage());
             }
         }
 
@@ -473,6 +476,49 @@ class UserController extends Controller
         }
 
         return response()->json($respuesta, $codigo);
+    }
+
+    /**
+     * Genera un número de historial único con formato XX111111XX.
+     * Tiene en cuenta SoftDeletes (withTrashed) y realiza reintentos.
+     */
+    private function generarNumeroHistorialUnico(int $maxIntentos = 10): string
+    {
+        for ($i = 0; $i < $maxIntentos; $i++) {
+            $numero = $this->generarCandidatoNumeroHistorial();
+
+            // Importante: withTrashed porque usas SoftDeletes en Paciente
+            $existe = Paciente::withTrashed()
+                ->where('numero_historial', $numero)
+                ->exists();
+
+            if (!$existe) {
+                return $numero;
+            }
+        }
+
+        // Último recurso (extremadamente raro): añade una semilla de tiempo y reintenta una vez más
+        $numero = $this->generarCandidatoNumeroHistorial();
+        if (!Paciente::withTrashed()->where('numero_historial', $numero)->exists()) {
+            return $numero;
+        }
+
+        throw new \RuntimeException('No se pudo generar un número de historial único tras varios intentos.');
+    }
+
+    /**
+     * Devuelve un candidato con formato XX111111XX (todo en mayúsculas).
+     */
+    private function generarCandidatoNumeroHistorial(): string
+    {
+        $letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $l1 = $letras[random_int(0, 25)];
+        $l2 = $letras[random_int(0, 25)];
+        $num = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $l3 = $letras[random_int(0, 25)];
+        $l4 = $letras[random_int(0, 25)];
+
+        return $l1 . $l2 . $num . $l3 . $l4;
     }
 
 }

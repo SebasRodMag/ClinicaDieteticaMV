@@ -51,7 +51,7 @@ export const routes: Routes = [
             { path: 'especialistas', component: EspecialistasListComponent },
             { path: 'usuarios', component: UsuariosListComponent },
             { path: 'citas', component: CitasListComponent },
-            { path: 'admin/configuracion', component: ConfiguracionComponent },
+            { path: 'configuracion', component: ConfiguracionComponent },
             { path: 'logs', component: LogsListComponent },
         ],
     },
