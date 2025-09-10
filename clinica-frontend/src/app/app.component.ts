@@ -20,7 +20,7 @@ export class AppComponent {
   }
   
 
-  showSuccess() {
+  mostrarMensajeExito() {
     this.toastr.success('Registro completado', 'Éxito');
   }
 

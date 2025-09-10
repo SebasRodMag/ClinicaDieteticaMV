@@ -14,13 +14,13 @@ import { HttpClient } from '@angular/common/http';
 export class HomeDashboardComponent implements OnInit {
   resumen = [
     { titulo: 'Total Usuarios', valor: '...', icono: 'usuarios', clase: 'resumen-card' },
-    { titulo: 'Especialistas activos', valor: '...', icono: 'especialistas', clase: 'resumen-card' },
-    { titulo: 'Pacientes activos', valor: '...', icono: 'pacientes', clase: 'resumen-card' },
     { titulo: 'Citas hoy', valor: '...', icono: 'citas', clase: 'resumen-card' },
+    { titulo: 'Pacientes activos', valor: '...', icono: 'pacientes', clase: 'resumen-card' },
+    { titulo: 'Configuración', valor: '...', icono: 'config', clase: 'resumen-card' },
   ];
 
   accesos = [
-    { titulo: 'Gestión de Usuarios', ruta: '/administrador/usuarios' },
+    { titulo: 'Gestión de Usuarios', ruta: 'administrador/usuarios' },
     { titulo: 'Gestión de Citas', ruta: '/administrador/citas' },
     { titulo: 'Gestión de Pacientes', ruta: '/administrador/pacientes' },
     { titulo: 'Configuración', ruta: '/administrador/configuracion' },
@@ -36,9 +36,9 @@ export class HomeDashboardComponent implements OnInit {
     this.ConfiguracionService.getResumenDashboard().subscribe({
       next: data => {
         this.resumen[0].valor = `${data.total_usuarios} registrados`;
-        this.resumen[1].valor = `${data.especialistas} activos`;
+        this.resumen[1].valor = `${data.citas_hoy} activos`;
         this.resumen[2].valor = `${data.pacientes} activos`;
-        this.resumen[3].valor = `${data.citas_hoy} programadas`;
+        //this.resumen[3].valor = `${data.citas_hoy} programadas`;
 
         this.datosCargados = true;
         this.comprobarCargaCompleta();
@@ -52,7 +52,7 @@ export class HomeDashboardComponent implements OnInit {
   }
 
   //Estos métodos son unicamente para manejar la carga de imágenes y ocultar el loading cuando todas las imágenes estén listas.
-  onImagenCargada(): void {
+  cuandoImagenCargada(): void {
     this.imagenesCargadas++;
     this.comprobarCargaCompleta();
   }

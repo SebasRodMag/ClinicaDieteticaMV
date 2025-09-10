@@ -16,8 +16,8 @@
                     <div class="resumen-overlay"></div>
                     <div class="card-body">
                         <div class="dashboard-icon mb-2 d-flex justify-content-center align-items-center">
-                            <img [src]="'assets/iconos/' + card.icono + '.png'" alt="icono" (load)="onImagenCargada()"
-                                (error)="onImagenCargada()" />
+                            <img [src]="'assets/iconos/' + card.icono + '.png'" alt="icono" (load)="cuandoImagenCargada()"
+                                (error)="cuandoImagenCargada()" />
                         </div>
                         <h5 class="card-title">{{ card.titulo }}</h5>
                         <p class="card-text">{{ card.valor }}</p>
