@@ -4,25 +4,38 @@ on:
     branches: [ "main" ]
     paths:
       - "clinica-frontend/**"
-jobs:
-  docker:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Login GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+  permissions:
+    contents: read
+    packages: write
+  jobs:
+    docker:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: docker/login-action@v3
+          with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+        - uses: docker/build-push-action@v5
+          with:
+            context: clinica-frontend
+            file: clinica-frontend/Dockerfile
+            push: true
+            tags: |
+              ghcr.io/${{ github.repository_owner }}/clinicamv-frontend:main
+        
+        - name: Login GHCR
+          run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build image (BASE_HREF=/clinicamv/)
-        run: |
-          docker build \
-            --build-arg BASE_HREF=/clinicamv/ \
-            -t ghcr.io/${{ github.repository_owner }}/clinicamv-frontend:main \
-            -f clinica-frontend/Dockerfile \
-            clinica-frontend
+        - name: Build image (BASE_HREF=/clinicamv/)
+          run: |
+            docker build \
+              --build-arg BASE_HREF=/clinicamv/ \
+              -t ghcr.io/${{ github.repository_owner }}/clinicamv-frontend:main \
+              -f clinica-frontend/Dockerfile \
+              clinica-frontend
 
       - name: Push
         run: docker push ghcr.io/${{ github.repository_owner }}/clinicamv-frontend:main
