@@ -3,20 +3,14 @@
     <h2 class="mb-4">Configuración del Sistema</h2>
     <div class="alert alert-info small py-2">
         <i class="bi bi-info-circle-fill me-1"></i>
-        Aqui puedes ver y modificar las configuraciones del sistema. Haz clic en "Editar" para cambiar el valor de una configuración.
-        <br>Al modificar ciertas configuraciones, como el color del tema, es posible que se aplique un efecto de recarga para reflejar los cambios.
-        <br>Ten en cuenta que algunas configuraciones pueden requerir conocimientos técnicos para ser modificadas correctamente.
-        <br>Si no estás seguro sobre una configuración, es recomendable no cambiarla sin consultar con un administrador o desarrollador.
-        <br><hr>
-        Para configuraciones que son objetos o arrays, editarlas en formato JSON. Asegúrate de que el JSON sea válido antes de guardar.
-        <br><strong>duracion_cita:</strong> Establece la duración en minutos de cada cita. Valor numérico entero.
-        <br><strong>precio_cita:</strong> Define el precio base de una cita. Valor numérico decimal.(Para aplicar cuando se establezca una plataforma de pago)
-        <br><strong>dias_no_laborables:</strong> Lista de fechas que se consideran no laborables. Valor en formato JSON (array de strings con fechas en formato YYYY-MM-DD).
-        <br><strong>horario_laboral:</strong> Define el horario de atención de la clínica. Valor en formato JSON (objeto con días de la semana y horas de apertura/cierre).
-        <br><strong>notificaciones_email:</strong> Indica si las notificaciones por email están activadas. Valor booleano (true/false).
-        <br><strong>color_tema:</strong> Define el color principal del tema de la aplicación. Valor en formato hexadecimal (por ejemplo, #ff5733).
-        <br><strong>Crear_cita_paciente:</strong> Si está activado, los pacientes pueden crear citas desde su panel. Valor booleano (true/false).
-        <br><strong>Especialidades:</strong> Lista de especialidades médicas disponibles en el sistema. Valor en formato JSON (array de strings).
+        Aquí puedes ver y modificar las configuraciones del sistema. Haz clic en "Editar" para cambiar el valor de una
+        configuración.
+        <br>Al modificar ciertas configuraciones, como el color del tema, es posible que se aplique un efecto de recarga
+        para reflejar los cambios.
+        <br>Ten en cuenta que algunas configuraciones pueden requerir conocimientos técnicos para ser modificadas
+        correctamente.
+        <br>Si no estás seguro sobre una configuración, es recomendable no cambiarla sin consultar con un administrador
+        o desarrollador.
     </div>
 
     <!-- Spinner de carga -->
@@ -161,6 +155,20 @@
 
             </div>
         </div>
+    </div>
+    <div class="alert alert-info small py-2">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Para configuraciones que son objetos o arrays, editarlas en formato JSON. Asegúrate de que el JSON sea válido
+        antes de guardar.
+        <br>
+        <br><strong>duracion_cita:</strong> Establece la duración en minutos de cada cita. Valor numérico entero.
+        <br><strong>precio_cita:</strong> Define el precio base de una cita. Valor numérico decimal.(Para aplicar cuando se establezca una plataforma de pago)
+        <br><strong>dias_no_laborables:</strong> Lista de fechas que se consideran no laborables. Valor en formato JSON (array de strings con fechas en formato YYYY-MM-DD).
+        <br><strong>horario_laboral:</strong> Define el horario de atención de la clínica. Valor en formato JSON (objeto con días de la semana y horas de apertura/cierre).
+        <br><strong>notificaciones_email:</strong> Indica si las notificaciones por email están activadas. Valor booleano (true/false).
+        <br><strong>color_tema:</strong> Define el color principal del tema de la aplicación. Valor en formato hexadecimal (por ejemplo, #ff5733).
+        <br><strong>Crear_cita_paciente:</strong> Si está activado, los pacientes pueden crear citas desde su panel. Valor booleano (true/false).
+        <br><strong>Especialidades:</strong> Lista de especialidades médicas disponibles en el sistema. Valor en formato JSON (array de strings).
     </div>
 
 </div>

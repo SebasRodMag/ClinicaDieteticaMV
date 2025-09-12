@@ -84,8 +84,11 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
 
     cargarConfiguracion(): void {
         this.UserService.getConfiguracion().subscribe({
-            next: (config: any) => {
-                this.permitirCrearCitaPaciente = config?.['Crear_cita_paciente'] === 'true';
+            next: (res: { message: string; configuraciones?: Record<string, any> }) => {
+                const respuesta = res?.configuraciones?.['Crear_cita_paciente'];
+                this.permitirCrearCitaPaciente = respuesta;
+
+                console.log('Crear_cita_paciente ->', respuesta);
             },
             error: () => {
                 this.permitirCrearCitaPaciente = false;

@@ -355,8 +355,6 @@ export class UserService {
     }
 
     updateConfiguracion(id: number, data: { clave: string, valor: string, descripcion: string }): Observable<any> {
-        // Usamos PUT o PATCH para actualizar un registro específico.
-        // Aquí pasamos el ID de la configuración y un objeto con los datos a actualizar.
         return this.http.put<any>(`${this.apiUrl}/configuracion-general/${id}`, data);
     }
 
