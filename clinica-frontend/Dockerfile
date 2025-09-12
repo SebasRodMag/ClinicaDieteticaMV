@@ -4,7 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build -- --configuration=production
+ARG BASE_HREF=/clinicamv/
+RUN npm run build -- --configuration=production --base-href $BASE_HREF
 
 # --- Nginx estático ---
 FROM nginx:1.25-alpine
