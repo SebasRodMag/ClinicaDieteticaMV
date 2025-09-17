@@ -39,16 +39,18 @@ export class ConfiguracionService {
     }
 
     cargarColorTemaPublico(): void {
-        this.http.get<{ color_tema: string }>(`${urlApiServicio.apiUrl}/color-tema`)
+        this.http
+            .get<{ color_tema?: string }>(`${urlApiServicio.apiUrl}/color-tema`, { responseType: 'json' as const })
             .subscribe({
                 next: (respuesta) => {
-                    const color = respuesta.color_tema || '#28a745';
+                    const color = respuesta?.color_tema ?? '#28a745';
                     this.colorTemaSubject.next(color);
                     this.aplicarColorTema(color);
                 },
                 error: () => {
                     console.warn('No se pudo cargar el color del tema. Usando valor por defecto.');
-                }
+                    this.actualizarColorTema('#28a745');
+                },
             });
     }
 
