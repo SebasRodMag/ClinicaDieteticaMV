@@ -75,7 +75,7 @@ return [
     'middleware' => [
         //Authenticate_session es para trabajar con sesiones de usuario en aplicaciones SPA que no es mi caso y 
         // provoca conflicto en la case de dato buscando la tabla Session
-        'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
+        //'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
         'encrypt_cookies' => Illuminate\Cookie\Middleware\EncryptCookies::class,
         'validate_csrf_token' => Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
     ],
