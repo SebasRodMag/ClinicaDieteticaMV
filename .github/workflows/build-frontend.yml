@@ -3,6 +3,7 @@ on:
   push:
     branches: [ "main" ]
     paths: [ "clinica-frontend/**" ]
+  workflow_dispatch: {}   # << para hacer el run manual
 permissions: { contents: read, packages: write }
 jobs:
   docker:
