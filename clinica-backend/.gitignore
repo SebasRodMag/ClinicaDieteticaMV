@@ -24,3 +24,11 @@ Homestead.yaml
 npm-debug.log
 Thumbs.db
 yarn-error.log
+.git
+.gitignore
+node_modules
+vendor/* # (composer ya lo reinstala dentro)
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
