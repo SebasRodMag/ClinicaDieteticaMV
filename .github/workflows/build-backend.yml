@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths: [ "clinica-backend/**" ]
+  workflow_dispatch: {}   # << para hacer el run manual
 
 permissions:
   contents: read
@@ -27,13 +28,11 @@ jobs:
             tagprefix: api
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.OWNER }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v6
         with:
           context: clinica-backend
@@ -43,5 +42,8 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-main
             ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-${{ github.sha }}
+            # Tags de compatibilidad (por si tu server aún apunta a los antiguos):
+            ghcr.io/${{ env.OWNER }}/clinicamv-php:main${{ matrix.target == 'php' && '' || '' }}
+            ghcr.io/${{ env.OWNER }}/clinicamv-api:main${{ matrix.target == 'api' && '' || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
