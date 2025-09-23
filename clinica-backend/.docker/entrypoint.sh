@@ -3,33 +3,32 @@ set -e
 
 cd /var/www
 
-# Espera a que MySQL acepte conexiones para ejecutar las migraciones
+# Esperar a MySQL (usa tus variables del entorno)
 until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Exception $e) { exit(1);}"; do
   echo "⏳ Esperando a la base de datos (${DB_HOST}:${DB_PORT})..."
   sleep 2
 done
 
-# si no existe .env, copiar .env.example
-[ ! -f .env ] && [ -f .env.example ] && cp .env.example .env
+# Si NO hay APP_KEY en el entorno, entonces sí preparamos .env y generamos la key
+if [ -z "${APP_KEY}" ]; then
+  [ ! -f .env ] && [ -f .env.example ] && cp .env.example .env
+  grep -q '^APP_KEY=' .env || echo 'APP_KEY=' >> .env
+  php artisan config:clear || true
+  php artisan key:generate --force || true
+fi
 
-# si falta la línea APP_KEY, añadirla
-grep -q '^APP_KEY=' .env || echo 'APP_KEY=' >> .env
-
-# Limpia cache de config antes de generar la key
-php artisan config:clear || true
-php artisan key:generate --force || true
-
-# Cache de configuración/ROUTES/views para prod
+# Cache de configuración/rutas/vistas con las variables actuales
 php artisan config:cache || true
 php artisan route:cache || true
 php artisan view:cache || true
 
-# Espera a DB y migra (opcional en prod; puedes comentar si prefieres manual)
-php artisan migrate --force --no-interaction
+# Migraciones solo si está habilitado
+if [ "${MIGRATE_ON_START:-false}" = "true" ]; then
+  php artisan migrate --force --no-interaction
+fi
 
-# Sembrado controlado por variable de entorno en docker-compose.yml
-# Por defecto está a false para evitar problemas en producción
-if [ "${SEED_ON_START}" = "true" ]; then
+# Seed opcional
+if [ "${SEED_ON_START:-false}" = "true" ]; then
   php artisan db:seed --force --no-interaction
 fi
 

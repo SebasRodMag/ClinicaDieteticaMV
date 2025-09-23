@@ -41,6 +41,9 @@ services:
     volumes:
       - laravel_storage:/var/www/storage
     networks: [edge]
+    environment:
+      MIGRATE_ON_START: "false"   # Cambiar a "true" si quieres que se ejecuten los seeders al iniciar el deploy
+      SEED_ON_START: "false"
 
   api:
     image: ghcr.io/sebasrodmag/clinicamv-backend:api-main
