@@ -14,7 +14,7 @@ import { CitaPorEspecialista } from '../../models/citasPorEspecialista.model';
 import { CitaListado } from '../../models/listarCitas.model';
 import { CitaActualizar } from '../../models/citaActualizar.model';
 import { Log } from '../../models/log.model';
-import { urlApiServicio } from '../../components/utilidades/variable-entorno';
+import { environment } from '../../../environments/environment';
 import { Historial } from '../../models/historial.model';
 import { AuthService } from '../Auth-Service/Auth.service';
 
@@ -22,7 +22,7 @@ import { AuthService } from '../Auth-Service/Auth.service';
     providedIn: 'root'
 })
 export class UserService {
-    private apiUrl = urlApiServicio.apiUrl;
+    private apiUrl = environment.apiBase;
 
     constructor(private http: HttpClient, private authService: AuthService) { }
 
