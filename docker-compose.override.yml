@@ -24,6 +24,13 @@ services:
     networks: [default]
 
   frontend:
+    build:
+      context: ./clinica-frontend
+      dockerfile: Dockerfile
+      args:
+        NG_CONFIGURATION: development   # debe llamar al environment.ts
+        BASE_HREF: "/"                 # o "/clinicamv/" tengo que verificar que coincida con la ruta base en Angular
+    image: clinicamv-frontend:dev
     ports:
       - "8080:80"
     labels: []

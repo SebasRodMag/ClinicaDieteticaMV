@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { ModalNuevaCitaComponent } from './modal/modal-nueva-cita.component';
 import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
 import { HttpClient } from '@angular/common/http';
-import { urlApiServicio } from '../components/utilidades/variable-entorno';
+import { environment } from '../../environments/environment';
 import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
 import { formatearFecha } from '../components/utilidades/sanitizar.utils';
 import { CalendarioCitasComponent } from '../components/calendario/calendario-citas.component';
@@ -178,7 +178,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     }
 
     unirseAVideollamada(cita: CitaGenerica): void {
-        const url = urlApiServicio.apiUrl;
+        const url = environment.apiBase;
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 
@@ -204,7 +204,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
 
         // Le damos un diley a la apertura de la videollamada  para que se vea el spinner primero
         setTimeout(() => {
-            const url = urlApiServicio.apiUrl;
+            const url = environment.apiBase;
             unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
         }, 0);
     }
