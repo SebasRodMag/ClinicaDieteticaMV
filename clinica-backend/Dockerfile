@@ -36,10 +36,10 @@ RUN mkdir -p storage bootstrap/cache \
 
 # Entrypoint y CMD por defecto
 COPY .docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh + # Pool PHP-FPM: abrir 0.0.0.0:9000 para que nginx (api) conecte por red + COPY .docker/pool-www.conf /usr/local/etc/php-fpm.d/zz-pool.conf
 
 ENTRYPOINT ["sh", "/entrypoint.sh"]
-CMD ["php-fpm"]
+CMD ["php-fpm"]+FROM nginx:1.25-alpine AS api + WORKDIR /var/www + COPY --from=php /var/www /var/www + COPY .docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 ############################
 # API (Nginx sirviendo /public)

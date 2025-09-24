@@ -47,3 +47,24 @@ jobs:
             ghcr.io/${{ env.OWNER }}/clinicamv-api:main${{ matrix.target == 'api' && '' || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+strategy:
+  matrix:
+    include:
+      - target: php
+        imagename: clinicamv-backend
+        tagprefix: php
+      - target: api
+        imagename: clinicamv-backend
+        tagprefix: api
+
+with:
+  context: clinica-backend
+  file: clinica-backend/Dockerfile
+  target: ${{ matrix.target }}
+  push: true
+  tags: |
+    ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-main
+    ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-${{ github.sha }}
+    # Compatibilidad mientras migras composes antiguos:
+    ghcr.io/${{ env.OWNER }}/clinicamv-php:main${{ matrix.target == 'php' && '' || '' }}
+    ghcr.io/${{ env.OWNER }}/clinicamv-api:main${{ matrix.target == 'api' && '' || '' }}

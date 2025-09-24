@@ -5,7 +5,7 @@ cd /var/www
 
 # Esperar a MySQL (usa tus variables del entorno)
 until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Exception $e) { exit(1);}"; do
-  echo "⏳ Esperando a la base de datos (${DB_HOST}:${DB_PORT})..."
+  echo "... Esperando a la base de datos (${DB_HOST}:${DB_PORT})..."
   sleep 2
 done
 
