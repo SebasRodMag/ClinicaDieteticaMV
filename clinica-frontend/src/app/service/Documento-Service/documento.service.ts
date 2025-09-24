@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { urlApiServicio } from '../../components/utilidades/variable-entorno';
+import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Documento } from '../../models/documento.model';
@@ -9,7 +9,7 @@ import { Documento } from '../../models/documento.model';
     providedIn: 'root'
 })
 export class DocumentoService {
-    private apiUrl = urlApiServicio.apiUrl;
+    private apiUrl = environment.apiBase;
 
     constructor(private http: HttpClient) { }
 

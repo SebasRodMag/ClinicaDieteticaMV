@@ -58,6 +58,9 @@ services:
     build:
       context: ./clinica-frontend
       dockerfile: Dockerfile
+      args:
+        NG_CONFIGURATION: development
+        BASE_HREF: "/"
     ports:
       - "8080:80"
     depends_on:
