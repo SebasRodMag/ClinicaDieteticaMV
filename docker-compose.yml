@@ -30,20 +30,18 @@ services:
 
   php:
     image: ghcr.io/sebasrodmag/clinicamv-backend:php-main
+    env_file: [ ./secrets/clinica.env ]
+    environment:
+      MIGRATE_ON_START: "true" # Cambiar a "true" si quieres que se ejecuten los seeders al iniciar el deploy
+      SEED_ON_START: "true"
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
-    # Carga variables sensibles desde un fichero (créalo: ./secrets/clinica.env)
-    env_file:
-      - ./secrets/clinica.env
     # Persiste subidas/logs/etc. de Laravel
     volumes:
       - laravel_storage:/var/www/storage
     networks: [edge]
-    environment:
-      MIGRATE_ON_START: "false"   # Cambiar a "true" si quieres que se ejecuten los seeders al iniciar el deploy
-      SEED_ON_START: "false"
 
   api:
     image: ghcr.io/sebasrodmag/clinicamv-backend:api-main
