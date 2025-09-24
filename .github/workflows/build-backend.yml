@@ -23,21 +23,20 @@ jobs:
           - target: php
             imagename: clinicamv-backend
             tagprefix: php
-            compat_tag: ghcr.io/${{ github.repository_owner }}/clinicamv-php:main
           - target: api
             imagename: clinicamv-backend
             tagprefix: api
-            compat_tag: ghcr.io/${{ github.repository_owner }}/clinicamv-api:main
 
     steps:
       - uses: actions/checkout@v4
 
-      # Opcional si quisieras multi-arch
-      # - uses: docker/setup-qemu-action@v3
-
-      - uses: docker/setup-buildx-action@v3
+      # Builder con driver docker-container (soporta cache GHA)
+      - name: Set up Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
         with:
-          install: true  # <-- habilita buildx como builder por defecto
+          install: true
+          driver: docker-container
 
       - uses: docker/login-action@v3
         with:
@@ -45,13 +44,14 @@ jobs:
           username: ${{ env.OWNER }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Forzar minúsculas para GHCR (recomendado)
+      # Owner en minúsculas para GHCR
       - name: Lowercase owner
         run: echo "OWNER_LC=${OWNER,,}" >> $GITHUB_ENV
         shell: bash
 
       - uses: docker/build-push-action@v6
         with:
+          builder: ${{ steps.buildx.outputs.name }}   # <= usar el builder creado
           context: clinica-backend
           file: clinica-backend/Dockerfile
           target: ${{ matrix.target }}
@@ -59,6 +59,7 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-main
             ghcr.io/${{ env.OWNER_LC }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-${{ github.sha }}
-            ${{ matrix.compat_tag }}
+            ${{ matrix.target == 'php' && format('ghcr.io/{0}/clinicamv-php:main', env.OWNER_LC) || '' }}
+            ${{ matrix.target == 'api' && format('ghcr.io/{0}/clinicamv-api:main', env.OWNER_LC) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
