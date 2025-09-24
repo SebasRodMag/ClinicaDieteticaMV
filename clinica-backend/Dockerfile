@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.6
-# Convertir a multi-stage para tener PHP-FPM + y la api con Nginx con mi código
+
 ############################
 # PHP-FPM + Composer (build)
 ############################
@@ -9,16 +9,16 @@ WORKDIR /var/www
 # SO y extensiones necesarias
 RUN apk add --no-cache icu-dev libzip-dev oniguruma-dev git unzip bash nano \
  && docker-php-ext-configure intl \
- && docker-php-ext-install -j$(nproc) pdo pdo_mysql intl bcmath zip opcache
+ && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql intl bcmath zip opcache
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Copiamos solo composer.* primero
+# Copiamos solo composer.* primero (mejor cache)
 COPY composer.json composer.lock ./
 
-# Instalar dependencias sin scripts primero para cachear
+# Instalar dependencias sin scripts (cache)
 RUN composer install \
     --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
     --no-scripts
@@ -26,20 +26,23 @@ RUN composer install \
 # Copiamos el proyecto
 COPY . .
 
-# Segunda pasada para ejecutar scripts de composer
+# Segunda pasada para ejecutar scripts
 RUN composer install \
     --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
-# Permisos
+# Permisos runtime
 RUN mkdir -p storage bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+ && chown -R www-data:www-data storage bootstrap/cache
 
-# Entrypoint y CMD por defecto
+# Entrypoint
 COPY .docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh + # Pool PHP-FPM: abrir 0.0.0.0:9000 para que nginx (api) conecte por red + COPY .docker/pool-www.conf /usr/local/etc/php-fpm.d/zz-pool.conf
+RUN chmod +x /entrypoint.sh
+
+# Pool PHP-FPM escuchando 0.0.0.0:9000
+COPY .docker/pool-www.conf /usr/local/etc/php-fpm.d/zz-pool.conf
 
 ENTRYPOINT ["sh", "/entrypoint.sh"]
-CMD ["php-fpm"]+FROM nginx:1.25-alpine AS api + WORKDIR /var/www + COPY --from=php /var/www /var/www + COPY .docker/nginx.conf /etc/nginx/conf.d/default.conf
+CMD ["php-fpm"]
 
 ############################
 # API (Nginx sirviendo /public)
@@ -50,8 +53,9 @@ WORKDIR /var/www
 # Copiamos el código desde el stage php
 COPY --from=php /var/www /var/www
 
-# Conf de Nginx que apunta a /var/www/public
+# Conf de Nginx que apunta a /var/www/public y proxy a php:9000
 COPY .docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# healthcheck sencillo para verificar que el contenedor está vivo
-HEALTHCHECK --interval=30s --timeout=3s --retries=5 CMD wget -qO- http://127.0.0.1/_health || exit 1
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --retries=5 \
+  CMD wget -qO- http://127.0.0.1/_health || exit 1

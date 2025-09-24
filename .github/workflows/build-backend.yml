@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths: [ "clinica-backend/**" ]
-  workflow_dispatch: {}   # << para hacer el run manual
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -23,16 +23,21 @@ jobs:
           - target: php
             imagename: clinicamv-backend
             tagprefix: php
+            compat_tag: ghcr.io/${{ github.repository_owner }}/clinicamv-php:main
           - target: api
             imagename: clinicamv-backend
             tagprefix: api
+            compat_tag: ghcr.io/${{ github.repository_owner }}/clinicamv-api:main
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.OWNER }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: docker/build-push-action@v6
         with:
           context: clinica-backend
@@ -42,29 +47,6 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-main
             ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-${{ github.sha }}
-            # Tags de compatibilidad (por si tu server aún apunta a los antiguos):
-            ghcr.io/${{ env.OWNER }}/clinicamv-php:main${{ matrix.target == 'php' && '' || '' }}
-            ghcr.io/${{ env.OWNER }}/clinicamv-api:main${{ matrix.target == 'api' && '' || '' }}
+            ${{ matrix.compat_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-strategy:
-  matrix:
-    include:
-      - target: php
-        imagename: clinicamv-backend
-        tagprefix: php
-      - target: api
-        imagename: clinicamv-backend
-        tagprefix: api
-
-with:
-  context: clinica-backend
-  file: clinica-backend/Dockerfile
-  target: ${{ matrix.target }}
-  push: true
-  tags: |
-    ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-main
-    ghcr.io/${{ env.OWNER }}/${{ matrix.imagename }}:${{ matrix.tagprefix }}-${{ github.sha }}
-    # Compatibilidad mientras migras composes antiguos:
-    ghcr.io/${{ env.OWNER }}/clinicamv-php:main${{ matrix.target == 'php' && '' || '' }}
-    ghcr.io/${{ env.OWNER }}/clinicamv-api:main${{ matrix.target == 'api' && '' || '' }}
