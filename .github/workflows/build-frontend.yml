@@ -16,33 +16,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          install: true
-          driver: docker-container
+      - name: Create & use buildx builder (docker-container)
+        run: |
+          set -eux
+          docker buildx create --name mybuilder --driver docker-container --use
+          docker buildx inspect --bootstrap
+          docker buildx ls
 
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lowercase owner
-        run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-        shell: bash
+        id: lc
+        run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/build-push-action@v6
         with:
-          builder: ${{ steps.buildx.outputs.name }}
+          builder: mybuilder
           context: clinica-frontend
           file: clinica-frontend/Dockerfile
           push: true
           build-args: |
             BASE_HREF=/
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/clinicamv-frontend:main
-            ghcr.io/${{ env.OWNER_LC }}/clinicamv-frontend:${{ github.sha }}
+            ghcr.io/${{ steps.lc.outputs.owner_lc }}/clinicamv-frontend:main
+            ghcr.io/${{ steps.lc.outputs.owner_lc }}/clinicamv-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
