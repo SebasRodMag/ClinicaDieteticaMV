@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../service/User-Service/user.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
-import { urlApiServicio } from '../../utilidades/variable-entorno';
+import { environment } from '../../../../environments/environment';
 import { unirseConferencia } from '../../utilidades/unirse-conferencia';
 import { construirFechaHoraLocal } from '../../utilidades/sanitizar.utils';
 import { mostrarBotonVideollamada } from '../../utilidades/mostrar-boton-videollamada';
@@ -178,7 +178,7 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
 
         //Abrir la videollamada. Lo hacemos en el siguiente tick para que Angular procese el cierre del modal-info.
         setTimeout(() => {
-            unirseConferencia(this.citaSeleccionada!.id, this.http, this.snackBar, urlApiServicio.apiUrl);
+            unirseConferencia(this.citaSeleccionada!.id, this.http, this.snackBar, environment.apiBase);
         }, 0);
     }
 

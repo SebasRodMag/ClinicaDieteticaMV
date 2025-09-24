@@ -12,7 +12,7 @@ import { CitaPorEspecialista } from '../models/citasPorEspecialista.model';
 import { CalendarioCitasComponent } from '../components/calendario/calendario-citas.component';
 import { unirseConferencia } from '../components/utilidades/unirse-conferencia';
 import { HttpClient } from '@angular/common/http';
-import { urlApiServicio } from '../components/utilidades/variable-entorno';
+import { environment } from '../../environments/environment';
 import { CitaGenerica } from '../models/cita-generica.model';
 import { ModalInfoCitaComponent } from '../components/calendario/modal/modal-info-cita.component';
 import { mostrarBotonVideollamada } from '../components/utilidades/mostrar-boton-videollamada';
@@ -229,7 +229,7 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
 
     // Acepta CitaGenerica (solo usa id)
     unirseAVideollamada(cita: CitaGenerica): void {
-        const url = urlApiServicio.apiUrl;
+        const url = environment.apiBase;
         unirseConferencia(cita.id, this.HttpClient, this.snackBar, url);
     }
 
