@@ -1,1 +1,10 @@
 server/**/secrets/*.env
+# Env y secretos
+*.env
+**/secrets/*
+!**/secrets/.env.example
+
+# Node/Laravel artefactos
+node_modules/
+vendor/
+storage/*.key
