@@ -32,13 +32,12 @@ services:
     image: ghcr.io/sebasrodmag/clinicamv-backend:php-main
     env_file: [ ./secrets/clinica.env ]
     environment:
-      MIGRATE_ON_START: "true" # Cambiar a "true" si quieres que se ejecuten los seeders al iniciar el deploy
+      MIGRATE_ON_START: "true"
       SEED_ON_START: "true"
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
-    # Persiste subidas/logs/etc. de Laravel
     volumes:
       - laravel_storage:/var/www/storage
     networks: [red-clinicamv]
@@ -66,7 +65,6 @@ services:
       - traefik.http.services.front.loadbalancer.server.port=80
     networks: [red-clinicamv]
 
-  # Opcional: solo accesible desde localhost del servidor
   phpmyadmin:
     image: phpmyadmin:5.2
     restart: unless-stopped

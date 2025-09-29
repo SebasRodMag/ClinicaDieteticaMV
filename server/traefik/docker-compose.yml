@@ -1,0 +1,41 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - --log.level=INFO
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      # redirección http -> https
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      # Let's Encrypt (HTTP-01)
+      - --certificatesresolvers.lets.acme.httpchallenge=true
+      - --certificatesresolvers.lets.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.lets.acme.email=noreply@clinicamv.lol
+      - --certificatesresolvers.lets.acme.storage=/acme/acme.json
+      # Si quisieras probar staging alguna vez, descomenta:
+      # - --certificatesresolvers.lets.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --api.dashboard=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme:/acme
+    networks: [red-clinicamv]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.rule=Host(`traefik.clinicamv.lol`)
+      - traefik.http.routers.dashboard.entrypoints=websecure
+      - traefik.http.routers.dashboard.tls.certresolver=lets
+      - traefik.http.routers.dashboard.service=api@internal
+
+networks:
+  red-clinicamv:
+    external: true
+
+volumes:
+  acme:
