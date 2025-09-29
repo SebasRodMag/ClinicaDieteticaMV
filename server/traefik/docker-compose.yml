@@ -15,9 +15,6 @@ services:
       - --certificatesresolvers.lets.acme.httpchallenge=true
       - --certificatesresolvers.lets.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.lets.acme.email=noreply@clinicamv.lol
-      - --certificatesresolvers.lets.acme.storage=/acme/acme.json
-      # Si quisieras probar staging alguna vez, descomenta:
-      # - --certificatesresolvers.lets.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
       - --api.dashboard=true
     ports:
       - "80:80"
