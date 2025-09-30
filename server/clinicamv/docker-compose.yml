@@ -45,7 +45,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-      start_period: 20s
+      start_period: 180s #Para darle tiempo a que se apliquen migraciones
     networks: [red-clinicamv]
 
   api:
