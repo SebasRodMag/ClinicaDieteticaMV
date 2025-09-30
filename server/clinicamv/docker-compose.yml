@@ -110,3 +110,26 @@ services:
     ports:
       - "127.0.0.1:8082:80"
     networks: [red-clinicamv]
+
+  clinicamv-queue:
+    image: ghcr.io/sebasrodmag/clinicamv-backend:php-main
+    depends_on:
+      - clinicamv-api
+      - clinicamv-db
+    working_dir: /var/www/html
+    command: php artisan queue:work --queue=default --sleep=3 --tries=3 --timeout=120
+    environment:
+      - APP_ENV=production
+      - APP_KEY=${APP_KEY}
+      - QUEUE_CONNECTION=database
+      - MAIL_MAILER=${MAIL_MAILER}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
+    restart: always
+    volumes:
+      - ./clinica-backend:/var/www/html
