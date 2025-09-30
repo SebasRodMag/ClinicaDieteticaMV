@@ -7,9 +7,9 @@ FROM php:8.2-fpm-alpine AS php
 WORKDIR /var/www
 
 # SO y extensiones necesarias
-RUN apk add --no-cache icu-dev libzip-dev oniguruma-dev git unzip bash nano \
+RUN apk add --no-cache icu-dev libzip-dev oniguruma-dev git unzip bash nano netcat-openbsd \
  && docker-php-ext-configure intl \
- && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql intl bcmath zip opcache
+ && docker-php-ext-install -j$(nproc) pdo pdo_mysql intl bcmath zip opcache
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
