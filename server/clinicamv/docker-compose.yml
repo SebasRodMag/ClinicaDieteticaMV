@@ -32,8 +32,8 @@ services:
     image: ghcr.io/sebasrodmag/clinicamv-backend:php-main
     env_file: [ ./secrets/clinica.env ]
     environment:
-      MIGRATE_ON_START: "true"
-      SEED_ON_START: "true"
+      MIGRATE_ON_START: "false" # Cambiar a "true" para que se ejecuten los seeders al iniciar el deploy
+      SEED_ON_START: "false" # Igual que arriba
     restart: unless-stopped
     depends_on:
       db:
