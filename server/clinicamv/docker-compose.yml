@@ -84,9 +84,10 @@ services:
 
       # Root con WWW para redirigir a app
       - traefik.http.routers.root.rule=Host(`clinicamv.lol`) || Host(`www.clinicamv.lol`)
-      - traefik.http.routers.root.entrypoints=web,websecure   # permite redirigir también en http
+      - traefik.http.routers.root.entrypoints=websecure
       - traefik.http.routers.root.tls.certresolver=lets
       - traefik.http.routers.root.middlewares=to-app@docker,secure-headers@docker
+      - traefik.http.routers.root.service=noop@internal
       - traefik.http.middlewares.to-app.redirectregex.regex=^https?://(www\.)?clinicamv\.lol(/.*)?$
       - traefik.http.middlewares.to-app.redirectregex.replacement=https://app.clinicamv.lol$2
       - traefik.http.middlewares.to-app.redirectregex.permanent=true
