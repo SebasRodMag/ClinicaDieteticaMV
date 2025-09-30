@@ -74,11 +74,22 @@ services:
     restart: unless-stopped
     labels:
       - traefik.enable=true
+
+      # Router principal de la app
       - traefik.http.routers.front.rule=Host(`app.clinicamv.lol`)
       - traefik.http.routers.front.entrypoints=websecure
       - traefik.http.routers.front.tls.certresolver=lets
       - traefik.http.services.front.loadbalancer.server.port=80
       - traefik.http.routers.front.middlewares=secure-headers@docker
+
+      # Root con WWW para redirigir a app
+      - traefik.http.routers.root.rule=Host(`clinicamv.lol`) || Host(`www.clinicamv.lol`)
+      - traefik.http.routers.root.entrypoints=web,websecure   # permite redirigir también en http
+      - traefik.http.routers.root.tls.certresolver=lets
+      - traefik.http.routers.root.middlewares=to-app@docker,secure-headers@docker
+      - traefik.http.middlewares.to-app.redirectregex.regex=^https?://(www\.)?clinicamv\.lol(/.*)?$
+      - traefik.http.middlewares.to-app.redirectregex.replacement=https://app.clinicamv.lol$2
+      - traefik.http.middlewares.to-app.redirectregex.permanent=true
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/_health || exit 1"]
       interval: 10s
