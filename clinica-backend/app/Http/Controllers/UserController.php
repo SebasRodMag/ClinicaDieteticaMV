@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\Loggable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Notification;
 
 class UserController extends Controller
 {
-    use Loggable;
+    use Loggable, Notifiable;
 
     /**
      * 

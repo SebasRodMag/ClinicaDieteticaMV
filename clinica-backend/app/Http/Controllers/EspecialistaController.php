@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\User;
 use App\Traits\Loggable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -14,10 +15,11 @@ use Illuminate\Validation\Rule;
 use App\Models\Cita;
 use App\Notifications\EspecialistaBajaNotificacion;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
 
 class EspecialistaController extends Controller
 {
-    use Loggable;
+    use Loggable, Notifiable;
 
     /**
      * Mostrar todos los especialistas.
@@ -174,7 +176,7 @@ class EspecialistaController extends Controller
             DB::beginTransaction();
 
             $user = $especialista->user;
-            $nombreEspecialista = $user?->nombre . ' ' . $user?->apellidos;
+            $nombreEspecialista = trim(($user->nombre ?? '') . ' ' . ($user->apellidos ?? ''));
 
             // Obtener citas con sus pacientes
             $citas = Cita::with('paciente.user')
@@ -186,14 +188,24 @@ class EspecialistaController extends Controller
                 $pacienteUser = $cita->paciente->user ?? null;
 
                 if ($pacienteUser && filter_var($pacienteUser->email, FILTER_VALIDATE_EMAIL)) {
-                    $fechaHora = optional($cita->fecha_hora_cita)->format('d-m-Y H:i');
-                    $pacienteUser->notify(new EspecialistaBajaNotificacion($nombreEspecialista, $fechaHora));
+                    try {
+                        $fechaHora = optional($cita->fecha_hora_cita)->format('d-m-Y H:i');
+                        $pacienteUser->notify(new EspecialistaBajaNotificacion($nombreEspecialista, $fechaHora));
+                    } catch (\Throwable $mailEx) {
+                        Log::warning('Fallo enviando notificación de baja especialista', [
+                            'user_id' => $pacienteUser->id ?? null,
+                            'error' => $mailEx->getMessage(),
+                        ]);
+                        // No hacemos throw; la baja debe continuar
+                    }
                 }
             }
 
             // Eliminar citas
             $citasIds = $citas->pluck('id_cita');
-            Cita::whereIn('id_cita', $citasIds)->delete();
+            if ($citasIds->isNotEmpty()) {
+                Cita::whereIn('id_cita', $citasIds)->delete();
+            }
 
             // Cambiar el rol del especialista
             if ($user && method_exists($user, 'syncRoles')) {
@@ -225,7 +237,7 @@ class EspecialistaController extends Controller
             report($e);
         }
 
-        return response()->json($respuesta, $codigo);
+        return response()->json($respuesta, $codigo); // <- sin tilde
     }
 
 
