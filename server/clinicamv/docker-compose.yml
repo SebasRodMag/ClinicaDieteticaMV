@@ -114,10 +114,16 @@ services:
   clinicamv-queue:
     image: ghcr.io/sebasrodmag/clinicamv-backend:php-main
     depends_on:
-      - clinicamv-api
-      - clinicamv-db
-    working_dir: /var/www/html
+      php:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    # Usa el mismo entorno que php
+    env_file: [ ./secrets/clinica.env ]
+    working_dir: /var/www
     command: php artisan queue:work --queue=default --sleep=3 --tries=3 --timeout=120
+    restart: unless-stopped
+    networks: [red-clinicamv]
     environment:
       - APP_ENV=production
       - APP_KEY=${APP_KEY}
@@ -130,6 +136,5 @@ services:
       - MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
       - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
       - MAIL_FROM_NAME=${MAIL_FROM_NAME}
-    restart: always
     volumes:
-      - ./clinica-backend:/var/www/html
+      - laravel_storage:/var/www/storage
