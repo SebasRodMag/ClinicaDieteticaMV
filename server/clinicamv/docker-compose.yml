@@ -120,21 +120,9 @@ services:
         condition: service_healthy
     # Usa el mismo entorno que php
     env_file: [ ./secrets/clinica.env ]
-    working_dir: /var/www
+    working_dir: /var/www/html
     command: php artisan queue:work --queue=default --sleep=3 --tries=3 --timeout=120
     restart: unless-stopped
     networks: [red-clinicamv]
-    environment:
-      - APP_ENV=production
-      - APP_KEY=${APP_KEY}
-      - QUEUE_CONNECTION=database
-      - MAIL_MAILER=${MAIL_MAILER}
-      - MAIL_HOST=${MAIL_HOST}
-      - MAIL_PORT=${MAIL_PORT}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
-      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
-      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
     volumes:
       - laravel_storage:/var/www/storage
