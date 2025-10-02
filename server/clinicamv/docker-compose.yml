@@ -122,7 +122,7 @@ services:
     env_file: [ ./secrets/clinica.env ]
     entrypoint: ["sh","-lc"]
     working_dir: /var/www
-    command: php artisan queue:work --queue=default --sleep=3 --tries=3 --timeout=120
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=120 # Corre el worker en todas las colas, prueba para ver donde falla
     restart: unless-stopped
     networks: [red-clinicamv]
     volumes:
