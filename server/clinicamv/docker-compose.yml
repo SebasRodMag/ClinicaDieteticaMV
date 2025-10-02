@@ -121,7 +121,7 @@ services:
     # Usa el mismo entorno que php
     env_file: [ ./secrets/clinica.env ]
     entrypoint: [] 
-    command: ["php","/var/www/artisan","queue:work","--sleep=1","--tries=3","--timeout=120","-vvv"]
+    command: ["php","/var/www/artisan","queue:work","--queue=default,mail,notifications","--sleep=1","--tries=3","--timeout=120","-vvv"]
     working_dir: /var/www
     restart: unless-stopped
     networks: [red-clinicamv]
