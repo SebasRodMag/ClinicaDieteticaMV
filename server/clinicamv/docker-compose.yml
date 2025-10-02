@@ -120,6 +120,7 @@ services:
         condition: service_healthy
     # Usa el mismo entorno que php
     env_file: [ ./secrets/clinica.env ]
+    entrypoint: ["sh","-lc"]
     working_dir: /var/www
     command: php artisan queue:work --queue=default --sleep=3 --tries=3 --timeout=120
     restart: unless-stopped
