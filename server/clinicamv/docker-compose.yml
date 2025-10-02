@@ -45,7 +45,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-      start_period: 60s #Cuando ejecutemos migraciones, subir el tiempo a 360s para darle tiempo a que se ejecuten.
+      start_period: 60s #Cuando ejecutemos migraciones, subir el tiempo a 360s para darle tiempo a que se ejecuten. Sino, en 60 esta bien.
     networks: [red-clinicamv]
 
   api:
@@ -120,7 +120,7 @@ services:
         condition: service_healthy
     # Usa el mismo entorno que php
     env_file: [ ./secrets/clinica.env ]
-    working_dir: /var/www/html
+    working_dir: /var/www
     command: php artisan queue:work --queue=default --sleep=3 --tries=3 --timeout=120
     restart: unless-stopped
     networks: [red-clinicamv]
