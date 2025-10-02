@@ -29,6 +29,7 @@ class CitaCanceladaNotificacion extends Notification implements ShouldQueue
         $hora  = optional($this->cita->fecha_hora_cita)->format('H:i');
 
         return (new MailMessage)
+            ->from(config('mail.from.address'), config('mail.from.name'))
             ->subject('Cita cancelada')
             ->greeting('Hola,')
             ->line("Tu cita del {$fecha} a las {$hora} ha sido cancelada.")
