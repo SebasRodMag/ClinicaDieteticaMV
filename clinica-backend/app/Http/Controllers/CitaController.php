@@ -441,7 +441,11 @@ class CitaController extends Controller
         $dbg = (string) request('dbg', ''); // <<<<<<<<<< DEBUG SWITCH
 
         $user = auth()->user();
-        $userId = $user->id ?? null;
+        if (!$user) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        $userId = $user->id;
 
         $codigo = 200;
         $respuesta = [];
@@ -1118,6 +1122,9 @@ class CitaController extends Controller
     public function cambiarEstadoCita(Request $request, int $id): JsonResponse
     {
         $usuario = auth()->user();
+        if (!$usuario) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
         $rol = $usuario->getRoleNames()->first();
         $userId = $usuario->id;
 
