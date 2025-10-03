@@ -14,7 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use \Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Http\Notifications\CitaCanceladaNotification;
+use App\Http\Notifications\CitaCanceladaNotificacion;
 
 class CitaController extends Controller
 {
@@ -442,7 +442,7 @@ class CitaController extends Controller
         $userId = $user->id ?? null;
         $codigo = 200;
         $respuesta = [];
-        $continuar = true; // evita returns intermedios
+        $continuar = true;
         $rolQuienCancela = 'sistema';
         $notificaciones = 0;
 
