@@ -438,7 +438,7 @@ class CitaController extends Controller
      */
     public function cancelarCita(int $id): JsonResponse
     {
-        
+
         $user = auth()->user();
         $userId = $user->id ?? null;
         $codigo = 200;
@@ -448,7 +448,13 @@ class CitaController extends Controller
         $notificaciones = 0;
 
         //Para depuración
-        Log::info('DEBUG cancelarCita*: voy a notificar', ['cita_id' => $id ?? $id]);
+        Log::info('DEBUG cancelarCita (runtime)', [
+            'user_id' => auth()->id(),
+            'cita_id' => $id,
+            'queue' => config('queue.default'),
+            'mailer' => config('mail.default'),
+            'from' => config('mail.from.address'),
+        ]);
         try {
             //Buscar cita con relaciones para tener identificados a los participantes y poder notificar
             $cita = Cita::with(['paciente.user', 'especialista.user'])->find($id);
@@ -468,6 +474,7 @@ class CitaController extends Controller
                 if ($rol === 'paciente') {
                     $paciente = Paciente::where('user_id', $userId)->first();
                     $autorizado = $paciente && $cita->id_paciente === $paciente->id;
+
                 } elseif ($rol === 'especialista') {
                     $especialista = Especialista::where('user_id', $userId)->first();
                     $autorizado = $especialista && $cita->id_especialista === $especialista->id;
@@ -479,6 +486,15 @@ class CitaController extends Controller
                     $this->registrarLog($userId, 'cancelar_cita_no_autorizado', 'citas', $id);
                     $continuar = false;
                 }
+                Log::info('DEBUG auth cancelarCita', [
+                    'rol' => $rol ?? null,
+                    'autorizado' => $autorizado ?? null,
+                    'id_paciente_cita' => $cita->id_paciente ?? null,
+                    'id_especialista_cita' => $cita->id_especialista ?? null,
+                    'pk_paciente' => $paciente?->getKey(),
+                    'pk_especialista' => $especialista?->getKey(),
+                ]);
+
             }
 
             //Validar estado
