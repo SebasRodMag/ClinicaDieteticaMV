@@ -438,14 +438,17 @@ class CitaController extends Controller
      */
     public function cancelarCita(int $id): JsonResponse
     {
+        
         $user = auth()->user();
         $userId = $user->id ?? null;
         $codigo = 200;
         $respuesta = [];
         $continuar = true;
-        $rolQuienCancela = 'sistema';
+        $rolQueCancela = 'sistema';
         $notificaciones = 0;
 
+        //Para depuración
+        Log::info('DEBUG cancelarCita*: voy a notificar', ['cita_id' => $id ?? $id]);
         try {
             //Buscar cita con relaciones para tener identificados a los participantes y poder notificar
             $cita = Cita::with(['paciente.user', 'especialista.user'])->find($id);
@@ -459,7 +462,7 @@ class CitaController extends Controller
             //Autorización (paciente o especialista asignados)
             if ($continuar) {
                 $rol = $user?->getRoleNames()?->first();
-                $rolQuienCancela = in_array($rol, ['paciente', 'especialista'], true) ? $rol : 'sistema';
+                $rolQueCancela = in_array($rol, ['paciente', 'especialista'], true) ? $rol : 'sistema';
                 $autorizado = false;
 
                 if ($rol === 'paciente') {
@@ -492,7 +495,7 @@ class CitaController extends Controller
                 $cita->save();
 
                 $motivo = (string) request('motivo', '');
-                $notificaciones = $this->notificarCancelacionCita($cita, $motivo, $rolQuienCancela);
+                $notificaciones = $this->notificarCancelacionCita($cita, $motivo, $rolQueCancela);
 
                 $this->registrarLog($userId, 'cancelar_cita', 'citas', $id);
                 $respuesta = [
@@ -1131,6 +1134,11 @@ class CitaController extends Controller
                 return;
             }
             try {
+                Log::info('DEBUG notify cancelación', [
+                    'rolDestino' => $rolDestino,
+                    'to_email' => $usuario->email ?? null,
+                    'cita_id' => $cita->id_cita ?? $cita->id ?? null,
+                ]);
                 $usuario->notify(new CitaCanceladaNotificacion($cita, $motivo, $canceladaPor));
                 $enviadas++;
             } catch (\Throwable $e) {
