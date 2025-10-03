@@ -438,6 +438,8 @@ class CitaController extends Controller
      */
     public function cancelarCita(int $id): JsonResponse
     {
+        //esto es solo de prueba, para saber si entra a este método o el error está en otro sitio
+        return response()->json(['probe' => 'cancelarCita entra'], 200);
 
         $user = auth()->user();
         $userId = $user->id ?? null;
