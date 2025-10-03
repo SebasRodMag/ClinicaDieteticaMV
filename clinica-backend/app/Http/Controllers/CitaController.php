@@ -497,8 +497,8 @@ class CitaController extends Controller
                     'autorizado' => $autorizado ?? null,
                     'id_paciente_cita' => $cita->id_paciente ?? null,
                     'id_especialista_cita' => $cita->id_especialista ?? null,
-                    'pk_paciente' => $paciente?->getKey(),
-                    'pk_especialista' => $especialista?->getKey(),
+                    'pk_paciente' => $paciente ? $paciente->getKey() : null,
+                    'pk_especialista' => $especialista ? $especialista->getKey() : null,
                 ]);
 
             }
