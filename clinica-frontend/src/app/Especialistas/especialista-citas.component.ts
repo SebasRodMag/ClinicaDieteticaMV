@@ -241,7 +241,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         this.cargandoActualizarEstado = true;
 
         if (evento.nuevoEstado === 'cancelada') {
-            this.UserService.cancelarCita(evento.id).subscribe({
+            this.UserService.cancelarCita(evento.id, evento.motivo).subscribe({
                 next: () => {
                     this.obtenerCitas();
                     this.modalInfoCitaVisible = false;
