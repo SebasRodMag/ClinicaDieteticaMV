@@ -237,9 +237,26 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
         this.cancelarCita(cita);
     }
 
-    actualizarEstadoCita(evento: { id: number; nuevoEstado: string }): void {
+    actualizarEstadoCita(evento: { id: number; nuevoEstado: string; motivo?: string }): void {
         this.cargandoActualizarEstado = true;
 
+        if (evento.nuevoEstado === 'cancelada') {
+            this.UserService.cancelarCita(evento.id).subscribe({
+                next: () => {
+                    this.obtenerCitas();
+                    this.modalInfoCitaVisible = false;
+                    this.snackBar.open('Cita cancelada correctamente.', 'Cerrar', { duration: 3000 });
+                },
+                error: () => {
+                    this.cargandoActualizarEstado = false;
+                    this.snackBar.open('No se pudo cancelar la cita.', 'Cerrar', { duration: 3000 });
+                },
+                complete: () => this.cargandoActualizarEstado = false
+            });
+            return;
+        }
+
+        // Otros estados -> cambiarEstadoCita
         this.UserService.cambiarEstadoCita(evento.id, evento.nuevoEstado).subscribe({
             next: () => {
                 this.obtenerCitas();
@@ -250,9 +267,7 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
                 this.cargandoActualizarEstado = false;
                 this.snackBar.open('No se pudo actualizar el estado de la cita.', 'Cerrar', { duration: 3000 });
             },
-            complete: () => {
-                this.cargandoActualizarEstado = false;
-            }
+            complete: () => this.cargandoActualizarEstado = false
         });
     }
 
