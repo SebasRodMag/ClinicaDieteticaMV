@@ -211,12 +211,13 @@ export class UserService {
         return this.http.get<{ citas: CitaPorEspecialista[] }>(`${this.apiUrl}/listar-citas-paciente`);
     }
 
-    cancelarCita(idCita: number): Observable<any> {
-        return this.http.patch(`${this.apiUrl}/citas/${idCita}/cancelar`, {});
+    cancelarCita(idCita: number, motivo?: string): Observable<any> {
+        const body = motivo ? { motivo } : {};
+        return this.http.patch(`${this.apiUrl}/citas/${idCita}/cancelar`, body);
     }
 
-    cambiarEstadoCita(idCita: number, nuevoEstado: string): Observable<any> {
-        return this.http.patch(`${this.apiUrl}/citas/${idCita}/cambiar-estado`, { estado: nuevoEstado });
+    cambiarEstadoCita(idCita: number, estado: string): Observable<any> {
+        return this.http.patch(`${this.apiUrl}/citas/${idCita}/cambiar-estado`, { estado });
     }
 
     verPaciente(id: number): Observable<any> {

@@ -475,6 +475,10 @@ class CitaController extends Controller
                     $paciente = Paciente::where('user_id', $userId)->first();
                     $autorizado = $paciente && $cita->id_paciente === $paciente->id;
 
+                }
+                if ($rol === 'administrador') {
+                    $autorizado = true;
+                    $rolQueCancela = 'administrador';
                 } elseif ($rol === 'especialista') {
                     $especialista = Especialista::where('user_id', $userId)->first();
                     $autorizado = $especialista && $cita->id_especialista === $especialista->id;
@@ -1081,6 +1085,13 @@ class CitaController extends Controller
         $request->validate([
             'estado' => 'required|string|in:pendiente,realizada,cancelada,ausente,reasignada,finalizada',
         ]);
+
+        // Si me piden ponerla en 'cancelada', delego en cancelarCita()
+        if ($estadoNuevo === 'cancelada') {
+            // El motivo puede venir del front
+            // cancelarCita() ya lee request('motivo'), así que no hace falta pasarlo
+            return $this->cancelarCita($id);
+        }
 
         $cita = Cita::find($id);
         if (!$cita) {
