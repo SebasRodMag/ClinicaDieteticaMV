@@ -441,13 +441,17 @@ class CitaController extends Controller
 
         $user = auth()->user();
         $userId = $user->id ?? null;
+
         $codigo = 200;
         $respuesta = [];
         $continuar = true;
         $rolQueCancela = 'sistema';
         $notificaciones = 0;
 
-        //Para depuración
+        $paciente = null;
+        $especialista = null;
+
+        //Para depurar hasta donde llega antes de fallar
         Log::info('DEBUG cancelarCita (runtime)', [
             'user_id' => auth()->id(),
             'cita_id' => $id,
@@ -473,15 +477,12 @@ class CitaController extends Controller
 
                 if ($rol === 'paciente') {
                     $paciente = Paciente::where('user_id', $userId)->first();
-                    $autorizado = $paciente && $cita->id_paciente === $paciente->id;
-
-                }
-                if ($rol === 'administrador') {
-                    $autorizado = true;
-                    $rolQueCancela = 'administrador';
+                    $autorizado = $paciente && intval($cita->id_paciente) === intval($paciente->getKey());
                 } elseif ($rol === 'especialista') {
                     $especialista = Especialista::where('user_id', $userId)->first();
-                    $autorizado = $especialista && $cita->id_especialista === $especialista->id;
+                    $autorizado = $especialista && intval($cita->id_especialista) === intval($especialista->getKey());
+                } elseif ($rol === 'administrador') {
+                    $autorizado = true;
                 }
 
                 if (!$autorizado) {
@@ -490,6 +491,7 @@ class CitaController extends Controller
                     $this->registrarLog($userId, 'cancelar_cita_no_autorizado', 'citas', $id);
                     $continuar = false;
                 }
+                //Log para depuración
                 Log::info('DEBUG auth cancelarCita', [
                     'rol' => $rol ?? null,
                     'autorizado' => $autorizado ?? null,
