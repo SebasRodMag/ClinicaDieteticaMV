@@ -14,7 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use \Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Http\Notifications\CitaCanceladaNotificacion;
+use App\Notifications\CitaCanceladaNotificacion;
 
 class CitaController extends Controller
 {
