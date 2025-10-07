@@ -438,14 +438,7 @@ class CitaController extends Controller
      */
     public function cancelarCita(int $id): JsonResponse
     {
-        $dbg = (string) request('dbg', ''); // <<<<<<<<<< DEBUG SWITCH
-
         $user = auth()->user();
-        if (!$user) {
-            return response()->json(['message' => 'No autenticado'], 401);
-        }
-
-        $userId = $user->id;
 
         $codigo = 200;
         $respuesta = [];
@@ -456,100 +449,64 @@ class CitaController extends Controller
         $paciente = null;
         $especialista = null;
 
-        Log::info('DBG A: entrar cancelarCita', [
-            'user_id' => auth()->id(),
-            'cita_id' => $id,
-            'dbg' => $dbg,
-        ]);
-        if ($dbg === 'A')
-            return response()->json(['hit' => 'A'], 200);
-
         try {
-            // A1: buscar cita
-            $cita = Cita::with(['paciente.user', 'especialista.user'])->find($id);
-            Log::info('DBG A1: find cita', ['found' => (bool) $cita, 'id' => $id]);
-            if ($dbg === 'A1')
-                return response()->json(['hit' => 'A1', 'found' => (bool) $cita], 200);
-
-            if (!$cita) {
-                $codigo = 404;
-                $respuesta = ['message' => 'Cita no encontrada'];
-                $this->registrarLog($userId, 'cancelar_cita_fallida', 'citas', $id);
+            // Autenticación
+            if (!$user) {
+                $codigo = 401;
+                $respuesta = ['message' => 'No autenticado'];
                 $continuar = false;
             }
 
-            // B: autorización
+            // Buscar cita con relaciones (para notificar)
+            $cita = $continuar ? Cita::with(['paciente.user', 'especialista.user'])->find($id) : null;
+            if ($continuar && !$cita) {
+                $codigo = 404;
+                $respuesta = ['message' => 'Cita no encontrada'];
+                $this->registrarLog($user?->id, 'cancelar_cita_fallida', 'citas', $id);
+                $continuar = false;
+            }
+
+            // Autorización
             if ($continuar) {
                 $rol = $user?->getRoleNames()?->first();
-                $rolQueCancela = in_array($rol, ['paciente', 'especialista'], true) ? $rol : 'sistema';
+                $rolQueCancela = in_array($rol, ['paciente', 'especialista', 'administrador'], true) ? $rol : 'sistema';
                 $autorizado = false;
 
                 if ($rol === 'paciente') {
-                    $paciente = Paciente::where('user_id', $userId)->first();
+                    $paciente = Paciente::where('user_id', $user->id)->first();
                     $autorizado = $paciente && intval($cita->id_paciente) === intval($paciente->getKey());
                 } elseif ($rol === 'especialista') {
-                    $especialista = Especialista::where('user_id', $userId)->first();
+                    $especialista = Especialista::where('user_id', $user->id)->first();
                     $autorizado = $especialista && intval($cita->id_especialista) === intval($especialista->getKey());
                 } elseif ($rol === 'administrador') {
                     $autorizado = true;
                 }
 
-                Log::info('DBG B: auth', [
-                    'rol' => $rol,
-                    'autorizado' => $autorizado,
-                    'id_paciente_cita' => $cita->id_paciente ?? null,
-                    'id_especialista_cita' => $cita->id_especialista ?? null,
-                    'pk_paciente' => $paciente?->getKey(),
-                    'pk_especialista' => $especialista?->getKey(),
-                ]);
-                if ($dbg === 'B')
-                    return response()->json(['hit' => 'B', 'autorizado' => $autorizado], 200);
-
                 if (!$autorizado) {
                     $codigo = 403;
                     $respuesta = ['message' => 'No autorizado para cancelar esta cita'];
-                    $this->registrarLog($userId, 'cancelar_cita_no_autorizado', 'citas', $id);
+                    $this->registrarLog($user->id, 'cancelar_cita_no_autorizado', 'citas', $id);
                     $continuar = false;
                 }
             }
 
-            // C: estado
+            // Validación de estado
             if ($continuar && in_array($cita->estado, ['cancelada', 'realizada'], true)) {
-                Log::info('DBG C: estado no cancelable', ['estado' => $cita->estado]);
-                if ($dbg === 'C')
-                    return response()->json(['hit' => 'C', 'estado' => $cita->estado], 200);
-
                 $codigo = 400;
                 $respuesta = ['message' => 'La cita no se puede cancelar en su estado actual'];
-                $this->registrarLog($userId, 'cancelar_cita_estado_no_cancelable', 'citas', $id);
+                $this->registrarLog($user->id, 'cancelar_cita_estado_no_cancelable', 'citas', $id);
                 $continuar = false;
             }
 
-            // D: cancelar y guardar
+            // Cancelar y notificar
             if ($continuar) {
-                Log::info('DBG D: antes de save', ['estado_actual' => $cita->estado]);
-                if ($dbg === 'D')
-                    return response()->json(['hit' => 'D'], 200);
-
                 $cita->estado = 'cancelada';
                 $cita->save();
 
-                Log::info('DBG E: tras save', ['estado_nuevo' => $cita->estado]);
-                if ($dbg === 'E')
-                    return response()->json(['hit' => 'E'], 200);
-
                 $motivo = (string) request('motivo', '');
-                Log::info('DBG F: antes de notificar', ['motivo' => $motivo]);
-                if ($dbg === 'F')
-                    return response()->json(['hit' => 'F'], 200);
-
                 $notificaciones = $this->notificarCancelacionCita($cita, $motivo, $rolQueCancela);
 
-                Log::info('DBG G: tras notificar', ['notificaciones' => $notificaciones]);
-                if ($dbg === 'G')
-                    return response()->json(['hit' => 'G', 'notificaciones' => $notificaciones], 200);
-
-                $this->registrarLog($userId, 'cancelar_cita', 'citas', $id);
+                $this->registrarLog($user->id, 'cancelar_cita', 'citas', $id);
                 $respuesta = [
                     'message' => 'Cita cancelada correctamente',
                     'id_cita' => $cita->id_cita,
@@ -557,25 +514,13 @@ class CitaController extends Controller
                 ];
             }
         } catch (\Throwable $e) {
-            // ¡que quede EN FICHERO, sí o sí!
-            Log::error('EX cancelarCita', [
-                'msg' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
             $codigo = 500;
             $respuesta = ['message' => 'Error interno al cancelar la cita'];
-            $this->logError($userId, 'Error al cancelar cita', [
+            $this->logError($user?->id, 'Error al cancelar cita', [
                 'cita_id' => $id,
                 'error' => $e->getMessage(),
             ]);
         }
-
-        Log::info('DBG Z: antes del return', ['codigo' => $codigo, 'resp' => $respuesta]);
-        if ($dbg === 'Z')
-            return response()->json(['hit' => 'Z', 'codigo' => $codigo], 200);
 
         return response()->json($respuesta, $codigo);
     }
@@ -1122,121 +1067,152 @@ class CitaController extends Controller
     public function cambiarEstadoCita(Request $request, int $id): JsonResponse
     {
         $usuario = auth()->user();
-        if (!$usuario) {
-            return response()->json(['message' => 'No autenticado'], 401);
-        }
-        $rol = $usuario->getRoleNames()->first();
-        $userId = $usuario->id;
 
-        $estadoNuevo = $request->input('estado');
+        $codigo = 200;
+        $respuesta = [];
+        $continuar = true;
 
-        $request->validate([
-            'estado' => 'required|string|in:pendiente,realizada,cancelada,ausente,reasignada,finalizada',
-        ]);
-
-        // Si me piden ponerla en 'cancelada', delego en cancelarCita()
-        if ($estadoNuevo === 'cancelada') {
-            // El motivo puede venir del front
-            // cancelarCita() ya lee request('motivo'), así que no hace falta pasarlo
-            return $this->cancelarCita($id);
-        }
-
-        $cita = Cita::find($id);
-        if (!$cita) {
-            return response()->json(['message' => 'Cita no encontrada.'], 404);
-        }
-
-        $puedeActualizar = false;
-
-        if ($rol === 'administrador') {
-            $puedeActualizar = true;
-        } elseif ($rol === 'especialista') {
-            $especialista = Especialista::where('user_id', $userId)->first();
-            if ($especialista && $especialista->id === $cita->id_especialista) {
-                $puedeActualizar = true;
+        try {
+            // Autenticación
+            if (!$usuario) {
+                $codigo = 401;
+                $respuesta = ['message' => 'No autenticado'];
+                $continuar = false;
             }
-        } elseif ($rol === 'paciente') {
-            $paciente = Paciente::where('user_id', $userId)->first();
-            if ($paciente && $paciente->id === $cita->id_paciente && $estadoNuevo === 'cancelada') {
-                $puedeActualizar = true;
+
+            // Validación de entrada
+            $estadoNuevo = (string) $request->input('estado', '');
+            if ($continuar) {
+                $request->validate([
+                    'estado' => 'required|string|in:pendiente,realizada,cancelada,ausente,reasignada,finalizada',
+                ]);
             }
+
+            // Si piden cancelar, se delega en cancelarCita()
+            if ($continuar && $estadoNuevo === 'cancelada') {
+                return $this->cancelarCita($id);
+            }
+
+            // Buscar cita
+            $cita = $continuar ? Cita::find($id) : null;
+            if ($continuar && !$cita) {
+                $codigo = 404;
+                $respuesta = ['message' => 'Cita no encontrada.'];
+                $continuar = false;
+            }
+
+            // Autorización para estados distintos de "cancelada"
+            if ($continuar) {
+                $rol = $usuario->getRoleNames()->first();
+                $userId = $usuario->id;
+                $puedeActualizar = false;
+
+                if ($rol === 'administrador') {
+                    $puedeActualizar = true;
+                } elseif ($rol === 'especialista') {
+                    $especialista = Especialista::where('user_id', $userId)->first();
+                    $puedeActualizar = $especialista && $especialista->id === $cita->id_especialista;
+                } else {
+                    $puedeActualizar = false;
+                }
+
+                if (!$puedeActualizar) {
+                    $codigo = 403;
+                    $respuesta = ['message' => 'No autorizado para cambiar el estado de esta cita.'];
+                    $continuar = false;
+                }
+            }
+
+            // Guardar el cambio de estado
+            if ($continuar) {
+                $estadoAnterior = $cita->estado;
+                $cita->estado = $estadoNuevo;
+                $cita->save();
+
+                $this->registrarLog($usuario->id, "cambiar_estado_cita ($estadoAnterior → $estadoNuevo)", 'citas', $id);
+
+                $respuesta = [
+                    'message' => 'Estado de la cita actualizado correctamente.',
+                    'estado_anterior' => $estadoAnterior,
+                    'estado_nuevo' => $estadoNuevo,
+                ];
+            }
+        } catch (\Throwable $e) {
+            $codigo = 500;
+            $respuesta = ['message' => 'Error interno al cambiar el estado de la cita'];
+            $this->logError($usuario?->id, 'Error al cambiar estado de cita', [
+                'cita_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
-        if (!$puedeActualizar) {
-            return response()->json(['message' => 'No autorizado para cambiar el estado de esta cita.'], 403);
-        }
-
-        $estadoAnterior = $cita->estado;
-        $cita->estado = $estadoNuevo;
-        $cita->save();
-
-        $this->registrarLog($userId, "cambiar_estado_cita ($estadoAnterior → $estadoNuevo)", 'citas', $id);
-
-        return response()->json([
-            'message' => 'Estado de la cita actualizado correctamente.',
-            'estado_anterior' => $estadoAnterior,
-            'estado_nuevo' => $estadoNuevo,
-        ]);
+        return response()->json($respuesta, $codigo);
     }
 
     /**
      * Notifica por email la cancelación de una cita a paciente y especialista.
      * Usa cola (ShouldQueue) si la notificación lo implementa.
      *
-     * @param \App\Models\Cita $cita
-     * @param string $motivo
-     * @param 'paciente'|'especialista'|'sistema' $canceladaPor
-     * @return array Conteo de notificaciones enviadas
+     * @param Cita $cita Cita cancelada
+     * @param string $motivo Motivo de la cancelación (opcional)
+     * @param 'paciente'|'especialista'|'sistema' $canceladaPor Quién cancela la cita
+     * @return array Conteo de notificaciones enviadas y fallidas
      */
-    private function notificarCancelacionCita(Cita $cita, string $motivo, string $canceladaPor = 'sistema'): array
-    {
-        Log::info('DBG N0: entrar notificar', ['cita' => $cita->id_cita ?? null]);
-
+    private function notificarCancelacionCita(
+        Cita $cita,
+        string $motivo,
+        string $canceladaPor = 'sistema'
+    ): array {
+        // Se busca a los relacionados con la cita por si no vinieron las relaciones
         $cita->loadMissing(['paciente.user', 'especialista.user']);
-        Log::info('DBG N1: tras loadMissing');
 
         $enviadas = 0;
-        $pacienteUser = $cita->paciente->user ?? null;
-        $especialistaUser = $cita->especialista->user ?? null;
-        Log::info('DBG N2: destinatarios', [
-            'paciente_email' => $pacienteUser->email ?? null,
-            'esp_email' => $especialistaUser->email ?? null,
-        ]);
 
-        $enviar = function ($usuario, string $rolDestino) use ($cita, $motivo, $canceladaPor, &$enviadas) {
-            Log::info('DBG N3: en enviar()', ['rolDestino' => $rolDestino]);
+        // Posibles destinatarios
+        $destinatarios = [
+            ['user' => $cita->paciente->user ?? null, 'rol' => 'paciente'],
+            ['user' => $cita->especialista->user ?? null, 'rol' => 'especialista'],
+        ];
 
-            if (!$usuario || !filter_var($usuario->email ?? '', FILTER_VALIDATE_EMAIL)) {
-                Log::info('Cancelación: usuario sin email válido, se omite notificación', [
-                    'rolDestino' => $rolDestino,
-                    'user_id' => $usuario->id ?? null,
-                ]);
-                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_sin_email', 'citas', $cita->id_cita ?? $cita->id ?? null);
-                return;
+        //Evitar duplicados si por cualquier motivo es el mismo user
+        $vistos = [];
+
+        foreach ($destinatarios as $dest) {
+            $usuario = $dest['user'];
+            $rolDestino = $dest['rol'];
+
+            if (!$usuario) {
+                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_inexistente', 'citas', $cita->id_cita ?? $cita->id ?? null);
+                continue;
             }
+
+            // se depura por id de usuario
+            $usuario_id = (string) ($usuario->id ?? '');
+            if ($uid === '' || isset($vistos[$usuario_id])) {
+                continue;
+            }
+            $vistos[$usuario_id] = true;
+
+            // Validar email
+            $email = $usuario->email ?? '';
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_sin_email', 'citas', $cita->id_cita ?? $cita->id ?? null);
+                continue;
+            }
+
             try {
-                Log::info('DBG N4: antes notify', ['to' => $usuario->email, 'rolDestino' => $rolDestino]);
                 $usuario->notify(new CitaCanceladaNotificacion($cita, $motivo, $canceladaPor));
                 $enviadas++;
-                Log::info('DBG N5: tras notify ok', ['rolDestino' => $rolDestino]);
             } catch (\Throwable $e) {
-                Log::warning('Fallo enviando notificación de cita cancelada', [
+                \Log::warning('Fallo enviando notificación de cita cancelada', [
                     'rolDestino' => $rolDestino,
                     'user_id' => $usuario->id ?? null,
                     'error' => $e->getMessage(),
                 ]);
                 $this->registrarLog(auth()->id(), 'error_notificacion_cancelacion_cita', 'citas', $cita->id_cita ?? $cita->id ?? null);
             }
-        };
-
-        $enviar($pacienteUser, 'paciente');
-        $enviar($especialistaUser, 'especialista');
-
-        Log::info('DBG N6: salir notificar', ['enviadas' => $enviadas]);
+        }
 
         return ['enviadas' => $enviadas];
     }
-
-
-
 }
