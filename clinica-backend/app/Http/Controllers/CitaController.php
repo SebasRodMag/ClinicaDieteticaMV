@@ -1088,7 +1088,7 @@ class CitaController extends Controller
                 ]);
             }
 
-            // Si piden cancelar, delega en cancelarCita()
+            // Si piden cancelar, se delega en cancelarCita()
             if ($continuar && $estadoNuevo === 'cancelada') {
                 return $this->cancelarCita($id);
             }
@@ -1101,7 +1101,7 @@ class CitaController extends Controller
                 $continuar = false;
             }
 
-            // Autorización (para estados distintos de "cancelada")
+            // Autorización para estados distintos de "cancelada"
             if ($continuar) {
                 $rol = $usuario->getRoleNames()->first();
                 $userId = $usuario->id;
@@ -1113,7 +1113,6 @@ class CitaController extends Controller
                     $especialista = Especialista::where('user_id', $userId)->first();
                     $puedeActualizar = $especialista && $especialista->id === $cita->id_especialista;
                 } else {
-                    // Paciente u otros roles: no pueden cambiar a otros estados aquí
                     $puedeActualizar = false;
                 }
 
@@ -1124,7 +1123,7 @@ class CitaController extends Controller
                 }
             }
 
-            // Guardar cambio de estado
+            // Guardar el cambio de estado
             if ($continuar) {
                 $estadoAnterior = $cita->estado;
                 $cita->estado = $estadoNuevo;
@@ -1154,60 +1153,66 @@ class CitaController extends Controller
      * Notifica por email la cancelación de una cita a paciente y especialista.
      * Usa cola (ShouldQueue) si la notificación lo implementa.
      *
-     * @param \App\Models\Cita $cita
-     * @param string $motivo
-     * @param 'paciente'|'especialista'|'sistema' $canceladaPor
-     * @return array Conteo de notificaciones enviadas
+     * @param Cita $cita Cita cancelada
+     * @param string $motivo Motivo de la cancelación (opcional)
+     * @param 'paciente'|'especialista'|'sistema' $canceladaPor Quién cancela la cita
+     * @return array Conteo de notificaciones enviadas y fallidas
      */
-    private function notificarCancelacionCita(Cita $cita, string $motivo, string $canceladaPor = 'sistema'): array
-    {
-        Log::info('DBG N0: entrar notificar', ['cita' => $cita->id_cita ?? null]);
-
+    private function notificarCancelacionCita(
+        Cita $cita,
+        string $motivo,
+        string $canceladaPor = 'sistema'
+    ): array {
+        // Se busca a los relacionados con la cita por si no vinieron las relaciones
         $cita->loadMissing(['paciente.user', 'especialista.user']);
-        Log::info('DBG N1: tras loadMissing');
 
         $enviadas = 0;
-        $pacienteUser = $cita->paciente->user ?? null;
-        $especialistaUser = $cita->especialista->user ?? null;
-        Log::info('DBG N2: destinatarios', [
-            'paciente_email' => $pacienteUser->email ?? null,
-            'esp_email' => $especialistaUser->email ?? null,
-        ]);
 
-        $enviar = function ($usuario, string $rolDestino) use ($cita, $motivo, $canceladaPor, &$enviadas) {
-            Log::info('DBG N3: en enviar()', ['rolDestino' => $rolDestino]);
+        // Posibles destinatarios
+        $destinatarios = [
+            ['user' => $cita->paciente->user ?? null, 'rol' => 'paciente'],
+            ['user' => $cita->especialista->user ?? null, 'rol' => 'especialista'],
+        ];
 
-            if (!$usuario || !filter_var($usuario->email ?? '', FILTER_VALIDATE_EMAIL)) {
-                Log::info('Cancelación: usuario sin email válido, se omite notificación', [
-                    'rolDestino' => $rolDestino,
-                    'user_id' => $usuario->id ?? null,
-                ]);
-                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_sin_email', 'citas', $cita->id_cita ?? $cita->id ?? null);
-                return;
+        //Evitar duplicados si por cualquier motivo es el mismo user
+        $vistos = [];
+
+        foreach ($destinatarios as $dest) {
+            $usuario = $dest['user'];
+            $rolDestino = $dest['rol'];
+
+            if (!$usuario) {
+                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_inexistente', 'citas', $cita->id_cita ?? $cita->id ?? null);
+                continue;
             }
+
+            // se depura por id de usuario
+            $usuario_id = (string) ($usuario->id ?? '');
+            if ($uid === '' || isset($vistos[$usuario_id])) {
+                continue;
+            }
+            $vistos[$usuario_id] = true;
+
+            // Validar email
+            $email = $usuario->email ?? '';
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_sin_email', 'citas', $cita->id_cita ?? $cita->id ?? null);
+                continue;
+            }
+
             try {
-                Log::info('DBG N4: antes notify', ['to' => $usuario->email, 'rolDestino' => $rolDestino]);
                 $usuario->notify(new CitaCanceladaNotificacion($cita, $motivo, $canceladaPor));
                 $enviadas++;
-                Log::info('DBG N5: tras notify ok', ['rolDestino' => $rolDestino]);
             } catch (\Throwable $e) {
-                Log::warning('Fallo enviando notificación de cita cancelada', [
+                \Log::warning('Fallo enviando notificación de cita cancelada', [
                     'rolDestino' => $rolDestino,
                     'user_id' => $usuario->id ?? null,
                     'error' => $e->getMessage(),
                 ]);
                 $this->registrarLog(auth()->id(), 'error_notificacion_cancelacion_cita', 'citas', $cita->id_cita ?? $cita->id ?? null);
             }
-        };
-
-        $enviar($pacienteUser, 'paciente');
-        $enviar($especialistaUser, 'especialista');
-
-        Log::info('DBG N6: salir notificar', ['enviadas' => $enviadas]);
+        }
 
         return ['enviadas' => $enviadas];
     }
-
-
-
 }
