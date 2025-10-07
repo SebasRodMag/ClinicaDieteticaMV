@@ -2,34 +2,47 @@
 
 namespace App\Notifications;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class PacienteAltaNotificacion extends Notification
+class PacienteAltaNotificacion extends Notification implements ShouldQueue
 {
+    use Queueable;
+
+    /** Evita enviar antes de que se confirme la transacción DB */
+    public bool $afterCommit = true;
+
     public function __construct(
         public string $nombreEspecialista,
         public string $numeroHistorial = ''
-    ) {
-    }
+    ) {}
 
     public function via($notifiable): array
     {
         return ['mail'];
     }
 
+    public function viaQueues(): array
+    {
+        return ['mail' => 'mail'];
+    }
+
     public function toMail($notifiable): MailMessage
     {
-        return (new MailMessage)
+        $msg = (new MailMessage)
+            ->from(config('mail.from.address'), config('mail.from.name'))
             ->subject('Alta como paciente en la Clínica Dietética')
             ->greeting('Hola,')
-            ->line("Te informamos que has sido dado de alta como paciente por el especialista {$this->nombreEspecialista}.")
-            ->when(
-                $this->numeroHistorial,
-                fn($msg) =>
-                $msg->line("Tu número de historial asignado es: {$this->numeroHistorial}.")
-            )
-            ->line('A partir de ahora podrás acceder a tu área personal para gestionar tus citas y documentos.')
+            ->line("Te informamos que has sido dado/a de alta como paciente por el/la especialista {$this->nombreEspecialista}.");
+
+        if (!empty($this->numeroHistorial)) {
+            $msg->line("Tu número de historial asignado es: {$this->numeroHistorial}.");
+        }
+
+        return $msg
+            ->line('Ya puedes acceder a tu área personal para gestionar tus citas y documentos.')
             ->salutation('Gracias por confiar en nosotros.');
     }
 }
