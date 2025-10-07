@@ -159,7 +159,7 @@ class EspecialistaController extends Controller
 
     public function borrarEspecialista(int $id): JsonResponse
     {
-        $userId = auth()->id();
+        $actorId = auth()->id();
         $codigo = 200;
         $respuesta = [];
 
@@ -169,75 +169,86 @@ class EspecialistaController extends Controller
             if (!$especialista) {
                 $codigo = 404;
                 $respuesta = ['message' => 'Especialista no encontrado'];
-                $this->registrarLog($userId, 'eliminar_especialista_fallido', 'Especialista no encontrado', $id);
+                $this->registrarLog($actorId, 'eliminar_especialista_fallido', 'especialistas', $id);
                 return response()->json($respuesta, $codigo);
             }
 
             DB::beginTransaction();
 
-            $user = $especialista->user;
-            $nombreEspecialista = trim(($user->nombre ?? '') . ' ' . ($user->apellidos ?? ''));
+            $userEsp = $especialista->user;
+            $nombreEspecialista = trim(($userEsp->nombre ?? '') . ' ' . ($userEsp->apellidos ?? ''));
 
-            // Obtener citas con sus pacientes
-            $citas = Cita::with('paciente.user')
-                ->where('id_especialista', $id)
-                ->get();
+            $totalNotificadas = 0;
+            $totalCitasAfectadas = 0;
 
-            // Notificar a cada paciente
-            foreach ($citas as $cita) {
-                $pacienteUser = $cita->paciente->user ?? null;
+            // Citas futuras/no cerradas del especialista
+            $queryCitas = Cita::with('paciente.user')
+                ->where('id_especialista', $especialista->getKey())
+                ->whereNotIn('estado', ['cancelada', 'realizada'])
+                ->where('fecha_hora_cita', '>=', now())
+                ->orderBy('id_cita');
 
-                if ($pacienteUser && filter_var($pacienteUser->email, FILTER_VALIDATE_EMAIL)) {
-                    try {
-                        $fechaHora = optional($cita->fecha_hora_cita)->format('d-m-Y H:i');
-                        $pacienteUser->notify(new EspecialistaBajaNotificacion($nombreEspecialista, $fechaHora));
-                    } catch (\Throwable $mailEx) {
-                        Log::warning('Fallo enviando notificación de baja especialista', [
-                            'user_id' => $pacienteUser->id ?? null,
-                            'error' => $mailEx->getMessage(),
-                        ]);
-                        // No hacemos throw; la baja debe continuar
+            // El chunk evita picos de memoria si hay muchas citas
+            $queryCitas->chunk(200, function ($citas) use ($nombreEspecialista, &$totalNotificadas, &$totalCitasAfectadas) {
+                foreach ($citas as $cita) {
+                    $totalCitasAfectadas++;
+
+                    // Notificación al paciente
+                    $pacUser = $cita->paciente->user ?? null;
+                    if ($pacUser && filter_var($pacUser->email ?? '', FILTER_VALIDATE_EMAIL)) {
+                        try {
+                            $fechaHora = optional($cita->fecha_hora_cita)->format('d-m-Y H:i');
+                            $pacUser->notify(new EspecialistaBajaNotificacion(
+                                nombreEspecialista: $nombreEspecialista,
+                                fechaHoraCita: $fechaHora
+                            ));
+                            $totalNotificadas++;
+                        } catch (\Throwable $mailEx) {
+                            Log::warning('Fallo notificación baja especialista', [
+                                'dest_user_id' => $pacUser->id ?? null,
+                                'cita_id' => $cita->id_cita ?? null,
+                                'error' => $mailEx->getMessage(),
+                            ]);
+                            // seguimos para que la baja no se rompa por el mail
+                        }
                     }
+
+                    // Cancela la cita
+                    $cita->estado = 'cancelada';
+                    // Se deja un comentario en la cita para dejar un rastro.
+                    $cita->comentario = trim(($cita->comentario ?? '') . "\nCancelada por baja del especialista.");
+                    $cita->save();
                 }
-            }
+            });
 
-            // Eliminar citas
-            $citasIds = $citas->pluck('id_cita');
-            if ($citasIds->isNotEmpty()) {
-                Cita::whereIn('id_cita', $citasIds)->delete();
-            }
-
-            // Cambiar el rol del especialista
-            if ($user && method_exists($user, 'syncRoles')) {
-                $user->syncRoles(['usuario']);
-            }
-
-            // Eliminar registro del especialista
-            method_exists($especialista, 'forceDelete')
-                ? $especialista->forceDelete()
-                : $especialista->delete();
+            // Cambiar el rol del usuario del especialista
+            $userEsp->syncRoles(['usuario']);
 
             DB::commit();
 
+            $this->registrarLog($actorId, 'eliminar_especialista', 'especialistas', $especialista->getKey());
+
             $respuesta = [
-                'message' => 'Especialista dado de baja, citas eliminadas y pacientes notificados',
+                'message' => 'Especialista dado de baja. Citas afectadas canceladas y pacientes notificados.',
                 'data' => [
-                    'especialista_id' => $id,
-                    'citas_eliminadas' => $citas->count(),
+                    'especialista_id' => $especialista->getKey(),
+                    'citas_canceladas' => $totalCitasAfectadas,
+                    'notificaciones_enviadas' => $totalNotificadas,
                     'rol_nuevo' => 'usuario',
                 ],
             ];
-
-            $this->registrarLog($userId, 'eliminar_especialista', 'Especialista eliminado y pacientes notificados', $id);
         } catch (\Throwable $e) {
             DB::rollBack();
             $codigo = 500;
             $respuesta = ['message' => 'Error interno al eliminar especialista'];
-            $this->logError($userId, 'eliminar_especialista_error', $e->getMessage());
+            $this->logError($actorId, 'eliminar_especialista_error', [
+                'especialista_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
             report($e);
         }
 
-        return response()->json($respuesta, $codigo); // <- sin tilde
+        return response()->json($respuesta, $codigo);
     }
 
 
