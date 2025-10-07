@@ -20,7 +20,7 @@ export class HomeDashboardComponent implements OnInit {
   ];
 
   accesos = [
-    { titulo: 'Gestión de Usuarios', ruta: 'administrador/usuarios' },
+    { titulo: 'Gestión de Usuarios', ruta: '/administrador/usuarios' },
     { titulo: 'Gestión de Citas', ruta: '/administrador/citas' },
     { titulo: 'Gestión de Pacientes', ruta: '/administrador/pacientes' },
     { titulo: 'Configuración', ruta: '/administrador/configuracion' },
