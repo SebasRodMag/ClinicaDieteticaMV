@@ -1163,42 +1163,57 @@ class CitaController extends Controller
         string $motivo,
         string $canceladaPor = 'sistema'
     ): array {
-        // Se busca a los relacionados con la cita por si no vinieron las relaciones
         $cita->loadMissing(['paciente.user', 'especialista.user']);
 
-        $enviadas = 0;
-
-        // Posibles destinatarios
-        $destinatarios = [
+        $candidatos = [
             ['user' => $cita->paciente->user ?? null, 'rol' => 'paciente'],
             ['user' => $cita->especialista->user ?? null, 'rol' => 'especialista'],
         ];
 
-        //Evitar duplicados si por cualquier motivo es el mismo user
         $vistos = [];
+        $destinatariosValidos = [];
 
-        foreach ($destinatarios as $dest) {
-            $usuario = $dest['user'];
-            $rolDestino = $dest['rol'];
+        foreach ($candidatos as $cand) {
+            $usuario = $cand['user'];
+            $rolDestino = $cand['rol'];
 
             if (!$usuario) {
-                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_inexistente', 'citas', $cita->id_cita ?? $cita->id ?? null);
-                continue;
-            }
+                $this->registrarLog(
+                    auth()->id(),
+                    'cancelacion_cita_usuario_inexistente',
+                    'citas',
+                    $cita->id_cita ?? $cita->id ?? null
+                );
+            } else {
+                $usuario_id = (string) ($usuario->id ?? '');
+                $email = $usuario->email ?? '';
 
-            // se depura por id de usuario
-            $usuario_id = (string) ($usuario->id ?? '');
-            if ($uid === '' || isset($vistos[$usuario_id])) {
-                continue;
-            }
-            $vistos[$usuario_id] = true;
+                $esNuevoId = $usuario_id !== '' && !isset($vistos[$usuario_id]);
+                $emailEsValido = filter_var($email, FILTER_VALIDATE_EMAIL);
 
-            // Validar email
-            $email = $usuario->email ?? '';
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $this->registrarLog(auth()->id(), 'cancelacion_cita_usuario_sin_email', 'citas', $cita->id_cita ?? $cita->id ?? null);
-                continue;
+                if ($esNuevoId && $emailEsValido) {
+                    $vistos[$usuario_id] = true;
+                    $destinatariosValidos[] = ['user' => $usuario, 'rol' => $rolDestino];
+                } elseif ($esNuevoId && !$emailEsValido) {
+                    // Marca como visto para no repetir logs, y registra incidencia
+                    $vistos[$usuario_id] = true;
+                    $this->registrarLog(
+                        auth()->id(),
+                        'cancelacion_cita_usuario_sin_email',
+                        'citas',
+                        $cita->id_cita ?? $cita->id ?? null
+                    );
+                }
+                // Si no es nuevo lo ignoramos en silencio.
             }
+        }
+
+        //Envío de notificaciones
+        $enviadas = 0;
+
+        foreach ($destinatariosValidos as $dest) {
+            $usuario = $dest['user'];
+            $rolDestino = $dest['rol'];
 
             try {
                 $usuario->notify(new CitaCanceladaNotificacion($cita, $motivo, $canceladaPor));
@@ -1209,7 +1224,12 @@ class CitaController extends Controller
                     'user_id' => $usuario->id ?? null,
                     'error' => $e->getMessage(),
                 ]);
-                $this->registrarLog(auth()->id(), 'error_notificacion_cancelacion_cita', 'citas', $cita->id_cita ?? $cita->id ?? null);
+                $this->registrarLog(
+                    auth()->id(),
+                    'error_notificacion_cancelacion_cita',
+                    'citas',
+                    $cita->id_cita ?? $cita->id ?? null
+                );
             }
         }
 
