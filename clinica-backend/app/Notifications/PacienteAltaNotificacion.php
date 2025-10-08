@@ -10,14 +10,13 @@ use Illuminate\Notifications\Messages\MailMessage;
 class PacienteAltaNotificacion extends Notification implements ShouldQueue
 {
     use Queueable;
-
-    /** Evita enviar antes de que se confirme la transacción DB */
-    public bool $afterCommit = true;
-
     public function __construct(
         public string $nombreEspecialista,
         public string $numeroHistorial = ''
-    ) {}
+    ) {
+        // Evita enviar antes de que se confirme la transacción DB
+        $this-> afterCommit = true;
+    }
 
     public function via($notifiable): array
     {
