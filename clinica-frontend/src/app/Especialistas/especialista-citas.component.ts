@@ -52,6 +52,10 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     esNuevo = true;
     filtroTexto: string = '';
 
+    paginaActual = 1;
+    itemsPorPagina = 10;
+    maxPaginasVisibles = 5;
+
     loading: boolean = false;
     huboError: boolean = false;
     modalNuevaCitaVisible: boolean = false;
@@ -125,13 +129,20 @@ export class EspecialistaCitasComponent implements OnInit, AfterViewInit {
     }
 
     aplicarFiltros(): void {
-        const termino = this.filtroTexto.toLowerCase().trim();
-        this.citasFiltradas = this.citas.filter((cita) =>
-            cita.nombre_paciente.toLowerCase().includes(termino) ||
-            cita.dni_paciente.toLowerCase().includes(termino) ||
-            cita.estado.toLowerCase().includes(termino) ||
-            cita.tipo_cita.toLowerCase().includes(termino)
-        );
+        const termino = (this.filtroTexto || '').toLowerCase().trim();
+
+        if (!termino) {
+            this.citasFiltradas = [...this.citas];
+        } else {
+            this.citasFiltradas = this.citas.filter(c =>
+                (c.nombre_paciente || '').toLowerCase().includes(termino) ||
+                (c.dni_paciente || '').toLowerCase().includes(termino) ||
+                (c.estado || '').toLowerCase().includes(termino) ||
+                (c.tipo_cita || '').toLowerCase().includes(termino)
+            );
+        }
+
+        this.paginaActual = 1;
     }
 
     cancelarCita(cita: CitaPorPaciente): void {
