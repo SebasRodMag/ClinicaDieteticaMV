@@ -2,22 +2,26 @@
     <h2 class="text-2xl font-bold mb-4">Vista mensual de mis citas</h2>
 </div>
 <div class="alert alert-info small py-2">
-        <i class="bi bi-info-circle-fill me-1"></i>
-        Aquí puedes ver un calendario mensual con todas tus citas programadas. Haz clic en una cita para ver más detalles o para editarla.
-        <br>También puedes crear una nueva cita haciendo clic en el botón "Nueva cita".
-        <br>Recuerda que solo puedes editar citas que estén en estado "pendiente". Las citas ya realizadas no se pueden modificar.
-    </div>
+    <i class="bi bi-info-circle-fill me-1"></i>
+    Aquí puedes ver un calendario mensual con todas tus citas programadas. Haz clic en una cita para ver más detalles o
+    para editarla.
+    <br>También puedes crear una nueva cita haciendo clic en el botón "Nueva cita".
+    <br>Recuerda que solo puedes editar citas que estén en estado "pendiente". Las citas ya realizadas no se pueden
+    modificar.
+</div>
 <app-calendario-citas *ngIf="!loading" [citas]="citasGenericas" (citaClick)="abrirModalInfoCita($event)"
     (citaCancelada)="cancelarCitaDesdeCalendario($event)" (recargarCitas)="obtenerCitas()">
 </app-calendario-citas>
 
 <h2 class="text-2xl font-bold mb-4">Listado de todas las citas</h2>
 <div class="alert alert-info small py-2">
-        <i class="bi bi-info-circle-fill me-1"></i>
-        Aquí puedes ver un listado de todas tus citas programadas. Utiliza el filtro de búsqueda para encontrar citas específicas por paciente, DNI, estado, etc.
-        <br>Haz clic en "Nueva cita" para programar una nueva cita.
-        <br>Recuerda que solo puedes editar citas que estén en estado "pendiente". Las citas ya realizadas no se pueden modificar.
-    </div>
+    <i class="bi bi-info-circle-fill me-1"></i>
+    Aquí puedes ver un listado de todas tus citas programadas. Utiliza el filtro de búsqueda para encontrar citas
+    específicas por paciente, DNI, estado, etc.
+    <br>Haz clic en "Nueva cita" para programar una nueva cita.
+    <br>Recuerda que solo puedes editar citas que estén en estado "pendiente". Las citas ya realizadas no se pueden
+    modificar.
+</div>
 <div class="d-flex align-items-center mb-3">
     <input type="text" [(ngModel)]="filtroTexto" (ngModelChange)="aplicarFiltros()" class="form-control me-3"
         placeholder="Buscar por paciente, DNI, estado, etc." />
@@ -28,8 +32,9 @@
 </div>
 
 <app-tabla-datos [datosTotales]="citasFiltradas" [columnas]="columnas" [templatesMap]="templatesMap"
-    [columnaOrden]="null" [direccionOrdenAsc]="true" [paginaActual]="1" [itemsPorPagina]="10"
-    [maxPaginasVisibles]="5" />
+    [columnaOrden]="null" [direccionOrdenAsc]="true" [paginaActual]="paginaActual" [itemsPorPagina]="itemsPorPagina"
+    [maxPaginasVisibles]="maxPaginasVisibles" (cambiarPagina)="paginaActual = $event">
+</app-tabla-datos>
 
 <ng-template #fechaTemplate let-cita>
     {{ formatearFecha(cita.fecha, '/') }}
