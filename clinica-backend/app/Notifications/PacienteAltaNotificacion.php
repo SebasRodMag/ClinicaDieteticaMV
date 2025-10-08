@@ -31,17 +31,17 @@ class PacienteAltaNotificacion extends Notification implements ShouldQueue
 
     public function toMail($notifiable): MailMessage
     {
-        $msg = (new MailMessage)
+        $email = (new MailMessage)
             ->from(config('mail.from.address'), config('mail.from.name'))
             ->subject('Alta como paciente en la Clínica Dietética')
             ->greeting('Hola,')
             ->line("Te informamos que has sido dado/a de alta como paciente por el/la especialista {$this->nombreEspecialista}.");
 
         if (!empty($this->numeroHistorial)) {
-            $msg->line("Tu número de historial asignado es: {$this->numeroHistorial}.");
+            $email->line("Tu número de historial asignado es: {$this->numeroHistorial}.");
         }
 
-        return $msg
+        return $email
             ->line('Ya puedes acceder a tu área personal para gestionar tus citas y documentos.')
             ->salutation('Gracias por confiar en nosotros.');
     }

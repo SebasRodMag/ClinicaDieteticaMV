@@ -695,11 +695,19 @@ class PacienteController extends Controller
                 $user->syncRoles(['paciente']);
 
                 // Notificación de alta irá a la cola 'mail'
-                $especialistaNombre = auth()->user()?->nombre ?? 'nuestro equipo';
-                $user->notify(new PacienteAltaNotificacion(
-                    nombreEspecialista: $especialistaNombre,
-                    numeroHistorial: $paciente->numero_historial
-                ));
+                $especialistaNombre = auth()->user()?->nombre ?? 'uno de nuestros especialistas';//Por si no se encuentra el nombre del especialista aunque no debería darse el caso
+                try {
+                    $user->notify(new PacienteAltaNotificacion(
+                        nombreEspecialista: $especialistaNombre,
+                        numeroHistorial: $paciente->numero_historial
+                    ));
+                } catch (\Throwable $e) {
+                    \Log::warning('Fallo enviando PacienteAltaNotificacion', [
+                        'user_id' => $user->id ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Si se produce un error al enviar la notificación, no se interrumpe el proceso de creación del paciente.
+                }
 
                 $this->registrarLog(auth()->id(), 'crear_paciente', 'pacientes', $paciente->id);
 
