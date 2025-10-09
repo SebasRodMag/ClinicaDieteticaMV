@@ -8,8 +8,8 @@ services:
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --entrypoints.web.http.redirections.entryPoint.to=websecure
-      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --certificatesresolvers.lets.acme.tlschallenge=true
       - --certificatesresolvers.lets.acme.email=noreply@clinicamv.lol
       - --certificatesresolvers.lets.acme.storage=/acme/acme.json
