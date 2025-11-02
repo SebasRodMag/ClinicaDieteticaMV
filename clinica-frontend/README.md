@@ -1,6 +1,6 @@
 
 # Clínica MV – Frontend (Angular)
-<image src="/front_angular_19.png" alt="Imagen de Angular 19">
+<image src="/assets/front_angular_19.png" alt="Imagen de Angular 19">
 
 **SPA** en **Angular** para la gestión una clínica, controlando pacientes, especialistas, citas e historiales.  
 Consume la **API REST** de Laravel (Sanctum) y utiliza **Bootstrap 5**, **FullCalendar** y componentes reutilizables (tablas, modales, exportaciones).
