@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/workflow.png" alt="Imagen de github workflow" width="600">
+  <img src="/assets/workflow.png" alt="Imagen de github workflow" width="600">
 </p>
 
 # CI/CD – Workflows de GitHub Actions

@@ -64,7 +64,7 @@
 </app-tabla-historial>
 
 <app-modal-edit-historial *ngIf="modalVisible" [visible]="modalVisible" [historial]="historialSeleccionado"
-    [esNuevo]="esNuevo" [color]="colorSistema" [listaPacientes]="pacientesUnicosMapeados"
+    [esNuevo]="esNuevo" [color]="colorSistema" [listaPacientes]="esNuevo ? null : pacientesUnicosMapeados"
     [pacienteNombre]="pacienteNombreSeleccionado" (cerrar)="cerrarModal()" (guardar)="guardarHistorial($event)">
 </app-modal-edit-historial>
 

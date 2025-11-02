@@ -1,6 +1,5 @@
-<!-- SIN fondo oscuro en el contenedor del modal -->
 <div class="modal fade show d-block" tabindex="-1" role="dialog" *ngIf="visible" style="z-index: 1050;">
-    <!-- Centrado horizontal y vertical. Quitamos m-0 -->
+    <!-- Centrado horizontal y vertical -->
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content border border-light shadow">
             <div class="modal-header bg-primary text-white modal-header-sistema">
@@ -10,7 +9,6 @@
                 <button type="button" class="btn-close" (click)="cerrar.emit()"></button>
             </div>
 
-            <!-- El overlay de carga SOLO sobre el body -->
             <div class="modal-body position-relative">
                 <div *ngIf="cargandoPacientes"
                     class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
@@ -85,5 +83,5 @@
     </div>
 </div>
 
-<!-- Backdrop separado, detrás del modal -->
+<!-- Backdrop detrás del modal -->
 <div *ngIf="visible" class="modal-backdrop fade show"></div>

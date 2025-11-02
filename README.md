@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/favicon.png" alt="Imagen de Laravel 12" width="300">
+  <img src="/assets/favicon.png" alt="Imagen de Laravel 12" width="300">
 </p>
 
 # Clínica MV
@@ -51,7 +51,7 @@ Los pacientes, por su parte, pueden subir archivos personales (como analíticas 
 
 ## Arquitectura y tecnologías utilizadas
 
-<image src="/front_laravel_12.png" alt="Imagen de Laravel 12">
+<image src="/assets/front_laravel_12.png" alt="Imagen de Laravel 12">
 
 ### Backend (API REST con Laravel)
 
@@ -86,7 +86,7 @@ El backend actúa como el **núcleo lógico del sistema**, procesando peticiones
 
 ### Frontend (Interfaz web con Angular)
 
-<image src="/front_angular_19.png" alt="Imagen de Angular 19">
+<image src="/assets/front_angular_19.png" alt="Imagen de Angular 19">
 
 El frontend está desarrollado en **Angular 18 (standalone components)** y ofrece una experiencia fluida, moderna y adaptable a cualquier dispositivo.  
 Entre sus aspectos técnicos más relevantes:
@@ -176,7 +176,7 @@ php artisan queue:work
 ```
 
 #### Base de Datos (MySQL 8)
-<image src="/front-mysql.jpg" alt="Imagen de MySQL">
+<image src="/assets/front-mysql.jpg" alt="Imagen de MySQL">
 
 La persistencia de datos se gestiona mediante **MySQL 8**, almacenando información de usuarios, citas, historiales, logs y configuraciones del sistema.
 El acceso está restringido a los contenedores de Laravel y phpMyAdmin dentro de la red interna.
@@ -215,7 +215,7 @@ El acceso está restringido a los contenedores de Laravel y phpMyAdmin dentro de
 ---
 
 #### phpMyAdmin
-<image src="/front_phpmyadmin.png" alt="Imagen de php myadmin">
+<image src="/assets/front_phpmyadmin.png" alt="Imagen de php myadmin">
 
 Herramienta de administración visual de la base de datos, **accesible únicamente desde entorno local o desarrollo.**
 Facilita la inspección y depuración de datos durante el proceso de desarrollo.
@@ -227,7 +227,7 @@ Uso: Consultas SQL, revisión de migraciones y testing manual.
 ---
 
 ### Servicios del stack Docker
-<image src="/front_docker.png" alt="Imagen de docker">
+<image src="/assets/front_docker.png" alt="Imagen de docker">
 
 La siguiente tabla describe cada contenedor que forma parte del despliegue de **Clínica Dietética MV**, incluyendo su imagen, propósito, puertos y notas relevantes.
 
