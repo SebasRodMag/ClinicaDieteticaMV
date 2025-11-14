@@ -139,7 +139,7 @@ export class ModalEditHistorialComponent implements OnChanges, OnInit {
             lista_compra
         } = this.historial;
 
-        const fechaValida = !!fecha && new Date(fecha) >= new Date(this.fechaActual);
+        const fechaValida = !!fecha && new Date(fecha) <= new Date(this.fechaActual);
 
         const hayContenido = [
             observaciones_especialista?.trim() ?? '',

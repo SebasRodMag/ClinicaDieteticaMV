@@ -11,11 +11,13 @@ use Illuminate\Validation\Rules;
 use App\Models\User;
 use App\Traits\Loggable;
 use App\Models\Paciente;
+use OpenApi\Anotations as OA;
 
 class AuthController extends Controller
 {
 
     use Loggable;
+
     /**
      * Manejo de la solicitud de inicio de sesión.
      * Valida las credenciales del usuario y, si son correctas, genera un token de acceso.
@@ -26,6 +28,8 @@ class AuthController extends Controller
      * 
      * La función registrarLog está llamada solo si el login es exitoso, pues si falla no hay usuario para identificar.
      */
+
+
 
     public function login(Request $solicitud): JsonResponse
     {
