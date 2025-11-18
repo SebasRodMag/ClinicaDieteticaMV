@@ -14,8 +14,7 @@ class PacienteAltaNotificacion extends Notification implements ShouldQueue
         public string $nombreEspecialista,
         public string $numeroHistorial = ''
     ) {
-        // Evita enviar antes de que se confirme la transacción DB
-        $this-> afterCommit = true;
+        $this->afterCommit();
     }
 
     public function via($notifiable): array
