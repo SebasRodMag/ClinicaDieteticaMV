@@ -15,7 +15,6 @@ class EspecialistaBajaNotificacion extends Notification implements ShouldQueue
         public string $nombreEspecialista,
         public string $fechaHoraCita = ''
     ) {
-        $this->afterCommit();
     }
 
     public function via($notifiable): array
