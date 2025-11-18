@@ -11,12 +11,12 @@ class EspecialistaBajaNotificacion extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public bool $afterCommit = true;
-
     public function __construct(
         public string $nombreEspecialista,
         public string $fechaHoraCita = ''
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     public function via($notifiable): array
     {
