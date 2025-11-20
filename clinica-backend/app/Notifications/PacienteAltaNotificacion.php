@@ -14,7 +14,6 @@ class PacienteAltaNotificacion extends Notification implements ShouldQueue
         public string $nombreEspecialista,
         public string $numeroHistorial = ''
     ) {
-        $this->afterCommit();
     }
 
     public function via($notifiable): array
