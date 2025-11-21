@@ -28,7 +28,4 @@ use OpenApi\Annotations as OA;
  *     )
  * )
  */
-class PacienteDocumentacion
-{
-    // Esta clase solo contiene las anotaciones para los endpoints de pacientes.
-}
+function openapi_global_docs() {}

@@ -34,4 +34,4 @@ use OpenApi\Annotations as OA;
  */
 
 
-class GlobalDocumentacion {}
+function openapi_global_docs() {}
