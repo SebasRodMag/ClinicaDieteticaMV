@@ -32,4 +32,6 @@ use OpenApi\Annotations as OA;
  *     description="Gestión de historiales médicos"
  * )
  */
+
+
 class GlobalDocumentacion {}
