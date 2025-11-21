@@ -45,7 +45,6 @@ return [
                  */
                 'annotations' => [
                     base_path('app'),
-                    base_path('docs/Swagger'),
                 ],
             ],
         ],
