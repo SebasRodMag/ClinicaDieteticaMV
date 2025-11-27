@@ -32,3 +32,5 @@ storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
+!clinica-backend/resources/views/vendor/
+!clinica-backend/resources/views/vendor/l5-swagger/
