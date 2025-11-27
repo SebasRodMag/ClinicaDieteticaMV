@@ -76,8 +76,10 @@ services:
       - traefik.http.routers.clinicamv-docs.entrypoints=websecure
       - traefik.http.routers.clinicamv-docs.tls.certresolver=lets
       - traefik.http.routers.clinicamv-docs.service=clinicamv-api
-      - traefik.http.middlewares.clinicamv-docs-replacepath.replacepath.path=/api/documentation
-      - traefik.http.routers.clinicamv-docs.middlewares=clinicamv-docs-replacepath
+      - traefik.http.routers.clinicamv-docs.service=clinicamv-backend-svc
+
+      # Servicio backend que usa tanto api.clinicamv.lol como docs.clinicamv.lol
+      - traefik.http.services.clinicamv-backend-svc.loadbalancer.server.port=80
     networks: [red-clinicamv]
 
   frontend:
