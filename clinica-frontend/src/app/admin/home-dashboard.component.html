@@ -12,9 +12,9 @@
     <div [class.opacity-0]="loading" [class.pointer-events-none]="loading">
         <div class="row g-4 mb-5">
             <div class="col-md-3" *ngFor="let card of resumen">
-                <div class="card text-white text-center">
+                <div class="card text-dark text-center">
                     <div class="resumen-overlay"></div>
-                    <div> <!--Quitamos "class="card-body" para dejar el div en blanco-->
+                    <div class="card-body">
                         <div class="dashboard-icon mb-2 d-flex justify-content-center align-items-center">
                             <img [src]="'assets/iconos/' + card.icono + '.png'" alt="icono" (load)="cuandoImagenCargada()"
                                 (error)="cuandoImagenCargada()" />
