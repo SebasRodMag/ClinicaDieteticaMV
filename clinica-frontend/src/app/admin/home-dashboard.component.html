@@ -12,7 +12,7 @@
     <div [class.opacity-0]="loading" [class.pointer-events-none]="loading">
         <div class="row g-4 mb-5">
             <div class="col-md-3" *ngFor="let card of resumen">
-                <div class="card text-white text-center resumen-card">
+                <div class="card text-white text-center">
                     <div class="resumen-overlay"></div>
                     <div class="card-body">
                         <div class="dashboard-icon mb-2 d-flex justify-content-center align-items-center">
@@ -28,7 +28,7 @@
 
         <!-- Accesos rápidos -->
         <div class="row g-4">
-            <div class="col-md-3" *ngFor="let acceso of accesos">
+            <div class="col-md-3 resumen-card" *ngFor="let acceso of accesos">
                 <a [routerLink]="acceso.ruta" class="btn btn-outline-dark w-100 py-4">
                     {{ acceso.titulo }}
                 </a>
