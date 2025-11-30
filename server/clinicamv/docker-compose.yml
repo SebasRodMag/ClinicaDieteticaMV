@@ -69,17 +69,14 @@ services:
       - traefik.http.routers.clinicamv-api.tls.certresolver=lets
       - traefik.http.routers.clinicamv-api.priority=100 # Prioridad alta para evitar conflictos con otros routers que existen en este dominio
       - traefik.http.routers.clinicamv-api.middlewares=secure-headers@docker
-      - traefik.http.services.clinicamv-api.loadbalancer.server.port=80
+      - traefik.http.routers.clinicamv-api.service=clinicamv-backend-svc
+      - traefik.http.services.clinicamv-api-svc.loadbalancer.server.port=80
 
       # --- Docs Swagger (docs.clinicamv.lol) usando el mismo servicio ---
       - traefik.http.routers.clinicamv-docs.rule=Host(`docs.clinicamv.lol`)
       - traefik.http.routers.clinicamv-docs.entrypoints=websecure
       - traefik.http.routers.clinicamv-docs.tls.certresolver=lets
-      - traefik.http.routers.clinicamv-docs.service=clinicamv-api
-      - traefik.http.routers.clinicamv-docs.service=clinicamv-backend-svc
-
-      # Servicio backend que usa tanto api.clinicamv.lol como docs.clinicamv.lol
-      - traefik.http.services.clinicamv-backend-svc.loadbalancer.server.port=80
+      - traefik.http.routers.clinicamv-docs.service=clinicamv-api-svc
     networks: [red-clinicamv]
 
   frontend:
