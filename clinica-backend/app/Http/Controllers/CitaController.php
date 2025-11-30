@@ -15,6 +15,14 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use \Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Notifications\CitaCanceladaNotificacion;
+use OpenApi\Annotations as OA;
+
+/**
+ * @OA\Tag(
+ *     name="Citas",
+ *     description="Gestión de citas clínicas (pacientes y especialistas)."
+ * )
+ */
 
 class CitaController extends Controller
 {
@@ -24,8 +32,50 @@ class CitaController extends Controller
      * Función para listar todas las citas.
      * Esta función obtiene todas las citas de la base de datos, incluyendo la información del paciente y del especialista.
      * Registra un log de la acción realizada.
+     *
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el listado de citas.
      * @throws \Exception controla los errores en caso de que falle la consulta en la base de datos
+     *
+     * @OA\Get(
+     *     path="/api/citas",
+     *     summary="Listar todas las citas",
+     *     description="Devuelve todas las citas con información básica de paciente y especialista.",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Listado de citas o mensaje indicando que no hay registros.",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="citas",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id_cita", type="integer", example=1),
+     *                     @OA\Property(property="id_paciente", type="integer", nullable=true, example=10),
+     *                     @OA\Property(property="id_especialista", type="integer", nullable=true, example=5),
+     *                     @OA\Property(property="fecha", type="string", format="date", example="2025-12-01"),
+     *                     @OA\Property(property="hora", type="string", example="10:30"),
+     *                     @OA\Property(property="tipo_cita", type="string", example="presencial"),
+     *                     @OA\Property(property="estado", type="string", example="pendiente"),
+     *                     @OA\Property(property="nombre_paciente", type="string", example="Ana Pérez"),
+     *                     @OA\Property(property="nombre_especialista", type="string", example="Dr. Juan García"),
+     *                     @OA\Property(property="especialidad", type="string", example="Nutrición"),
+     *                     @OA\Property(property="comentario", type="string", nullable=true)
+     *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="message",
+     *                 type="string",
+     *                 nullable=true,
+     *                 example="No hay citas registradas"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=500, description="Error al obtener las citas")
+     * )
      */
     public function listarCitas(): JsonResponse
     {
@@ -89,6 +139,30 @@ class CitaController extends Controller
      *
      * @param int $id ID de la cita a consultar.
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los detalles de la cita o un mensaje de error si no se encuentra.
+     *
+     * @OA\Get(
+     *     path="/api/citas/{id}",
+     *     summary="Ver una cita por ID",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID de la cita",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Cita encontrada",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="cita", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Cita no encontrada"),
+     *     @OA\Response(response=500, description="Error al obtener la cita")
+     * )
      */
     public function verCita(int $id): JsonResponse
     {
@@ -125,11 +199,60 @@ class CitaController extends Controller
      * Registra un log de la acción realizada.
      * Valida los datos de entrada y maneja posibles errores durante la creación.
      * Si no se proporciona el ID del paciente o especialista, se infiere del usuario autenticado.
-     * 
+     *
      * @param \Illuminate\Http\Request $solicitud contiene los datos de la cita a crear.
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el estado de la operación y los detalles de la cita creada.
-     * @throws \Illuminate\Validation\ValidationException lanza una excepción si los datos no cumplen con las reglas de validación.
-     * @throws \Exception lanza una excepción si ocurre un error al crear la cita.
+     *
+     * @OA\Post(
+     *     path="/api/citas",
+     *     summary="Crear una nueva cita",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="paciente_id", type="integer", nullable=true, example=3,
+     *                 description="Opcional: si no se envía, se usa el paciente asociado al usuario autenticado"
+     *             ),
+     *             @OA\Property(property="especialista_id", type="integer", nullable=true, example=2,
+     *                 description="Opcional: si no se envía, se usa el especialista asociado al usuario autenticado"
+     *             ),
+     *             @OA\Property(
+     *                 property="fecha_hora_cita",
+     *                 type="string",
+     *                 format="date-time",
+     *                 example="2025-12-01 10:30:00",
+     *                 description="Fecha y hora de la cita (Y-m-d H:i:s), debe ser posterior al momento actual"
+     *             ),
+     *             @OA\Property(property="tipo_cita", type="string", example="presencial"),
+     *             @OA\Property(property="comentario", type="string", nullable=true, example="Primera visita")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Cita creada correctamente",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Cita creada correctamente"),
+     *             @OA\Property(
+     *                 property="cita",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="fecha", type="string", example="01-12-2025"),
+     *                 @OA\Property(property="hora", type="string", example="10:30"),
+     *                 @OA\Property(property="nombre_paciente", type="string"),
+     *                 @OA\Property(property="dni_paciente", type="string"),
+     *                 @OA\Property(property="estado", type="string", example="pendiente"),
+     *                 @OA\Property(property="tipo_cita", type="string", example="presencial"),
+     *                 @OA\Property(property="es_primera", type="boolean", example=true)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Paciente o especialista no encontrado para el usuario autenticado"),
+     *     @OA\Response(response=422, description="Datos no válidos o fecha/hora no permitida"),
+     *     @OA\Response(response=500, description="Error interno al crear la cita")
+     * )
      */
 
     public function nuevaCita(Request $solicitud): JsonResponse
@@ -260,6 +383,53 @@ class CitaController extends Controller
      * @param \Illuminate\Http\Request $solicitud contiene los datos actualizados de la cita.
      * @param int $id ID de la cita a actualizar.
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el estado de la operación y los detalles de la cita actualizada o un mensaje de error si no se encuentra.
+     *
+     * @OA\Put(
+     *     path="/api/actualizar-citas/{id}",
+     *     summary="Actualizar una cita existente",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID de la cita a actualizar",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id_paciente", type="integer", nullable=true, example=3),
+     *             @OA\Property(property="id_especialista", type="integer", nullable=true, example=2),
+     *             @OA\Property(property="fecha_hora_cita", type="string", format="date-time", nullable=true,
+     *                 example="2025-12-02 11:00:00"
+     *             ),
+     *             @OA\Property(property="tipo_cita", type="string", nullable=true, example="telemática"),
+     *             @OA\Property(
+     *                 property="estado",
+     *                 type="string",
+     *                 nullable=true,
+     *                 enum={"pendiente", "realizada", "cancelada", "ausente", "reprogramada", "reasignada"},
+     *                 example="pendiente"
+     *             ),
+     *             @OA\Property(property="comentario", type="string", nullable=true, example="Actualización de horario")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Cita actualizada correctamente",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Cita actualizada correctamente."),
+     *             @OA\Property(property="cita", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="No autorizado para modificar esta cita"),
+     *     @OA\Response(response=404, description="Cita no encontrada"),
+     *     @OA\Response(response=422, description="Datos no válidos"),
+     *     @OA\Response(response=500, description="Error interno al actualizar la cita")
+     * )
      */
     public function actualizarCita(Request $solicitud, int $id): JsonResponse
     {
@@ -386,6 +556,30 @@ class CitaController extends Controller
      * Se valida que el ID sea numérico y positivo, y que el usuario tenga el rol de administrador.
      * @param int $id ID de la cita a eliminar.
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el estado de la operación y un mensaje de confirmación o error.
+     *
+     * @OA\Delete(
+     *     path="/api/citas/{id}",
+     *     summary="Eliminar una cita (solo administrador)",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID de la cita a eliminar",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Cita eliminada correctamente",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Cita eliminada correctamente")
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="No autorizado para eliminar citas"),
+     *     @OA\Response(response=404, description="Cita no encontrada"),
+     *     @OA\Response(response=500, description="Error interno al eliminar la cita")
+     * )
      */
 
     public function borrarCita(int $id): JsonResponse
@@ -435,6 +629,50 @@ class CitaController extends Controller
      * @param int $id ID de la cita a cancelar.
      * @return \Illuminate\Http\JsonResponse devuelve un JSON con el resultado de la operación.
      * @throws \Exception si la cita no existe o si el usuario no tiene permisos para cancelarla.
+     * @OA\Patch(
+     *     path="/api/citas/{id}/cancelar",
+     *     summary="Cancelar una cita",
+     *     description="Permite a paciente, especialista o administrador cancelar una cita si está en un estado cancelable.",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID de la cita a cancelar",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="motivo",
+     *                 type="string",
+     *                 nullable=true,
+     *                 example="No puedo asistir a la cita"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Cita cancelada correctamente",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Cita cancelada correctamente"),
+     *             @OA\Property(property="id_cita", type="integer", example=1),
+     *             @OA\Property(
+     *                 property="notificaciones",
+     *                 type="integer",
+     *                 example=2,
+     *                 description="Número de notificaciones enviadas"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="La cita no se puede cancelar en su estado actual"),
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="No autorizado para cancelar esta cita"),
+     *     @OA\Response(response=404, description="Cita no encontrada"),
+     *     @OA\Response(response=500, description="Error interno al cancelar la cita")
+     * )
      */
     public function cancelarCita(int $id): JsonResponse
     {
@@ -537,6 +775,34 @@ class CitaController extends Controller
      * formateadas o un mensaje de error si el usuario no tiene
      * el rol adecuado o si el perfil (paciente/especialista) no se encuentra.
      * @throws Exception en caso de error en la base de datos
+     * 
+     * @OA\Get(
+     *     path="/api/pacientes/citas/todas",
+     *     summary="Listar las citas del usuario autenticado",
+     *     description="Devuelve las citas del usuario autenticado, actuando como paciente o especialista según su rol.",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Listado de citas del usuario",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="citas",
+     *                 type="array",
+     *                 @OA\Items(type="object")
+     *             ),
+     *             @OA\Property(
+     *                 property="message",
+     *                 type="string",
+     *                 nullable=true,
+     *                 example="No hay citas registradas para este paciente."
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="No autorizado para ver citas"),
+     *     @OA\Response(response=500, description="Error interno al obtener las citas")
+     * )
      */
     public function listarMisCitas(): JsonResponse
     {
@@ -702,6 +968,31 @@ class CitaController extends Controller
      * @param $idCita id de la cita
      * @return \Illuminate\Http\JsonResponse devuelve la url de la videoconferencia 
      * y un codigo 200 en caso de éxito o de lo contrario, mensaje de error con su código de error 
+     * @OA\Get(
+     *     path="/api/citas/{id}/sala-segura",
+     *     summary="Obtener sala segura de videoconferencia",
+     *     description="Devuelve el nombre de la sala de Jitsi si el usuario autenticado es paciente o especialista de la cita y esta es telemática.",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID de la cita",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Sala encontrada",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="nombre_sala", type="string", example="clinicaDietetica-cita-1")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="La cita no es telemática o no tiene sala asignada"),
+     *     @OA\Response(response=403, description="No tienes permisos para acceder a esta sala"),
+     *     @OA\Response(response=404, description="Cita no encontrada"),
+     *     @OA\Response(response=500, description="Error al obtener el nombre de la sala")
+     * )
      */
     public function obtenerSalaSegura($idCita): JsonResponse
     {
@@ -799,6 +1090,45 @@ class CitaController extends Controller
         return $respuesta;
     }
 
+    /**
+     * Método para listar las horas disponibles de un especialista (se infiere desde el usuario autenticado)
+     * para un día determinado.
+     *
+     * @param string $fecha Fecha en formato Y-m-d.
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/api/especialista/horas-disponibles/{fecha}",
+     *     summary="Horas disponibles del especialista autenticado",
+     *     tags={"Citas"},
+     *     @OA\Parameter(
+     *         name="fecha",
+     *         in="path",
+     *         description="Fecha de la cita (Y-m-d)",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date", example="2025-12-01")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Listado de horas disponibles",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="horas_disponibles",
+     *                 type="array",
+     *                 @OA\Items(type="string", example="10:00")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Fecha inválida o error al calcular horas disponibles",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="horas_disponibles", type="array", @OA\Items(type="string")),
+     *             @OA\Property(property="error", type="string", example="Fecha inválida o no proporcionada.")
+     *         )
+     *     )
+     * )
+     */
     public function horasDisponiblesEspecialista(string $fecha): JsonResponse
     {
         try {
@@ -813,6 +1143,52 @@ class CitaController extends Controller
         }
     }
 
+    /**
+     * Método para listar las horas disponibles de un especialista concreto para un día determinado.
+     *
+     * @param int $idEspecialista ID del especialista
+     * @param string $fecha Fecha en formato Y-m-d
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/api/horas-disponibles/{idEspecialista}/{fecha}",
+     *     summary="Horas disponibles para un especialista concreto",
+     *     tags={"Citas"},
+     *     @OA\Parameter(
+     *         name="idEspecialista",
+     *         in="path",
+     *         description="ID del especialista",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=2)
+     *     ),
+     *     @OA\Parameter(
+     *         name="fecha",
+     *         in="path",
+     *         description="Fecha de la cita (Y-m-d)",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date", example="2025-12-01")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Listado de horas disponibles",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="horas_disponibles",
+     *                 type="array",
+     *                 @OA\Items(type="string", example="11:30")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Fecha inválida o error al calcular horas disponibles",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="horas_disponibles", type="array", @OA\Items(type="string")),
+     *             @OA\Property(property="error", type="string", example="Fecha inválida o no proporcionada.")
+     *         )
+     *     )
+     * )
+     */
     public function horasDisponiblesPorEspecialista(int $idEspecialista, string $fecha): JsonResponse
     {
         try {
@@ -946,6 +1322,21 @@ class CitaController extends Controller
 
     /**
      * Compartir la configuración principal con el Frontend
+     *
+     * @OA\Get(
+     *     path="/api/configuracion-general",
+     *     summary="Obtener configuración general de citas",
+     *     tags={"Citas"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Configuración obtenida correctamente",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="horario_laboral", type="object"),
+     *             @OA\Property(property="dias_no_laborables", type="array", @OA\Items(type="string", format="date")),
+     *             @OA\Property(property="duracion_cita", type="integer", example=30)
+     *         )
+     *     )
+     * )
      */
     public function configuracion(): JsonResponse
     {
@@ -960,6 +1351,37 @@ class CitaController extends Controller
      * Devuelve los tipos de estado de cita disponibles.
      *
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/api/estados/estados-cita",
+     *     summary="Obtener tipos de estado de cita",
+     *     tags={"Citas"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Tipos de estado obtenidos correctamente",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="tipos_estado",
+     *                 type="array",
+     *                 @OA\Items(type="string", example="pendiente")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Error interno al consultar los tipos de estado de cita",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(
+     *                 property="tipos_estado",
+     *                 type="array",
+     *                 @OA\Items(type="string")
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function tiposEstadoCita(): JsonResponse
     {
@@ -1063,6 +1485,44 @@ class CitaController extends Controller
      * @param \Illuminate\Http\Request $request estado al que cambiaremos la cita
      * @param int $id de la cita
      * @return JsonResponse respuesta con el estado de la solicitud
+     * @OA\Patch(
+     *     path="/api/citas/{id}/cambiar-estado",
+     *     summary="Cambiar el estado de una cita",
+     *     description="Permite a especialistas y administradores cambiar el estado de una cita. Si el estado es 'cancelada', se delega en el endpoint de cancelación.",
+     *     tags={"Citas"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID de la cita",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="estado",
+     *                 type="string",
+     *                 enum={"pendiente", "realizada", "cancelada", "ausente", "reasignada", "finalizada"},
+     *                 example="realizada"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Estado de la cita actualizado correctamente",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Estado de la cita actualizado correctamente."),
+     *             @OA\Property(property="estado_anterior", type="string", example="pendiente"),
+     *             @OA\Property(property="estado_nuevo", type="string", example="realizada")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="No autorizado para cambiar el estado de esta cita"),
+     *     @OA\Response(response=404, description="Cita no encontrada"),
+     *     @OA\Response(response=500, description="Error interno al cambiar el estado de la cita")
+     * )
      */
     public function cambiarEstadoCita(Request $request, int $id): JsonResponse
     {
@@ -1151,10 +1611,9 @@ class CitaController extends Controller
 
     /**
      * Notifica por email la cancelación de una cita a paciente y especialista.
-     * Usa cola (ShouldQueue) si la notificación lo implementa.
      *
      * @param Cita $cita Cita cancelada
-     * @param string $motivo Motivo de la cancelación (opcional)
+     * @param string $motivo Motivo de la cancelación
      * @param 'paciente'|'especialista'|'sistema' $canceladaPor Quién cancela la cita
      * @return array Conteo de notificaciones enviadas y fallidas
      */
