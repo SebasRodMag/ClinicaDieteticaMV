@@ -14,7 +14,7 @@
             <div class="col-md-3" *ngFor="let card of resumen">
                 <div class="card text-white text-center">
                     <div class="resumen-overlay"></div>
-                    <div class="card-body">
+                    <div> <!--Quitamos "class="card-body" para dejar el div en blanco-->
                         <div class="dashboard-icon mb-2 d-flex justify-content-center align-items-center">
                             <img [src]="'assets/iconos/' + card.icono + '.png'" alt="icono" (load)="cuandoImagenCargada()"
                                 (error)="cuandoImagenCargada()" />
@@ -28,8 +28,8 @@
 
         <!-- Accesos rápidos -->
         <div class="row g-4">
-            <div class="col-md-3 resumen-card" *ngFor="let acceso of accesos">
-                <a [routerLink]="acceso.ruta" class="btn btn-outline-dark w-100 py-4">
+            <div class="col-md-3" *ngFor="let acceso of accesos">
+                <a [routerLink]="acceso.ruta" class="btn btn-outline-dark w-100 py-4 resumen-card">
                     {{ acceso.titulo }}
                 </a>
             </div>
