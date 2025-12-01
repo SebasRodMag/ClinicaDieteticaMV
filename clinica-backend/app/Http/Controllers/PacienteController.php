@@ -18,7 +18,7 @@ use App\Services\BajasServices;
 use Illuminate\Validation\Rule;
 use App\Notifications\PacienteAltaNotificacion;
 use Illuminate\Support\Facades\Notification;
-
+use OpenApi\Annotations as OA;
 
 class PacienteController extends Controller
 {
@@ -30,8 +30,66 @@ class PacienteController extends Controller
 
     /**
      * Muestra una lista de pacientes.
-     * Muestra todos los pacientes registrados en la base de datos.
-     * @return \Illuminate\Http\JsonResponse esta función devuelve una respuesta JSON con el listado de pacientes.
+     *
+     * Devuelve todos los pacientes registrados con información básica del usuario asociado.
+     *
+     * RUTA:
+     *  GET /pacientes
+     * ROLES:
+     *  paciente | especialista | administrador
+     *
+     * @OA\Get(
+     *   path="/pacientes",
+     *   summary="Listar pacientes",
+     *   description="Devuelve una lista de pacientes con datos básicos del usuario asociado (nombre, apellidos, email).",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de pacientes",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="pacientes",
+     *         type="array",
+     *         @OA\Items(
+     *           type="object",
+     *           example={
+     *             "id": 5,
+     *             "user_id": 10,
+     *             "numero_historial": "AB123456CD",
+     *             "fecha_alta": "2025-05-01",
+     *             "fecha_baja": null,
+     *             "created_at": "2025-05-01T10:00:00Z",
+     *             "updated_at": "2025-05-01T10:00:00Z",
+     *             "deleted_at": null,
+     *             "user": {
+     *               "id": 10,
+     *               "nombre": "Laura",
+     *               "apellidos": "García Pérez",
+     *               "email": "laura@example.com"
+     *             }
+     *           }
+     *         )
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="No hay pacientes disponibles",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No hay pacientes disponibles")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener pacientes",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error al obtener pacientes")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse esta función devuelve una respuesta JSON con el listado de pacientes.
      * 
      */
     public function listarPacientes(): JsonResponse
@@ -83,10 +141,48 @@ class PacienteController extends Controller
 
 
     /**
-     * Muestra la lista de pacientes con su nombre
-     * Lista todo los pacientes registrados en la base de datos con id y su nombre y apellido.
-     * @return \Illuminate\Http\JsonResponse esta función devuelve una respuesta JSON con el listado de pacientes.
-     * @throws \Exception Envía un mensaje de error si no se encuentra el paciente.
+     * Lista de pacientes con id y nombre completo.
+     *
+     * RUTA:
+     *  GET /pacientespornombre
+     *
+     * @OA\Get(
+     *   path="/pacientespornombre",
+     *   summary="Listar pacientes por nombre",
+     *   description="Devuelve una lista simplificada de pacientes (id de usuario y nombre completo) para usar en selects.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de pacientes",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="pacientes",
+     *         type="array",
+     *         @OA\Items(
+     *           type="object",
+     *           example={"id": 10, "nombre": "Laura García Pérez"}
+     *         )
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="No hay pacientes disponibles",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No hay pacientes disponibles")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener los pacientes",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error al obtener los pacientes")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse esta función devuelve una respuesta JSON con el listado de pacientes.
      */
 
     public function listarPacientesPorNombre(): JsonResponse
@@ -124,15 +220,12 @@ class PacienteController extends Controller
 
 
     /**
-     * Crea un nuevo paciente.
+     * Crea un nuevo paciente a partir de uno registrado, se agrego esta funcionalidad en nuevoPaciente() y este ha sido deprecado.
      * Registra un nuevo paciente en la base de datos.
      * Se valida que el usuario asociado exista y no esté ya registrado como paciente.
      * 
      * @param \Illuminate\Http\Request $solicitud recibe los datos del paciente
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el paciente creado o un mensaje de error.
-     * @throws \Illuminate\Validation\ValidationException si los datos no cumplen con las reglas de validación.
-     * @throws \Exception lanza excepción si ocurre un error al crear el paciente.
-     * 
+     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el paciente creado o un mensaje de error. 
      */
     public function viejoPaciente(Request $solicitud, $id): JsonResponse
     {
@@ -192,11 +285,95 @@ class PacienteController extends Controller
 
 
     /**
-     * Muestra un paciente específico.
-     * Busca un paciente por su ID y devuelve sus datos.
-     * Se valida que el ID sea numérico y que el paciente exista.
-     * @param int $id ID del paciente a buscar
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los datos del paciente o un mensaje de error.
+     * Mostrar un paciente específico.
+     *
+     * RUTAS:
+     *  GET /pacientes/{id}       (paciente, para ver su propio perfil)
+     *  GET /pacientes/{id}/ver   (administrador, vista de detalle)
+     *
+     * @OA\Get(
+     *   path="/pacientes/{id}",
+     *   summary="Ver un paciente por ID",
+     *   description="Devuelve los datos básicos del paciente indicado.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del paciente",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Paciente encontrado",
+     *     @OA\JsonContent(
+     *       oneOf={
+     *         @OA\Schema(
+     *           type="object",
+     *           example={
+     *             "id": 5,
+     *             "user_id": 10,
+     *             "numero_historial": "AB123456CD",
+     *             "fecha_alta": "2025-05-01",
+     *             "fecha_baja": null
+     *           }
+     *         )
+     *       }
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=400,
+     *     description="ID inválido",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="ID inválido")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Paciente no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Paciente no encontrado")
+     *     )
+     *   )
+     * )
+     *
+     * @OA\Get(
+     *   path="/pacientes/{id}/ver",
+     *   summary="Ver detalle de paciente (admin)",
+     *   description="Devuelve los datos del paciente indicado. Utilizado en la vista de administración.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del paciente",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Paciente encontrado",
+     *     @OA\JsonContent(type="object")
+     *   ),
+     *   @OA\Response(
+     *     response=400,
+     *     description="ID inválido",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="ID inválido")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Paciente no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Paciente no encontrado")
+     *     )
+     *   )
+     * )
+     *
+     * @param mixed $id
+     * @return JsonResponse devuelve una respuesta JSON con los datos del paciente o un mensaje de error.
      * 
      */
     public function verPaciente($id): JsonResponse
@@ -227,11 +404,67 @@ class PacienteController extends Controller
 
 
     /**
-     * Borrar un paciente (softDelete).
-     * Este método elimina un paciente por su ID.
-     * Se valida que el ID sea numérico y que el paciente exista.
-     * @param int $id ID del paciente a eliminar
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o un mensaje de error.
+     * Dar de baja (eliminar) un paciente.
+     *
+     * Cambia el rol del usuario a 'usuario', elimina sus citas y borra el registro de paciente.
+     *
+     * RUTA:
+     *  DELETE /pacientes/{id}
+     *
+     * @OA\Delete(
+     *   path="/pacientes/{id}",
+     *   summary="Eliminar (dar de baja) a un paciente",
+     *   description="Da de baja a un paciente: elimina sus citas, cambia el rol del usuario asociado a 'usuario' y elimina el registro de paciente.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del paciente a dar de baja",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Paciente dado de baja correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Paciente dado de baja y citas eliminadas correctamente"),
+     *       @OA\Property(
+     *         property="data",
+     *         type="object",
+     *         example={
+     *           "paciente_id": 5,
+     *           "citas_eliminadas": 3,
+     *           "rol_usuario": "usuario"
+     *         }
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=400,
+     *     description="ID inválido",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="ID inválido")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Paciente no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Paciente no encontrado")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="No se pudo completar la baja del paciente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No se pudo completar la baja del paciente")
+     *     )
+     *   )
+     * )
+     *
+     * @param mixed $id
+     * @return JsonResponse devuelve una respuesta JSON con un mensaje de éxito o un mensaje de error.
      * 
      */
     public function borrarPaciente($id): JsonResponse
@@ -320,10 +553,67 @@ class PacienteController extends Controller
     /**
      * Devuelve información completa de todos los pacientes,
      * incluyendo la última cita (estado y especialista asociado).
-     * Esta función obtiene todos los pacientes y sus datos asociados, incluyendo la última cita.
-     * Se utiliza la relación definida en el modelo Paciente para obtener la última cita.
-     * @throws \Throwable si ocurre un error al obtener los pacientes.
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con la información de los pacientes.
+     *
+     * RUTA:
+     *  GET /pacientestodos
+     * ROLES:
+     *  administrador
+     *
+     * @OA\Get(
+     *   path="/pacientestodos",
+     *   summary="Listado completo de pacientes (admin)",
+     *   description="Devuelve un listado de pacientes con datos de contacto, número de historial, estado y última cita (incluyendo especialista).",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de pacientes",
+     *     @OA\JsonContent(
+     *       type="array",
+     *       @OA\Items(
+     *         type="object",
+     *         example={
+     *           "id": 10,
+     *           "nombre": "Laura",
+     *           "apellidos": "García Pérez",
+     *           "telefono": "600123123",
+     *           "email": "laura@example.com",
+     *           "numero_historial": "AB123456CD",
+     *           "fecha_alta": "2025-05-01",
+     *           "fecha_baja": null,
+     *           "estado": "pendiente",
+     *           "especialista_asociado": 3,
+     *           "especialista": {
+     *             "id_especialista": 3,
+     *             "usuario": {
+     *               "id_usuario": 7,
+     *               "nombre": "María",
+     *               "apellidos": "Pérez",
+     *               "email": "maria@example.com",
+     *               "telefono": "600111222"
+     *             }
+     *           }
+     *         }
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="No se encontraron pacientes",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No se encontraron pacientes")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener los pacientes",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error al obtener los pacientes")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse devuelve una respuesta JSON con la información de los pacientes.
      */
     //Para devolver una lista completa de pacientes con sus datos asociados, incluyendo la última cita.
     // originalmente se empleaba una consulta compleja, por medio de un left join, pero aquí se simplifica utilizando Eloquent,
@@ -384,8 +674,34 @@ class PacienteController extends Controller
 
 
     /**
-     * Función para listar la relación de citas de un paciente y los epecialistas adjuntando la información necesaria
-     * @return JsonResponse|mixed
+     * Lista la relación de pacientes con su última cita y especialista.
+     *
+     * RUTA:
+     *  GET /pacienteslistado
+     * ROLES:
+     *  administrador
+     *
+     * @OA\Get(
+     *   path="/pacienteslistado",
+     *   summary="Pacientes con información de especialista y última cita",
+     *   description="Devuelve para cada paciente sus datos, la última cita y el especialista asociado.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de pacientes con especialista",
+     *     @OA\JsonContent(type="array", @OA\Items(type="object"))
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error interno al obtener pacientes con especialista",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error interno al obtener pacientes con especialista")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse
      */
     public function pacientesConEspecialista(): JsonResponse
     {
@@ -481,12 +797,85 @@ class PacienteController extends Controller
 
 
     /**
-     * Actualiza datos del paciente, requiere confirmar password.
+     * Actualiza datos del paciente autenticado, verificando la contraseña actual.
+     *
+     * RUTA:
+     *  PUT /pacientes/{id}
+     * ROLES:
+     *  paciente (sobre sí mismo)
+     *
+     * @OA\Put(
+     *   path="/pacientes/{id}",
+     *   summary="Actualizar datos del paciente (self-service)",
+     *   description="Permite al paciente autenticado actualizar sus datos personales, confirmando la contraseña actual.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del paciente (debe coincidir con el usuario autenticado)",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       required={"nombre","apellidos","dni_usuario","email","password_actual"},
+     *       @OA\Property(property="nombre", type="string", example="Laura"),
+     *       @OA\Property(property="apellidos", type="string", example="García Pérez"),
+     *       @OA\Property(property="dni_usuario", type="string", example="12345678A"),
+     *       @OA\Property(property="email", type="string", format="email", example="laura@example.com"),
+     *       @OA\Property(property="direccion", type="string", nullable=true, example="Calle Falsa 123"),
+     *       @OA\Property(property="fecha_nacimiento", type="string", format="date", nullable=true, example="1990-01-01"),
+     *       @OA\Property(property="telefono", type="string", nullable=true, example="600123123"),
+     *       @OA\Property(property="password_actual", type="string", example="PasswordActual123")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Datos actualizados correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="mensaje", type="string", example="Datos actualizados correctamente"),
+     *       @OA\Property(property="paciente", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=403,
+     *     description="No autorizado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="error", type="string", example="No autorizado")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Errores de validación o contraseña incorrecta",
+     *     @OA\JsonContent(
+     *       oneOf={
+     *         @OA\Schema(
+     *           type="object",
+     *           example={"errors": {"email": {"El email ya está en uso"}}}
+     *         ),
+     *         @OA\Schema(
+     *           type="object",
+     *           example={"error": "Contraseña actual incorrecta"}
+     *         )
+     *       }
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Paciente no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="error", type="string", example="Paciente no encontrado")
+     *     )
+     *   )
+     * )
      *
      * @param Request $request
      * @param int $idPaciente
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
+
     public function actualizarPaciente(Request $request, int $idPaciente): JsonResponse
     {
         $codigo = 200;
@@ -547,11 +936,75 @@ class PacienteController extends Controller
     }
 
     /**
-     * Cambia la contraseña del paciente.
+     * Cambia la contraseña del paciente autenticado.
+     *
+     * RUTA:
+     *  PUT /pacientes/{id}/cambiar-password
+     *
+     * @OA\Put(
+     *   path="/pacientes/{id}/cambiar-password",
+     *   summary="Cambiar contraseña del paciente",
+     *   description="Permite al paciente autenticado cambiar su contraseña, confirmando la contraseña actual.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del paciente (debe coincidir con el usuario autenticado)",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       required={"password_actual","password_nuevo"},
+     *       @OA\Property(property="password_actual", type="string", example="PasswordActual123"),
+     *       @OA\Property(property="password_nuevo", type="string", example="NuevoPassword123"),
+     *       @OA\Property(property="password_nuevo_confirmation", type="string", example="NuevoPassword123")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Contraseña actualizada correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="mensaje", type="string", example="Contraseña actualizada correctamente")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=403,
+     *     description="No autorizado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="error", type="string", example="No autorizado")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Errores de validación o contraseña incorrecta",
+     *     @OA\JsonContent(
+     *       oneOf={
+     *         @OA\Schema(
+     *           type="object",
+     *           example={"errors": {"password_nuevo": {"La contraseña debe tener al menos 8 caracteres"}}}
+     *         ),
+     *         @OA\Schema(
+     *           type="object",
+     *           example={"error": "Contraseña actual incorrecta"}
+     *         )
+     *       }
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Paciente no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="error", type="string", example="Paciente no encontrado")
+     *     )
+     *   )
+     * )
      *
      * @param Request $request
      * @param int $idPaciente
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function cambiarPassword(Request $request, int $idPaciente): JsonResponse
     {
@@ -598,7 +1051,7 @@ class PacienteController extends Controller
     }
 
     /**
-     * obtener datos de paciente a partir del id de usuario.
+     * obtener datos de paciente a partir del id de usuario. Deprecado
      */
 
     public function obtenerPacientePorUsuario($userId): JsonResponse
@@ -633,16 +1086,59 @@ class PacienteController extends Controller
     }
 
     /**
-     * Almacena un nuevo paciente en la base de datos.
-     * Esta función recibe una solicitud con los datos del paciente,
-     * valida los datos y crea un nuevo registro en la base de datos.
-     * Se maneja la transacción para asegurar que los datos se guarden correctamente
-     * y se registran los logs correspondientes.
+     * Crear o restaurar un paciente.
      *
-     * @param  \Illuminate\Http\Request  $solicitud request que contiene los datos del paciente
-     * @throws \Illuminate\Validation\ValidationException devuelve una excepción si los datos no cumplen con las reglas de validación.
-     * @throws \Exception lanza una excepción si ocurre un error al guardar el paciente.
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o error y el código de respuesta HTTP.
+     * - Si el usuario nunca ha sido paciente: crea un registro nuevo con número de historial único.
+     * - Si ya lo fue y está en soft delete: lo restaura y actualiza fecha de alta.
+     *
+     * RUTA:
+     *  POST /nuevo-paciente
+     *
+     * BODY:
+     *  {
+     *    "user_id": 15
+     *  }
+     *
+     * @OA\Post(
+     *   path="/nuevo-paciente",
+     *   summary="Crear o restaurar un paciente",
+     *   description="Convierte un usuario en paciente o restaura un paciente dado de baja. Asigna rol 'paciente' y genera número de historial.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       required={"user_id"},
+     *       @OA\Property(property="user_id", type="integer", example=15, description="ID del usuario a convertir / restaurar como paciente")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=201,
+     *     description="Paciente creado o restaurado correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Paciente creado correctamente"),
+     *       @OA\Property(property="user", type="object"),
+     *       @OA\Property(property="paciente", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Errores de validación",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="errors", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error interno al crear/restaurar paciente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error interno al crear/restaurar paciente")
+     *     )
+     *   )
+     * )
+     *
+     * @param  Request  $solicitud contiene los datos del paciente
+     * @return JsonResponse devuelve una respuesta JSON con un mensaje de éxito o error y el código de respuesta HTTP.
      */
     public function nuevoPaciente(Request $solicitud): JsonResponse
     {
@@ -731,10 +1227,55 @@ class PacienteController extends Controller
     /**
      * Obtener los pacientes activos del especialista autenticado.
      *
-     * Devuelve los pacientes activos (sin baja actual) que han tenido citas con el especialista logueado.
-     * Devuelve solo los campos necesarios del paciente y su usuario.
+     * RUTA:
+     *  GET /paciente-por-especialista
+     * ROLES:
+     *  especialista
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *   path="/paciente-por-especialista",
+     *   summary="Pacientes del especialista autenticado",
+     *   description="Devuelve los pacientes activos que han tenido citas con el especialista autenticado.",
+     *   tags={"Pacientes"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Pacientes obtenidos correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Pacientes obtenidos correctamente"),
+     *       @OA\Property(
+     *         property="data",
+     *         type="array",
+     *         @OA\Items(
+     *           type="object",
+     *           example={
+     *             "id": 5,
+     *             "user_id": 10,
+     *             "numero_historial": "AB123456CD",
+     *             "nombre": "Laura",
+     *             "apellidos": "García Pérez"
+     *           }
+     *         )
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=403,
+     *     description="No autorizado como especialista",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No autorizado como especialista")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener los pacientes del especialista",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error al obtener los pacientes del especialista.")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse
      */
     public function listarPacientesDelEspecialista(): JsonResponse
     {

@@ -18,20 +18,66 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\PacienteAltaNotificacion;
 use Illuminate\Support\Facades\Notification;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *   name="Usuarios",
+ *   description="Gestión de usuarios, roles y datos básicos."
+ * )
+ */
 
 class UserController extends Controller
 {
     use Loggable, Notifiable;
 
     /**
-     * 
-     * Función para listar todos los usuarios.
-     * Obtiene todos los usuarios de la base de datos y devuelve una respuesta JSON.
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con el listado de usuarios.
-     * 
-     * 
-     *  */
+     * Listar todos los usuarios.
+     *
+     * RUTA:
+     *  GET /usuarios
+     *
+     * @OA\Get(
+     *   path="/usuarios",
+     *   summary="Listar todos los usuarios",
+     *   description="Obtiene todos los usuarios registrados en el sistema.",
+     *   tags={"Usuarios"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de usuarios obtenido correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="data",
+     *         type="array",
+     *         @OA\Items(type="object")
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="No hay usuarios registrados",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"No hay usuarios registrados."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener los usuarios",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error al obtener los usuarios."}}
+     *       )
+     *     )
+     *   )
+     * )
+     */
     public function listarTodos(): JsonResponse
     {
         $codigo = 200;
@@ -58,12 +104,65 @@ class UserController extends Controller
     }
 
     /**
-     * 
-     * Función para mostrar un usuario por ID.
-     * Obtiene un usuario de la base de datos según el ID proporcionado y devuelve una respuesta JSON
-     * @param int $id id del usuario a buscar
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los datos del usuario o un mensaje de error.
-     * 
+     * Mostrar un usuario por ID.
+     *
+     * RUTA:
+     *  GET /usuarios/{id}
+     *
+     * @OA\Get(
+     *   path="/usuarios/{id}",
+     *   summary="Ver un usuario por ID",
+     *   description="Obtiene un usuario de la base de datos según el ID proporcionado.",
+     *   tags={"Usuarios"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del usuario",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Usuario encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="data", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=400,
+     *     description="ID inválido",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"id": {"ID inválido. Debe ser numérico."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Usuario no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Usuario no encontrado."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener el usuario",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error al obtener el usuario."}}
+     *       )
+     *     )
+     *   )
+     * )
      */
     public function verUsuario($id): JsonResponse
     {
@@ -96,7 +195,54 @@ class UserController extends Controller
     }
 
     /**
-     * Crea un usuario con rol "usuario".
+     * Crear usuario con rol "usuario".
+     *
+     * RUTA:
+     *  POST /usuarios/rol-usuario
+     *
+     * @OA\Post(
+     *   path="/usuarios/rol-usuario",
+     *   summary="Crear usuario con rol básico 'usuario'",
+     *   description="Registra un usuario con rol 'usuario' sin crear modelo Paciente.",
+     *   tags={"Usuarios"},
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       required={"nombre","apellidos","email","password","password_confirmation","dni_usuario"},
+     *       @OA\Property(property="nombre", type="string", example="Ana"),
+     *       @OA\Property(property="apellidos", type="string", example="López Martín"),
+     *       @OA\Property(property="email", type="string", format="email", example="ana@example.com"),
+     *       @OA\Property(property="password", type="string", example="Password123"),
+     *       @OA\Property(property="password_confirmation", type="string", example="Password123"),
+     *       @OA\Property(property="dni_usuario", type="string", example="12345678A")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=201,
+     *     description="Usuario creado correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="user", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Errores de validación",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="errors", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error inesperado al crear usuario",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error inesperado al crear el usuario."}}
+     *       )
+     *     )
+     *   )
+     * )
      */
     public function crearUsuarioRolUsuario(Request $request): JsonResponse
     {
@@ -104,7 +250,55 @@ class UserController extends Controller
     }
 
     /**
-     * Crea un usuario con rol "paciente" y su modelo Paciente.
+     * Crear usuario con rol "paciente" y modelo Paciente.
+     *
+     * RUTA:
+     *  POST /usuarios
+     *
+     * @OA\Post(
+     *   path="/usuarios",
+     *   summary="Crear usuario con rol 'paciente'",
+     *   description="Registra un usuario y crea automáticamente el modelo Paciente asociado, asignando rol 'paciente'.",
+     *   tags={"Usuarios"},
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       required={"nombre","apellidos","email","password","password_confirmation","dni_usuario"},
+     *       @OA\Property(property="nombre", type="string", example="Laura"),
+     *       @OA\Property(property="apellidos", type="string", example="García Pérez"),
+     *       @OA\Property(property="email", type="string", format="email", example="laura@example.com"),
+     *       @OA\Property(property="password", type="string", example="Password123"),
+     *       @OA\Property(property="password_confirmation", type="string", example="Password123"),
+     *       @OA\Property(property="dni_usuario", type="string", example="23456789B")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=201,
+     *     description="Usuario y paciente creados correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="user", type="object"),
+     *       @OA\Property(property="paciente", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Errores de validación",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="errors", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error inesperado al crear usuario/paciente",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error inesperado al crear el usuario."}}
+     *       )
+     *     )
+     *   )
+     * )
      */
     public function crearUsuario(Request $request): JsonResponse
     {
@@ -113,13 +307,12 @@ class UserController extends Controller
 
 
     /**
-     * 
-     * Función privada genérica para para crear un nuevo usuario y asignar un rol.
-     * Valida los datos de entrada y crea un nuevo usuario en la base de datos.
-     * 
-     * @param Request $solicitud datos del usuario nuevo
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los datos del usuario creado o un mensaje de error.
-     * @throws \Illuminate\Validation\ValidationException si la validación falla.
+     * Función privada genérica para crear un nuevo usuario y asignar un rol.
+     *
+     * @param Request $request datos del usuario nuevo
+     * @param string $rolObjetivo
+     * @param bool $crearPaciente
+     * @return JsonResponse devuelve una respuesta JSON con los datos del usuario creado o un mensaje de error.
      */
     private function crearUsuarioGenerico(Request $request, string $rolObjetivo, bool $crearPaciente): JsonResponse
     {
@@ -214,13 +407,85 @@ class UserController extends Controller
 
 
     /**
-     * 
-     * Función para actualizar un usuario por ID.
-     * * Valida los datos de entrada y actualiza el usuario en la base de datos.
-     * 
-     * @param Request $solicitud datos del usuario a actualizar
-     * @param int $id ID del usuario que se va a actualizar
-     * @return \Illuminate\Http\JsonResponse
+     * Actualizar un usuario por ID.
+     *
+     * RUTA:
+     *  PUT /usuarios/{id}
+     *
+     * @OA\Put(
+     *   path="/usuarios/{id}",
+     *   summary="Actualizar datos de un usuario",
+     *   description="Actualiza los datos básicos de un usuario (nombre, apellidos, email, DNI, etc.).",
+     *   tags={"Usuarios"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del usuario a actualizar",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       required={"nombre","apellidos","email","dni_usuario"},
+     *       @OA\Property(property="nombre", type="string", example="Laura"),
+     *       @OA\Property(property="apellidos", type="string", example="García Pérez"),
+     *       @OA\Property(property="email", type="string", format="email", example="laura@example.com"),
+     *       @OA\Property(property="dni_usuario", type="string", example="12345678A"),
+     *       @OA\Property(property="fecha_nacimiento", type="string", format="date", nullable=true, example="1990-01-01"),
+     *       @OA\Property(property="telefono", type="string", nullable=true, example="600123123"),
+     *       @OA\Property(property="direccion", type="string", nullable=true, example="Calle Falsa 123"),
+     *       @OA\Property(property="password", type="string", nullable=true, example="NuevoPassword123"),
+     *       @OA\Property(property="password_confirmation", type="string", nullable=true, example="NuevoPassword123")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Usuario actualizado correctamente",
+     *     @OA\JsonContent(type="object")
+     *   ),
+     *   @OA\Response(
+     *     response=400,
+     *     description="ID inválido",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"id": {"El ID proporcionado no es válido."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Usuario no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Usuario no encontrado."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Errores de validación",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="errors", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al actualizar el usuario",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error inesperado al actualizar el usuario."}}
+     *       )
+     *     )
+     *   )
+     * )
      */
     public function actualizarUsuario(Request $solicitud, $id): JsonResponse
     {
@@ -314,12 +579,65 @@ class UserController extends Controller
 
 
     /**
-     * 
-     * Función para eliminar un usuario por ID (SoftDelete).
-     * Valida el ID y elimina el usuario de forma segura.
-     * 
-     * @param int $id ID del usuario que se va a eliminar
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o error.
+     * Eliminar un usuario por ID (SoftDelete).
+     *
+     * RUTA:
+     *  DELETE /usuarios/{id}
+     *
+     * @OA\Delete(
+     *   path="/usuarios/{id}",
+     *   summary="Eliminar un usuario",
+     *   description="Elimina (soft delete) un usuario por su ID.",
+     *   tags={"Usuarios"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del usuario a eliminar",
+     *     @OA\Schema(type="integer", example=5)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Usuario eliminado correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="mensaje", type="string", example="Usuario eliminado correctamente.")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=400,
+     *     description="ID inválido",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"id": {"El ID proporcionado no es válido."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Usuario no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Usuario no encontrado."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al eliminar el usuario",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error inesperado al eliminar el usuario."}}
+     *       )
+     *     )
+     *   )
+     * )
      */
     public function borrarUsuario($id): JsonResponse
     {
@@ -363,11 +681,72 @@ class UserController extends Controller
 
     //método para cambiar el rol 'especialista' o 'paciente' por el rol 'usuario' recibiendo como parámetro el id de usuario.
     /**
-     * Función para cambiar el rol de un usuario.
-     * Cambiamos el rol a 'usuario' y actualizamos el usuario para que no se liste en la vista de especialistas o pacientes.
-     * Ademas se eliminan las citas pendiente que les correspondan.
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o error.
-     * @param int $id ID del usuario que se va a cambiar el rol
+     * Cambiar el rol de un usuario a "usuario" y limpiar vínculos de paciente/especialista.
+     *
+     * - Si era especialista: elimina citas pendientes por id_especialista y hace soft delete de Especialista.
+     * - Si era paciente: elimina citas pendientes por id_paciente y hace soft delete de Paciente.
+     *
+     * RUTA:
+     *  PUT /usuarios/{id}/cambiar-rol
+     *
+     * @OA\Put(
+     *   path="/usuarios/{id}/cambiar-rol",
+     *   summary="Cambiar el rol de un usuario a 'usuario'",
+     *   description="Cambia el rol de un usuario a 'usuario', elimina sus citas pendientes asociadas como paciente/especialista y hace soft delete de los modelos relacionados.",
+     *   tags={"Usuarios"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del usuario cuyo rol se va a cambiar",
+     *     @OA\Schema(type="integer", example=10)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Rol cambiado correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="mensaje",
+     *         type="string",
+     *         example="El rol del usuario ha sido cambiado a \"usuario\" y se eliminaron sus citas pendientes."
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="ID inválido",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"id": {"El ID proporcionado no es válido."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Usuario no existe",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"El usuario no existe."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al cambiar el rol del usuario",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error inesperado al cambiar el rol del usuario."}}
+     *       )
+     *     )
+     *   )
+     * )
      */
     public function cambiarRol($id): JsonResponse
     {
@@ -442,9 +821,56 @@ class UserController extends Controller
 
 
     /**
-     * Función para obtener todos los usuario de la tabla user cuyo rol sea 'usuario'
-     * Este método sirve para listar los usuarios que pueden ser seleccionado para convertirse en 'pacientes' o 'especialistas'
-     * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con los usuarios que tienen el rol de 'usuario' o mensaje de error.
+     * Listar usuarios que solo tienen rol "usuario" (sin paciente/especialista).
+     *
+     * Sirve para seleccionar usuarios candidatos a ser pacientes o especialistas.
+     *
+     * RUTA:
+     *  GET /usuarios-disponibles
+     *
+     * @OA\Get(
+     *   path="/usuarios-disponibles",
+     *   summary="Obtener usuarios sin rol de paciente ni especialista",
+     *   description="Devuelve los usuarios cuyo rol es 'usuario' y que no tienen modelos Paciente ni Especialista asociados.",
+     *   tags={"Usuarios"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Usuarios obtenidos correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="data",
+     *         type="array",
+     *         @OA\Items(
+     *           type="object",
+     *           example={"id": 15, "nombre_apellidos": "Ana López"}
+     *         )
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=403,
+     *     description="No autorizado",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"autorizacion": {"No autorizado."}}
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener los usuarios",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="errors",
+     *         type="object",
+     *         example={"general": {"Ocurrió un error al obtener los usuarios."}}
+     *       )
+     *     )
+     *   )
+     * )
      */
     public function getUsuariosSinRolEspecialistaNiPaciente(): JsonResponse
     {

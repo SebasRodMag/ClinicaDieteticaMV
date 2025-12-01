@@ -1663,7 +1663,7 @@ class CitaController extends Controller
                         $cita->id_cita ?? $cita->id ?? null
                     );
                 }
-                // Si no es nuevo lo ignoramos en silencio.
+                //Si no es nuevo lo ignoramos en silencio.
             }
         }
 
