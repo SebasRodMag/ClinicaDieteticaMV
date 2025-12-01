@@ -13,6 +13,25 @@ use Illuminate\Support\Facades\Validator;
 use App\Traits\Loggable;
 use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *   schema="Documento",
+ *   type="object",
+ *   title="Documento",
+ *   description="Documento asociado a un historial o a un usuario",
+ *   @OA\Property(property="id", type="integer", example=1),
+ *   @OA\Property(property="user_id", type="integer", example=10),
+ *   @OA\Property(property="historial_id", type="integer", nullable=true, example=5),
+ *   @OA\Property(property="nombre", type="string", example="Analítica de sangre"),
+ *   @OA\Property(property="descripcion", type="string", nullable=true, example="Resultados analítica mayo 2025"),
+ *   @OA\Property(property="archivo", type="string", example="documentos/analitica_2025_05.pdf"),
+ *   @OA\Property(property="tipo", type="string", example="application/pdf"),
+ *   @OA\Property(property="tamano", type="integer", example=102400),
+ *   @OA\Property(property="visible_para_especialista", type="boolean", example=true),
+ *   @OA\Property(property="created_at", type="string", format="date-time", example="2025-05-01T10:30:00Z"),
+ *   @OA\Property(property="updated_at", type="string", format="date-time", example="2025-05-01T10:45:00Z")
+ * )
+ */
 
 class DocumentoController extends Controller
 {
