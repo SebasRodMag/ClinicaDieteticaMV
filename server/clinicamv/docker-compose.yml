@@ -111,19 +111,6 @@ services:
       retries: 5
       start_period: 10s
     networks: [red-clinicamv]
-
-  phpmyadmin:
-    image: phpmyadmin:5.2
-    restart: unless-stopped
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      UPLOAD_LIMIT: 128M
-    depends_on: [db]
-    ports:
-      - "127.0.0.1:8082:80"
-    networks: [red-clinicamv]
-
   clinicamv-queue:
     image: ghcr.io/sebasrodmag/clinicamv-backend:php-main
     depends_on:
