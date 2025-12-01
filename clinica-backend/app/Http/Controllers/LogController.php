@@ -6,7 +6,7 @@ use App\Models\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-
+use OpenApi\Annotations as OA;
 
 class LogController extends Controller
 {
@@ -22,9 +22,9 @@ class LogController extends Controller
     ];
 
     /**
-     * 
      * Constructor para aplicar middleware de autenticación y rol.
-     * 
+     *
+     * Solo administradores pueden acceder a estos endpoints.
      */
     public function __construct()
     {
@@ -32,10 +32,57 @@ class LogController extends Controller
     }
 
     /**
-     * 
      * Listar todos los logs.
+     *
      * Se obtienen todos los logs de la base de datos, ordenados por fecha de creación.
-     * Se incluye la relación con el usuario que generó el log para obtener su información.
+     * Incluye la relación con el usuario que generó el log (id, nombre, apellidos, email).
+     *
+     * RUTA:
+     *  GET /logs
+     * ROLES:
+     *  administrador
+     *
+     * @OA\Get(
+     *   path="/logs",
+     *   summary="Listar todos los logs",
+     *   description="Devuelve el listado completo de logs del sistema, ordenados por fecha de creación (solo administradores).",
+     *   tags={"Logs"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Logs obtenidos correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="data",
+     *         type="array",
+     *         @OA\Items(
+     *           type="object",
+     *           example={
+     *             "id": 150,
+     *             "user_id": 3,
+     *             "accion": "login",
+     *             "descripcion": "Usuario inició sesión",
+     *             "created_at": "2025-05-01T10:00:00Z",
+     *             "user": {
+     *               "id": 3,
+     *               "nombre": "Sebastián",
+     *               "apellidos": "Rodríguez",
+     *               "email": "sebastian@example.com"
+     *             }
+     *           }
+     *         )
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener los logs",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="error", type="string", example="Error al obtener los logs.")
+     *     )
+     *   )
+     * )
+     *
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con todos los logs.
      * @throws \Exception si ocurre un error al consultar los logs.
      */
@@ -62,8 +109,7 @@ class LogController extends Controller
      * Se busca un usuario por su ID y se devuelven sus logs.
      * Se valida que el ID sea numérico y se maneja el caso en que no es válido.
      * @param int $id ID del usuario
-     * @return \Illuminate\Http\JsonResponse devuelve los logs del usuario o un mensaje de error si el ID no es válido.
-     * @throws \Exception si ocurre un error al consultar los logs.
+     * @return JsonResponse devuelve los logs del usuario o un mensaje de error si el ID no es válido.
      */
     public function porUsuario($id): JsonResponse
     {
@@ -99,7 +145,6 @@ class LogController extends Controller
      * 
      * @param string $accion Acción a filtrar
      * @return \Illuminate\Http\JsonResponse devuelve los logs filtrados por acción o un mensaje de error si la acción no es válida.
-     * @throws \Exception si ocurre un error al consultar los logs.
      */
     public function porAccion($accion): JsonResponse
     {

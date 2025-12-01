@@ -16,13 +16,14 @@ use App\Models\Cita;
 use App\Notifications\EspecialistaBajaNotificacion;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Log;
+use OpenApi\Annotations as OA;
 
 class EspecialistaController extends Controller
 {
     use Loggable, Notifiable;
 
     /**
-     * Mostrar todos los especialistas.
+     * Mostrar todos los especialistas. No tiene end-points públicos porque es llamada desde otros métodos.
      * Devolverá una lista de todos los especialistas registrados en la base de datos.
      * @return \Illuminate\Http\JsonResponse devolverá una respuesta JSON con el listado de especialistas o un mensaje de error si no hay especialistas registrados.
      */
@@ -50,10 +51,53 @@ class EspecialistaController extends Controller
 
     /**
      * Mostrar un especialista específico.
-     * Esta función busca un especialista por su ID y devuelve sus detalles.
-     * Si el especialista no se encuentra, se devuelve un mensaje de error.
-     * Se valida que el ID sea numérico y se maneja el caso en que no se encuentra el especialista.
      *
+     * RUTA:
+     *  GET /especialistas/{id}
+     *
+     * @OA\Get(
+     *   path="/especialistas/{id}",
+     *   summary="Ver un especialista por ID",
+     *   description="Devuelve la información de un especialista concreto, incluyendo datos básicos del usuario asociado.",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del especialista",
+     *     @OA\Schema(type="integer", example=3)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Especialista encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="especialista",
+     *         type="object",
+     *         example={
+     *           "id": 3,
+     *           "user_id": 10,
+     *           "especialidad": "Nutrición Clínica",
+     *           "user": {
+     *             "id": 10,
+     *             "nombre": "María",
+     *             "apellidos": "Pérez López",
+     *             "email": "maria@example.com"
+     *           }
+     *         }
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Especialista no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Especialista no encontrado")
+     *     )
+     *   )
+     * )
+     * 
      * @param int $id ID del especialista que deseamos ver
      * @return JsonResponse devuelve una respuesta JSON con los detalles del especialista o un mensaje de error si no se encuentra.
      */
@@ -72,9 +116,48 @@ class EspecialistaController extends Controller
 
 
     /**
-     * Listar especialistas por nombre
-     * Función para listar especialistas por id y nombre.
-     * @return \Illuminate\Http\JsonResponse esta función devuelve una respuesta JSON con el listado de especialistas.
+     * Listar especialistas por nombre.
+     *
+     * RUTA:
+     *  GET /especialistapornombre
+     *
+     * @OA\Get(
+     *   path="/especialistapornombre",
+     *   summary="Listar especialistas por nombre",
+     *   description="Devuelve un listado simplificado de especialistas (id de usuario y nombre) para usar en selectores.",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de especialistas",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="especialistas",
+     *         type="array",
+     *         @OA\Items(
+     *           type="object",
+     *           example={"id": 12, "nombre": "Ana Martínez"}
+     *         )
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="No hay especialistas disponibles",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No hay especialistas disponibles")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error al obtener los especialistas",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error al obtener los especialistas")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse esta función devuelve una respuesta JSON con el listado de especialistas.
      * @throws \Exception Envía un mensaje de error si no se encuentra el paciente.
      */
 
@@ -105,12 +188,72 @@ class EspecialistaController extends Controller
 
     /**
      * Actualizar la información de un especialista.
-     * Esta función permite actualizar los datos de un especialista existente en la base de datos.
-     * Se valida que el ID del especialista exista y se aplican las reglas de validación a los datos de la solicitud.
+     *
+     * RUTA:
+     *  PUT /especialistas/{id}
+     *
+     * BODY:
+     *  {
+     *    "nombre": "opcional",
+     *    "apellidos": "opcional"
+     *  }
+     *
+     * @OA\Put(
+     *   path="/especialistas/{id}",
+     *   summary="Actualizar especialista",
+     *   description="Actualiza los datos básicos de un especialista (nombre y apellidos).",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del especialista a actualizar",
+     *     @OA\Schema(type="integer", example=3)
+     *   ),
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       @OA\Property(property="nombre", type="string", nullable=true, example="Laura"),
+     *       @OA\Property(property="apellidos", type="string", nullable=true, example="García Romero")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Especialista actualizado correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Especialista actualizado correctamente"),
+     *       @OA\Property(
+     *         property="especialista",
+     *         type="object",
+     *         example={
+     *           "id": 3,
+     *           "user_id": 10,
+     *           "especialidad": "Nutrición Clínica",
+     *           "nombre": "Laura",
+     *           "apellidos": "García Romero"
+     *         }
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=400,
+     *     description="No se proporcionaron campos para actualizar",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No se proporcionaron campos para actualizar")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Especialista no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Especialista no encontrado")
+     *     )
+     *   )
+     * )
      *
      * @param Request $solicitud parámetro de solicitud que contiene los datos a actualizar
      * @param int $id ID del especialista que se desea actualizar
-     * @throws \Illuminate\Validation\ValidationException si los datos no cumplen con las reglas de validación.
      * @return JsonResponse devuelve una respuesta JSON con los detalles del especialista actualizado o un mensaje de error si no se encuentra el especialista.
      */
     public function actualizarEspecialista(Request $solicitud, int $id): JsonResponse
@@ -145,10 +288,61 @@ class EspecialistaController extends Controller
 
 
     /**
-     * Borrar un especialista (softDelete).
-     * Esta función elimina un especialista de la base de datos de forma segura.
-     * Se valida que el ID del especialista exista antes de intentar eliminarlo.
-     * Si el especialista no se encuentra, se devuelve un mensaje de error.
+     * Borrar (dar de baja) un especialista.
+     *
+     * Esta operación:
+     * - Cancela las citas futuras/no cerradas del especialista.
+     * - Notifica a los pacientes afectados.
+     * - Cambia el rol del usuario asociado a "usuario".
+     *
+     * RUTA:
+     *  DELETE /especialistas/{id}
+     *
+     * @OA\Delete(
+     *   path="/especialistas/{id}",
+     *   summary="Dar de baja a un especialista",
+     *   description="Da de baja a un especialista, cancela sus citas futuras/no cerradas y notifica a los pacientes.",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="id",
+     *     in="path",
+     *     required=true,
+     *     description="ID del especialista a dar de baja",
+     *     @OA\Schema(type="integer", example=4)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Especialista dado de baja correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Especialista dado de baja. Citas afectadas canceladas y pacientes notificados."),
+     *       @OA\Property(
+     *         property="data",
+     *         type="object",
+     *         example={
+     *           "especialista_id": 4,
+     *           "citas_canceladas": 5,
+     *           "notificaciones_enviadas": 4,
+     *           "rol_nuevo": "usuario"
+     *         }
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=404,
+     *     description="Especialista no encontrado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Especialista no encontrado")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error interno al eliminar especialista",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error interno al eliminar especialista")
+     *     )
+     *   )
+     * )
      *
      * @param int $id ID del especialista que se desea eliminar
      * @return JsonResponse devuelve una respuesta JSON con un mensaje de confirmación o un mensaje de error si no se encuentra el especialista.
@@ -254,15 +448,54 @@ class EspecialistaController extends Controller
 
 
     /**
-     * Almacena un nuevo especialista en la base de datos.
-     * Esta función recibe una solicitud con los datos del especialista,
-     * valida los datos y crea un nuevo registro en la base de datos.
-     * Se maneja la transacción para asegurar que los datos se guarden correctamente
-     * y se registran los logs correspondientes.
+     * Crear o restaurar un especialista.
      *
+     * - Si el usuario nunca ha sido especialista: crea un registro nuevo.
+     * - Si ya lo fue y está en soft delete: lo restaura.
+     *
+     * RUTA:
+     *  POST /especialistas
+     *
+     * @OA\Post(
+     *   path="/especialistas",
+     *   summary="Crear o restaurar un especialista",
+     *   description="Crea un nuevo especialista asociado a un usuario existente o restaura uno dado de baja (soft delete).",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(
+     *       required={"user_id","especialidad"},
+     *       @OA\Property(property="user_id", type="integer", example=15, description="ID del usuario que se convertirá en especialista"),
+     *       @OA\Property(property="especialidad", type="string", maxLength=50, example="Nutrición Deportiva")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=201,
+     *     description="Especialista creado o restaurado correctamente",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Especialista creado correctamente"),
+     *       @OA\Property(property="user", type="object"),
+     *       @OA\Property(property="especialista", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Errores de validación",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="errors", type="object")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=500,
+     *     description="Error interno al crear/restaurar especialista",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="Error interno al crear/restaurar especialista")
+     *     )
+     *   )
+     * )
+     * 
      * @param  \Illuminate\Http\Request  $solicitud request que contiene los datos del especialista
-     * @throws \Illuminate\Validation\ValidationException devuelve una excepción si los datos no cumplen con las reglas de validación.
-     * @throws \Exception lanza una excepción si ocurre un error al guardar el especialista.
      * @return \Illuminate\Http\JsonResponse devuelve una respuesta JSON con un mensaje de éxito o error y el código de respuesta HTTP.
      */
     public function nuevoEspecialista(Request $solicitud): JsonResponse
@@ -338,10 +571,48 @@ class EspecialistaController extends Controller
     }
 
 
-
     /**
-     * Lista los especialista para la vista de administrador agregando los datos personales desde la tabla users.
-     * @return \Illuminate\Http\JsonResponse devuelve un json con la lista de especialistas o un mensaje de error.
+     * Lista los especialistas para la vista de administrador,
+     * agregando datos personales desde la tabla users.
+     *
+     * RUTA:
+     *  GET /especialistasfull
+     *
+     * @OA\Get(
+     *   path="/especialistasfull",
+     *   summary="Listar especialistas (vista administrador)",
+     *   description="Devuelve listado completo de especialistas con datos del usuario asociado. Solo para administradores.",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de especialistas",
+     *     @OA\JsonContent(
+     *       type="array",
+     *       @OA\Items(
+     *         type="object",
+     *         example={
+     *           "id_especialista": 4,
+     *           "user_id": 15,
+     *           "nombre_apellidos": "Carlos López Pérez",
+     *           "email": "carlos@example.com",
+     *           "telefono": "600123123",
+     *           "especialidad": "Nutrición Deportiva",
+     *           "fecha_alta": "2025-05-01"
+     *         }
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=403,
+     *     description="No autorizado.",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No autorizado.")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse devuelve un json con la lista de especialistas o un mensaje de error.
      */
 
     public function listarEspecialistasFull(): JsonResponse
@@ -370,9 +641,28 @@ class EspecialistaController extends Controller
     }
 
     /**
-     * Lista todas las especialidades distintas.
+     * Lista todas las especialidades.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * RUTA:
+     *  GET /especialidades
+     *
+     * @OA\Get(
+     *   path="/especialidades",
+     *   summary="Listar especialidades",
+     *   description="Devuelve el listado de las distintas especialidades registradas en la tabla de especialistas.",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de especialidades",
+     *     @OA\JsonContent(
+     *       type="array",
+     *       @OA\Items(type="string", example="Nutrición Clínica")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse
      */
     public function listarEspecialidades(): JsonResponse
     {
@@ -383,8 +673,51 @@ class EspecialistaController extends Controller
     /**
      * Lista especialistas filtrados por especialidad.
      *
+     * RUTA:
+     *  GET /especialistas-por-especialidad?especialidad=...
+     *
+     * @OA\Get(
+     *   path="/especialistas-por-especialidad",
+     *   summary="Listar especialistas por especialidad",
+     *   description="Devuelve especialistas filtrados por una especialidad concreta.",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Parameter(
+     *     name="especialidad",
+     *     in="query",
+     *     required=true,
+     *     description="Nombre de la especialidad a filtrar",
+     *     @OA\Schema(type="string", example="Nutrición Clínica")
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Listado de especialistas filtrado",
+     *     @OA\JsonContent(
+     *       type="array",
+     *       @OA\Items(
+     *         type="object",
+     *         example={
+     *           "id": 3,
+     *           "user": {
+     *             "nombre": "María",
+     *             "apellidos": "Pérez",
+     *             "email": "maria@example.com"
+     *           }
+     *         }
+     *       )
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=422,
+     *     description="Falta el parámetro especialidad",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="error", type="string", example="Se requiere el parámetro especialidad")
+     *     )
+     *   )
+     * )
+     *
      * @param Request $solicitud
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function listarEspecialistasPorEspecialidad(Request $solicitud): JsonResponse
     {
@@ -413,8 +746,51 @@ class EspecialistaController extends Controller
 
     /**
      * Devuelve el perfil del especialista autenticado.
-     * Respuesta mínima compatible con tu frontend: { user: Usuario }
-     * Además incluye especialista_id para usos opcionales.
+     *
+     * Respuesta:
+     *  {
+     *    "user": { id, nombre, apellidos, email },
+     *    "especialista_id": int|null,
+     *    "especialidad": string|null
+     *  }
+     *
+     * RUTA:
+     *  GET /perfilespecialista
+     *
+     * @OA\Get(
+     *   path="/perfilespecialista",
+     *   summary="Perfil del especialista autenticado",
+     *   description="Devuelve los datos del usuario especialista autenticado y su información básica.",
+     *   tags={"Especialistas"},
+     *   security={{"sanctum":{}}},
+     *   @OA\Response(
+     *     response=200,
+     *     description="Perfil del especialista",
+     *     @OA\JsonContent(
+     *       @OA\Property(
+     *         property="user",
+     *         type="object",
+     *         example={
+     *           "id": 10,
+     *           "nombre": "María",
+     *           "apellidos": "Pérez López",
+     *           "email": "maria@example.com"
+     *         }
+     *       ),
+     *       @OA\Property(property="especialista_id", type="integer", nullable=true, example=3),
+     *       @OA\Property(property="especialidad", type="string", nullable=true, example="Nutrición Clínica")
+     *     )
+     *   ),
+     *   @OA\Response(
+     *     response=403,
+     *     description="No autorizado",
+     *     @OA\JsonContent(
+     *       @OA\Property(property="message", type="string", example="No autorizado")
+     *     )
+     *   )
+     * )
+     *
+     * @return JsonResponse
      */
     public function perfilEspecialista(): JsonResponse
     {
