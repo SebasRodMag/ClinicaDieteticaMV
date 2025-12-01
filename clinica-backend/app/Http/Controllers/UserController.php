@@ -697,7 +697,7 @@ class UserController extends Controller
      *       @OA\Property(
      *         property="mensaje",
      *         type="string",
-     *         example="El rol del usuario ha sido cambiado a \"usuario\" y se eliminaron sus citas pendientes."
+     *         example="El rol del usuario ha sido cambiado a usuario y se eliminaron sus citas pendientes."
      *       )
      *     )
      *   ),
