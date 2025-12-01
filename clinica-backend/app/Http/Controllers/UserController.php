@@ -26,7 +26,6 @@ use OpenApi\Annotations as OA;
  *   description="Gestión de usuarios, roles y datos básicos."
  * )
  */
-
 class UserController extends Controller
 {
     use Loggable, Notifiable;
@@ -305,14 +304,13 @@ class UserController extends Controller
         return $this->crearUsuarioGenerico($request, 'paciente', true);
     }
 
-
     /**
      * Función privada genérica para crear un nuevo usuario y asignar un rol.
      *
-     * @param Request $request datos del usuario nuevo
+     * @param Request $request
      * @param string $rolObjetivo
      * @param bool $crearPaciente
-     * @return JsonResponse devuelve una respuesta JSON con los datos del usuario creado o un mensaje de error.
+     * @return JsonResponse
      */
     private function crearUsuarioGenerico(Request $request, string $rolObjetivo, bool $crearPaciente): JsonResponse
     {
@@ -347,7 +345,6 @@ class UserController extends Controller
                     'dni_usuario' => $request->input('dni_usuario'),
                 ]);
 
-                //un solo rol a la vez
                 $usuario->syncRoles([$rolObjetivo]);
 
                 if ($crearPaciente) {
@@ -357,7 +354,6 @@ class UserController extends Controller
                         'fecha_alta' => now(),
                     ]);
 
-                    // para que un fallo de mail no rompa la creación
                     try {
                         $especialistaNombre = auth()->user()?->nombre ?? 'uno de nuestros especialistas';
                         Notification::send($usuario, new PacienteAltaNotificacion(
@@ -379,7 +375,7 @@ class UserController extends Controller
                 DB::commit();
             } catch (QueryException $e) {
                 DB::rollBack();
-                $UsuarioEnCuestion = auth()->id() ?? $usuario->id;//asigna dependiendo si es un usuario autenticado o el mismo usuario que se está creando
+                $UsuarioEnCuestion = auth()->id() ?? ($usuario->id ?? 0);
                 $codigo = 500;
                 $respuesta = [
                     'errors' => [
@@ -402,9 +398,6 @@ class UserController extends Controller
 
         return response()->json($respuesta, $codigo);
     }
-
-
-
 
     /**
      * Actualizar un usuario por ID.
@@ -506,7 +499,6 @@ class UserController extends Controller
             return response()->json($respuesta, $codigo);
         }
 
-        // Reglas de validación
         $reglas = [
             'nombre' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
@@ -538,7 +530,6 @@ class UserController extends Controller
         }
 
         try {
-            // Asignación masiva segura
             $usuario->fill([
                 'nombre' => $solicitud->input('nombre'),
                 'apellidos' => $solicitud->input('apellidos'),
@@ -575,8 +566,6 @@ class UserController extends Controller
 
         return response()->json($respuesta, $codigo);
     }
-
-
 
     /**
      * Eliminar un usuario por ID (SoftDelete).
@@ -679,7 +668,6 @@ class UserController extends Controller
         return response()->json($respuesta, $codigo);
     }
 
-    //método para cambiar el rol 'especialista' o 'paciente' por el rol 'usuario' recibiendo como parámetro el id de usuario.
     /**
      * Cambiar el rol de un usuario a "usuario" y limpiar vínculos de paciente/especialista.
      *
@@ -750,12 +738,11 @@ class UserController extends Controller
      */
     public function cambiarRol($id): JsonResponse
     {
-
         $codigo = 200;
         $respuesta = [];
 
         if (!is_numeric($id)) {
-            $codigo = 422; //datos inválidos
+            $codigo = 422;
             $respuesta = ['errors' => ['id' => ['El ID proporcionado no es válido.']]];
         } else {
             $usuario = User::find($id);
@@ -767,7 +754,6 @@ class UserController extends Controller
                 try {
                     DB::transaction(function () use ($usuario) {
 
-                        // Si tiene rol especialista se borran citas pendientes por id de ESPECIALISTA y soft delete
                         if ($usuario->hasRole('especialista')) {
                             $esp = Especialista::where('user_id', $usuario->id)->first();
                             if ($esp) {
@@ -775,12 +761,11 @@ class UserController extends Controller
                                     ->where('estado', 'pendiente')
                                     ->delete();
 
-                                $esp->delete(); // softDelete
+                                $esp->delete();
                                 \Log::info("El usuario {$usuario->id} dejó de ser especialista. Citas pendientes eliminadas.");
                             }
                         }
 
-                        // Si tiene rol paciente se borran citas pendientes por id de PACIENTE y soft delete
                         if ($usuario->hasRole('paciente')) {
                             $pac = Paciente::where('user_id', $usuario->id)->first();
                             if ($pac) {
@@ -788,12 +773,11 @@ class UserController extends Controller
                                     ->where('estado', 'pendiente')
                                     ->delete();
 
-                                $pac->delete(); // softDelete
+                                $pac->delete();
                                 \Log::info("El usuario {$usuario->id} dejó de ser paciente. Citas pendientes eliminadas.");
                             }
                         }
 
-                        //Dejarlo solo el rol "usuario"
                         $usuario->syncRoles(['usuario']);
 
                         $this->registrarLog(auth()->id(), 'actualizar_usuario', 'users', $usuario->id);
@@ -818,7 +802,6 @@ class UserController extends Controller
         }
         return response()->json($respuesta, $codigo);
     }
-
 
     /**
      * Listar usuarios que solo tienen rol "usuario" (sin paciente/especialista).
@@ -907,14 +890,14 @@ class UserController extends Controller
 
     /**
      * Genera un número de historial único con formato XX111111XX.
-     * Tiene en cuenta SoftDeletes (withTrashed) y realiza reintentos.
+     *
+     * Uso interno para creación de pacientes.
      */
     private function generarNumeroHistorialUnico(int $maxIntentos = 10): string
     {
         for ($i = 0; $i < $maxIntentos; $i++) {
             $numero = $this->generarCandidatoNumeroHistorial();
 
-            // Importante: withTrashed porque usas SoftDeletes en Paciente
             $existe = Paciente::withTrashed()
                 ->where('numero_historial', $numero)
                 ->exists();
@@ -924,7 +907,6 @@ class UserController extends Controller
             }
         }
 
-        // Último recurso (extremadamente raro): añade una semilla de tiempo y reintenta una vez más
         $numero = $this->generarCandidatoNumeroHistorial();
         if (!Paciente::withTrashed()->where('numero_historial', $numero)->exists()) {
             return $numero;
@@ -934,7 +916,7 @@ class UserController extends Controller
     }
 
     /**
-     * Devuelve un candidato con formato XX111111XX (todo en mayúsculas).
+     * Devuelve un candidato con formato XX111111XX (uso interno).
      */
     private function generarCandidatoNumeroHistorial(): string
     {
@@ -947,5 +929,4 @@ class UserController extends Controller
 
         return $l1 . $l2 . $num . $l3 . $l4;
     }
-
 }
