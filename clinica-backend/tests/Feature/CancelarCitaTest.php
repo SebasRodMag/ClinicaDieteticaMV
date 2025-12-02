@@ -10,7 +10,7 @@ use App\Models\Cita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
-class CancelaCitaTest extends TestCase
+class CancelarCitaTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -18,10 +18,10 @@ class CancelaCitaTest extends TestCase
     {
         parent::setUp();
 
-        // Crear roles para el guard web (sin especificar 'api')
-        Role::create(['name' => 'paciente']);
-        Role::create(['name' => 'especialista']);
-        Role::create(['name' => 'administrador']);
+        // Roles necesarios para los tests
+        Role::firstOrCreate(['name' => 'paciente']);
+        Role::firstOrCreate(['name' => 'especialista']);
+        Role::firstOrCreate(['name' => 'administrador']);
     }
 
     /** @test */
@@ -29,16 +29,18 @@ class CancelaCitaTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('paciente');
+
         $paciente = Paciente::factory()->create(['user_id' => $user->id]);
         $especialista = Especialista::factory()->create();
+
         $cita = Cita::factory()->create([
             'id_paciente' => $paciente->id,
             'id_especialista' => $especialista->id,
             'estado' => 'pendiente',
         ]);
 
-        $this->actingAs($user)
-            ->postJson(route('citas.cancelar', ['id' => $cita->id]))
+        $this->actingAs($user, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id}/cancelar")
             ->assertStatus(200)
             ->assertJson(['message' => 'Cita cancelada correctamente']);
 
@@ -53,16 +55,18 @@ class CancelaCitaTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('especialista');
+
         $especialista = Especialista::factory()->create(['user_id' => $user->id]);
         $paciente = Paciente::factory()->create();
+
         $cita = Cita::factory()->create([
             'id_paciente' => $paciente->id,
             'id_especialista' => $especialista->id,
             'estado' => 'pendiente',
         ]);
 
-        $this->actingAs($user)
-            ->postJson(route('citas.cancelar', ['id' => $cita->id]))
+        $this->actingAs($user, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id}/cancelar")
             ->assertStatus(200)
             ->assertJson(['message' => 'Cita cancelada correctamente']);
 
@@ -77,16 +81,19 @@ class CancelaCitaTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('paciente');
+
+        // Paciente a una cita que no le pertenece
         $paciente = Paciente::factory()->create();
         $especialista = Especialista::factory()->create();
+
         $cita = Cita::factory()->create([
             'id_paciente' => $paciente->id,
             'id_especialista' => $especialista->id,
             'estado' => 'pendiente',
         ]);
 
-        $this->actingAs($user)
-            ->postJson(route('citas.cancelar', ['id' => $cita->id]))
+        $this->actingAs($user, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id}/cancelar")
             ->assertStatus(403)
             ->assertJson(['message' => 'No autorizado: no es su cita']);
     }
@@ -96,16 +103,18 @@ class CancelaCitaTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('paciente');
+
         $paciente = Paciente::factory()->create(['user_id' => $user->id]);
         $especialista = Especialista::factory()->create();
+
         $cita = Cita::factory()->create([
             'id_paciente' => $paciente->id,
             'id_especialista' => $especialista->id,
             'estado' => 'cancelada',
         ]);
 
-        $this->actingAs($user)
-            ->postJson(route('citas.cancelar', ['id' => $cita->id]))
+        $this->actingAs($user, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id}/cancelar")
             ->assertStatus(400)
             ->assertJson(['message' => 'La cita ya no se puede cancelar']);
     }
@@ -116,8 +125,8 @@ class CancelaCitaTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('paciente');
 
-        $this->actingAs($user)
-            ->postJson(route('citas.cancelar', ['id' => -1]))
+        $this->actingAs($user, 'sanctum')
+            ->patchJson("/api/citas/-1/cancelar")
             ->assertStatus(400)
             ->assertJson(['message' => 'ID de cita inválido']);
     }
@@ -128,8 +137,8 @@ class CancelaCitaTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('paciente');
 
-        $this->actingAs($user)
-            ->postJson(route('citas.cancelar', ['id' => 9999]))
+        $this->actingAs($user, 'sanctum')
+            ->patchJson("/api/citas/999999/cancelar")
             ->assertStatus(404)
             ->assertJson(['message' => 'Cita no encontrada']);
     }
