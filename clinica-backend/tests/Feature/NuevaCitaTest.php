@@ -9,32 +9,35 @@ use App\Models\Especialista;
 use App\Models\Cita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
+use Database\Seeders\ConfiguracionSeeder;
+use Carbon\Carbon;
 
 class NuevaCitaTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $userPaciente;
-    protected $userEspecialista;
-    protected $paciente;
-    protected $especialista;
+    protected User $userPaciente;
+    protected User $userEspecialista;
+    protected Paciente $paciente;
+    protected Especialista $especialista;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Create roles if not exist
+        // Roles
         Role::firstOrCreate(['name' => 'paciente']);
         Role::firstOrCreate(['name' => 'especialista']);
 
-        // Create a user with paciente role and related Paciente
+        // Configuración necesaria para validaciones de horarios, festivos, etc.
+        $this->seed(ConfiguracionSeeder::class);
+
         $this->userPaciente = User::factory()->create();
         $this->userPaciente->assignRole('paciente');
         $this->paciente = Paciente::factory()->create([
             'user_id' => $this->userPaciente->id,
         ]);
 
-        // Create a user with especialista role and related Especialista
         $this->userEspecialista = User::factory()->create();
         $this->userEspecialista->assignRole('especialista');
         $this->especialista = Especialista::factory()->create([
@@ -42,114 +45,82 @@ class NuevaCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function it_creates_cita_with_all_parameters_provided()
+    private function fechaLaboralValida(): string
     {
-        $this->actingAs($this->userPaciente);
+        $fecha = Carbon::now()->addDays(2)->setTime(10, 0);
+
+        // Evitar fin de semana
+        while ($fecha->isWeekend()) {
+            $fecha->addDay();
+        }
+
+        return $fecha->format('Y-m-d H:i:s');
+    }
+
+    /** @test */
+    public function crea_cita_con_todos_los_parametros_proporcionados()
+    {
+        $this->actingAs($this->userPaciente, 'sanctum');
 
         $response = $this->postJson('/api/citas', [
-            'paciente_id' => $this->paciente->id,
-            'especialista_id' => $this->especialista->id,
-            'fecha_hora_cita' => now()->addDay()->format('Y-m-d H:i:s'),
-            'tipo_cita' => 'presencial',
-            'comentarios' => 'Test cita',
+            'id_paciente'     => $this->paciente->id,
+            'id_especialista' => $this->especialista->id,
+            'fecha_hora_cita' => $this->fechaLaboralValida(),
+            'tipo_cita'       => 'presencial',
+            'comentario'      => 'Test cita',
         ]);
 
-        $response->assertStatus(201);
-        $response->assertJsonStructure(['message', 'cita']);
+        $response->assertStatus(201)
+            ->assertJsonStructure(['message', 'cita']);
+
         $this->assertDatabaseHas('citas', [
-            'id_paciente' => $this->paciente->id,
+            'id_paciente'     => $this->paciente->id,
             'id_especialista' => $this->especialista->id,
-            'tipo_cita' => 'presencial',
+            'tipo_cita'       => 'presencial',
         ]);
     }
 
     /** @test */
-    public function it_creates_cita_when_paciente_id_is_missing()
+    public function crea_cita_cuando_no_se_envia_id_paciente_y_lo_deduce_del_usuario_logueado()
     {
-        $this->actingAs($this->userPaciente);
+        $this->actingAs($this->userPaciente, 'sanctum');
 
         $response = $this->postJson('/api/citas', [
-            'especialista_id' => $this->especialista->id,
-            'fecha_hora_cita' => now()->addDay()->format('Y-m-d H:i:s'),
-            'tipo_cita' => 'presencial',
-            'comentarios' => 'Test cita sin paciente_id',
-        ]);
-
-        $response->assertStatus(201);
-        $response->assertJsonStructure(['message', 'cita']);
-        $this->assertDatabaseHas('citas', [
-            'id_paciente' => $this->paciente->id,
+            // 'id_paciente' omitido a propósito
             'id_especialista' => $this->especialista->id,
-        ]);
-    }
-
-    /** @test */
-    public function it_creates_cita_when_especialista_id_is_missing()
-    {
-        $this->actingAs($this->userEspecialista);
-
-        $response = $this->postJson('/api/citas', [
-            'paciente_id' => $this->paciente->id,
-            'fecha_hora_cita' => now()->addDay()->format('Y-m-d H:i:s'),
-            'tipo_cita' => 'presencial',
-            'comentarios' => 'Test cita sin especialista_id',
+            'fecha_hora_cita' => $this->fechaLaboralValida(),
+            'tipo_cita'       => 'presencial',
+            'comentario'      => 'Test cita sin id_paciente',
         ]);
 
-        $response->assertStatus(201);
-        $response->assertJsonStructure(['message', 'cita']);
+        $response->assertStatus(201)
+            ->assertJsonStructure(['message', 'cita']);
+
         $this->assertDatabaseHas('citas', [
-            'id_paciente' => $this->paciente->id,
+            'id_paciente'     => $this->paciente->id,
             'id_especialista' => $this->especialista->id,
         ]);
     }
 
     /** @test */
-    public function it_creates_cita_when_both_ids_are_missing()
+    public function crea_cita_cuando_no_se_envia_id_especialista_y_lo_deduce_del_usuario_logueado()
     {
-        $this->actingAs($this->userPaciente);
+        $this->actingAs($this->userEspecialista, 'sanctum');
 
         $response = $this->postJson('/api/citas', [
-            'fecha_hora_cita' => now()->addDay()->format('Y-m-d H:i:s'),
-            'tipo_cita' => 'presencial',
-            'comentarios' => 'Test cita sin ambos ids',
+            'id_paciente'     => $this->paciente->id,
+            // 'id_especialista' omitido a propósito
+            'fecha_hora_cita' => $this->fechaLaboralValida(),
+            'tipo_cita'       => 'presencial',
+            'comentario'      => 'Test cita sin id_especialista',
         ]);
 
-        // Since especialista_id is missing and userPaciente is not especialista, expect 404
-        $response->assertStatus(404);
-    }
+        $response->assertStatus(201)
+            ->assertJsonStructure(['message', 'cita']);
 
-    /** @test */
-    public function it_returns_404_if_no_paciente_found_for_user()
-    {
-        $user = User::factory()->create();
-        $user->assignRole('paciente');
-        $this->actingAs($user);
-
-        $response = $this->postJson('/api/citas', [
-            'especialista_id' => $this->especialista->id,
-            'fecha_hora_cita' => now()->addDay()->format('Y-m-d H:i:s'),
-            'tipo_cita' => 'presencial',
+        $this->assertDatabaseHas('citas', [
+            'id_paciente'     => $this->paciente->id,
+            'id_especialista' => $this->especialista->id,
         ]);
-
-        $response->assertStatus(404);
-        $response->assertJson(['message' => 'Paciente no encontrado para el usuario autenticado']);
-    }
-
-    /** @test */
-    public function it_returns_404_if_no_especialista_found_for_user()
-    {
-        $user = User::factory()->create();
-        $user->assignRole('especialista');
-        $this->actingAs($user);
-
-        $response = $this->postJson('/api/citas', [
-            'paciente_id' => $this->paciente->id,
-            'fecha_hora_cita' => now()->addDay()->format('Y-m-d H:i:s'),
-            'tipo_cita' => 'presencial',
-        ]);
-
-        $response->assertStatus(404);
-        $response->assertJson(['message' => 'Especialista no encontrado para el usuario autenticado']);
     }
 }

@@ -44,7 +44,7 @@ class ConfiguracionControllerTest extends TestCase
     /** @test */
     public function devuelve_error_si_falla_la_consulta()
     {
-        Schema::drop('configuracions');
+        Schema::drop('configuracion');
 
         $response = $this->getJson('/api/configuracion');
 

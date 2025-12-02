@@ -19,22 +19,26 @@ class PacienteEspecialistaControllerTest extends TestCase
         $response = $this->getJson('/api/especialidades');
 
         $response->assertStatus(200);
-        $response->assertJsonFragment(['Nutrición']);
-        $response->assertJsonFragment(['Cardiología']);
-        $response->assertJsonCount(2);
+        $json = $response->json();
+
+        // Deben existir solo 2 especialidades distintas
+        $this->assertCount(2, $json);
+        $this->assertContains('Nutrición', $json);
+        $this->assertContains('Cardiología', $json);
     }
 
     public function test_listar_especialistas_por_especialidad()
     {
-        Especialista::factory()->create(['especialidad' => 'Nutrición']);
-        Especialista::factory()->create(['especialidad' => 'Cardiología']);
+        $espNutri = Especialista::factory()->create(['especialidad' => 'Nutrición']);
+        $espCardio = Especialista::factory()->create(['especialidad' => 'Cardiología']);
 
         $response = $this->getJson('/api/especialistas?especialidad=Nutrición');
 
         $response->assertStatus(200);
         $json = $response->json();
+
         $this->assertCount(1, $json);
-        $this->assertEquals('Nutrición', $json[0]['especialidad']);
+        $this->assertEquals($espNutri->id, $json[0]['id']);
     }
 
     public function test_listar_especialistas_sin_parametro_especialidad_error()
