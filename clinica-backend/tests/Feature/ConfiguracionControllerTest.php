@@ -55,4 +55,3 @@ class ConfiguracionControllerTest extends TestCase
             ]);
     }
 }
-
