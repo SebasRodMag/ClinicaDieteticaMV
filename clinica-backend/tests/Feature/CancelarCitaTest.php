@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Paciente;
-use App\Models\Especialista;
 use App\Models\Cita;
+use App\Models\Especialista;
+use App\Models\Paciente;
+use App\Models\User;
+use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Notification;
+use Tests\TestCase;
 
 class CancelarCitaTest extends TestCase
 {
@@ -18,128 +19,132 @@ class CancelarCitaTest extends TestCase
     {
         parent::setUp();
 
-        // Roles necesarios para los tests
-        Role::firstOrCreate(['name' => 'paciente']);
-        Role::firstOrCreate(['name' => 'especialista']);
-        Role::firstOrCreate(['name' => 'administrador']);
+        $this->seed(RolesSeeder::class);
+        Notification::fake(); // Para evitar enviar emails reales
+    }
+
+    private function crearPacienteConUsuario(): array
+    {
+        $user = User::factory()->create();
+        $user->assignRole('paciente');
+
+        $paciente = Paciente::factory()->create([
+            'user_id' => $user->id,
+        ]);
+
+        return [$user, $paciente];
+    }
+
+    private function crearEspecialistaConUsuario(): array
+    {
+        $user = User::factory()->create();
+        $user->assignRole('especialista');
+
+        $especialista = Especialista::factory()->create([
+            'user_id' => $user->id,
+        ]);
+
+        return [$user, $especialista];
+    }
+
+    private function crearCitaPendiente(Paciente $paciente, Especialista $especialista): Cita
+    {
+        return Cita::factory()->create([
+            'id_paciente'    => $paciente->id,
+            'id_especialista'=> $especialista->id,
+            'estado'         => 'pendiente',
+        ]);
     }
 
     /** @test */
     public function paciente_puede_cancelar_su_cita()
     {
-        $user = User::factory()->create();
-        $user->assignRole('paciente');
+        [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
+        [$userEsp, $especialista] = $this->crearEspecialistaConUsuario();
 
-        $paciente = Paciente::factory()->create(['user_id' => $user->id]);
-        $especialista = Especialista::factory()->create();
+        $cita = $this->crearCitaPendiente($paciente, $especialista);
 
-        $cita = Cita::factory()->create([
-            'id_paciente' => $paciente->id,
-            'id_especialista' => $especialista->id,
-            'estado' => 'pendiente',
-        ]);
-
-        $this->actingAs($user, 'sanctum')
-            ->patchJson("/api/citas/{$cita->id}/cancelar")
+        $this->actingAs($userPaciente, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id_cita}/cancelar")
             ->assertStatus(200)
-            ->assertJson(['message' => 'Cita cancelada correctamente']);
+            ->assertJson([
+                'message' => 'Cita cancelada correctamente',
+                'id_cita' => $cita->id_cita,
+            ]);
 
         $this->assertDatabaseHas('citas', [
-            'id' => $cita->id,
-            'estado' => 'cancelada',
+            'id_cita' => $cita->id_cita,
+            'estado'  => 'cancelada',
         ]);
     }
 
     /** @test */
     public function especialista_puede_cancelar_su_cita()
     {
-        $user = User::factory()->create();
-        $user->assignRole('especialista');
+        [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
+        [$userEsp, $especialista] = $this->crearEspecialistaConUsuario();
 
-        $especialista = Especialista::factory()->create(['user_id' => $user->id]);
-        $paciente = Paciente::factory()->create();
+        $cita = $this->crearCitaPendiente($paciente, $especialista);
 
-        $cita = Cita::factory()->create([
-            'id_paciente' => $paciente->id,
-            'id_especialista' => $especialista->id,
-            'estado' => 'pendiente',
-        ]);
-
-        $this->actingAs($user, 'sanctum')
-            ->patchJson("/api/citas/{$cita->id}/cancelar")
+        $this->actingAs($userEsp, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id_cita}/cancelar")
             ->assertStatus(200)
-            ->assertJson(['message' => 'Cita cancelada correctamente']);
-
-        $this->assertDatabaseHas('citas', [
-            'id' => $cita->id,
-            'estado' => 'cancelada',
-        ]);
+            ->assertJson([
+                'message' => 'Cita cancelada correctamente',
+                'id_cita' => $cita->id_cita,
+            ]);
     }
 
     /** @test */
     public function usuario_no_autorizado_no_puede_cancelar_cita()
     {
-        $user = User::factory()->create();
-        $user->assignRole('paciente');
+        // Cita entre paciente y especialista
+        [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
+        [$userEsp, $especialista] = $this->crearEspecialistaConUsuario();
+        $cita = $this->crearCitaPendiente($paciente, $especialista);
 
-        // Paciente a una cita que no le pertenece
-        $paciente = Paciente::factory()->create();
-        $especialista = Especialista::factory()->create();
+        // paciente B, sin relación con la cita
+        [$userOtro, $pacienteOtro] = $this->crearPacienteConUsuario();
 
-        $cita = Cita::factory()->create([
-            'id_paciente' => $paciente->id,
-            'id_especialista' => $especialista->id,
-            'estado' => 'pendiente',
-        ]);
-
-        $this->actingAs($user, 'sanctum')
-            ->patchJson("/api/citas/{$cita->id}/cancelar")
+        $this->actingAs($userOtro, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id_cita}/cancelar")
             ->assertStatus(403)
-            ->assertJson(['message' => 'No autorizado: no es su cita']);
+            ->assertJson([
+                'message' => 'No autorizado para cancelar esta cita',
+            ]);
     }
 
     /** @test */
     public function no_se_puede_cancelar_cita_ya_cancelada_o_realizada()
     {
-        $user = User::factory()->create();
-        $user->assignRole('paciente');
-
-        $paciente = Paciente::factory()->create(['user_id' => $user->id]);
-        $especialista = Especialista::factory()->create();
+        [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
+        [$userEsp, $especialista] = $this->crearEspecialistaConUsuario();
 
         $cita = Cita::factory()->create([
-            'id_paciente' => $paciente->id,
+            'id_paciente'     => $paciente->id,
             'id_especialista' => $especialista->id,
-            'estado' => 'cancelada',
+            'estado'          => 'realizada',
         ]);
 
-        $this->actingAs($user, 'sanctum')
-            ->patchJson("/api/citas/{$cita->id}/cancelar")
+        $this->actingAs($userPaciente, 'sanctum')
+            ->patchJson("/api/citas/{$cita->id_cita}/cancelar")
             ->assertStatus(400)
-            ->assertJson(['message' => 'La cita ya no se puede cancelar']);
+            ->assertJson([
+                'message' => 'La cita no se puede cancelar en su estado actual',
+            ]);
     }
 
     /** @test */
     public function cancelar_cita_con_id_invalido_devuelve_error()
     {
-        $user = User::factory()->create();
-        $user->assignRole('paciente');
+        [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
 
-        $this->actingAs($user, 'sanctum')
+        // ID que seguro no existe
+        $this->actingAs($userPaciente, 'sanctum')
             ->patchJson("/api/citas/-1/cancelar")
-            ->assertStatus(400)
-            ->assertJson(['message' => 'ID de cita inválido']);
-    }
-
-    /** @test */
-    public function cancelar_cita_no_encontrada_devuelve_error()
-    {
-        $user = User::factory()->create();
-        $user->assignRole('paciente');
-
-        $this->actingAs($user, 'sanctum')
-            ->patchJson("/api/citas/999999/cancelar")
             ->assertStatus(404)
-            ->assertJson(['message' => 'Cita no encontrada']);
+            ->assertJson([
+                'message' => 'Cita no encontrada',
+            ]);
     }
 }

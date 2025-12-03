@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Database\Seeders\RolesSeeder;
 
 class PacienteControllerTest extends TestCase
 {
@@ -20,10 +21,11 @@ class PacienteControllerTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate(['name' => 'paciente']);
+        $this->seed(RolesSeeder::class);
+
 
         $this->usuario = User::factory()->create([
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('password'),
         ]);
         $this->usuario->assignRole('paciente');
 

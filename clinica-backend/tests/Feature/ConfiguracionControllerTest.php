@@ -6,17 +6,33 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Database\Seeders\ConfiguracionSeeder;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
+use Database\Seeders\RolesSeeder;
 
 class ConfiguracionControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected User $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(ConfiguracionSeeder::class);
+        $this->seed(RolesSeeder::class);
+
+        $this->user = User::factory()->create();
+        $this->user->assignRole('administrador');
+    }
 
     /** @test */
     public function devuelve_configuraciones_formateadas_correctamente()
     {
         $this->seed(ConfiguracionSeeder::class);
 
-        $response = $this->getJson('/api/configuracion');
+        $response = $this->actingAs($this->user, 'sanctum')
+        ->getJson('/api/obtenerConfiguraciones');
 
         $response->assertStatus(200)
             ->assertJsonFragment(['message' => 'Configuraciones cargadas correctamente'])
@@ -46,12 +62,47 @@ class ConfiguracionControllerTest extends TestCase
     {
         Schema::drop('configuracion');
 
-        $response = $this->getJson('/api/configuracion');
+        $response = $this->actingAs($this->user, 'sanctum')
+        ->getJson('/api/obtenerConfiguraciones');
 
         $response->assertStatus(500)
             ->assertJsonStructure([
                 'message',
                 'detalle',
             ]);
+    }
+
+    /** @test */
+    public function administrador_puede_actualizar_una_configuracion_por_clave()
+    {
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->putJson('/api/cambiarConfiguraciones/color_tema', [
+                'valor' => '#123456',
+            ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJson([
+                'message' => 'Configuración actualizada correctamente',
+            ]);
+
+        $this->assertDatabaseHas('configuracion', [
+            'clave' => 'color_tema',
+            'valor' => '#123456',
+        ]);
+    }
+
+    /** @test */
+    public function usuario_no_administrador_no_puede_actualizar_configuracion()
+    {
+        $userNoAdmin = User::factory()->create();
+        $userNoAdmin->assignRole('paciente');
+
+        $response = $this->actingAs($userNoAdmin, 'sanctum')
+            ->putJson('/api/cambiarConfiguraciones/color_tema', [
+                'valor' => '#999999',
+            ]);
+
+        $response->assertStatus(403);
     }
 }
