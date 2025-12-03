@@ -19,7 +19,7 @@ class AuthControllerTest extends TestCase
     }
 
     #[Test]
-    public function usuario_puede_hacer_login_con_credenciales_correctas()
+    public function test_usuario_puede_hacer_login_con_credenciales_correctas()
     {
         $user = User::factory()->create([
             'email'    => 'login@test.com',
@@ -41,7 +41,7 @@ class AuthControllerTest extends TestCase
     }
 
     #[Test]
-    public function login_falla_con_credenciales_incorrectas()
+    public function test_login_falla_con_credenciales_incorrectas()
     {
         $user = User::factory()->create([
             'email'    => 'login@test.com',
@@ -57,7 +57,7 @@ class AuthControllerTest extends TestCase
     }
 
     #[Test]
-    public function me_devuelve_el_usuario_autenticado()
+    public function test_me_devuelve_el_usuario_autenticado()
     {
         $user = User::factory()->create();
         $user->assignRole('paciente');
@@ -73,7 +73,7 @@ class AuthControllerTest extends TestCase
     }
 
     #[Test]
-    public function logout_revoca_el_token_actual()
+    public function test_logout_revoca_el_token_actual()
     {
         $user = User::factory()->create();
         $user->assignRole('paciente');

@@ -20,7 +20,7 @@ class HistorialControllerTest extends TestCase
     }
 
     #[Test]
-    public function paciente_puede_ver_sus_historiales()
+    public function test_paciente_puede_ver_sus_historiales()
     {
         $user = User::factory()->create();
         $user->assignRole('paciente');
@@ -36,7 +36,7 @@ class HistorialControllerTest extends TestCase
     }
 
     #[Test]
-    public function especialista_puede_listar_historiales_de_pacientes()
+    public function test_especialista_puede_listar_historiales_de_pacientes()
     {
         $user = User::factory()->create();
         $user->assignRole('especialista');
@@ -52,7 +52,7 @@ class HistorialControllerTest extends TestCase
     }
 
     #[Test]
-    public function usuario_sin_rol_apropiado_no_puede_ver_historiales()
+    public function test_usuario_sin_rol_apropiado_no_puede_ver_historiales()
     {
         $user = User::factory()->create();
         $user->assignRole('usuario');

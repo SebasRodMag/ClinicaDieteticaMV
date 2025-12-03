@@ -22,7 +22,7 @@ class ObtenerSalaSeguraTest extends TestCase
     }
 
     #[Test]
-    public function paciente_puede_obtener_sala_de_su_cita_telematica()
+    public function test_paciente_puede_obtener_sala_de_su_cita_telematica()
     {
         $userPaciente = User::factory()->create();
         $userPaciente->assignRole('paciente');
@@ -58,7 +58,7 @@ class ObtenerSalaSeguraTest extends TestCase
     }
 
     #[Test]
-    public function especialista_puede_obtener_sala_de_su_cita_telematica()
+    public function test_especialista_puede_obtener_sala_de_su_cita_telematica()
     {
         $userPaciente = User::factory()->create();
         $userPaciente->assignRole('paciente');
@@ -94,7 +94,7 @@ class ObtenerSalaSeguraTest extends TestCase
     }
 
     #[Test]
-    public function usuario_no_participante_no_puede_obtener_sala()
+    public function test_usuario_no_participante_no_puede_obtener_sala()
     {
         $userPaciente = User::factory()->create();
         $userPaciente->assignRole('paciente');
@@ -133,7 +133,7 @@ class ObtenerSalaSeguraTest extends TestCase
     }
 
     #[Test]
-    public function cita_no_telematica_o_sin_sala_devuelve_error_400()
+    public function test_cita_no_telematica_o_sin_sala_devuelve_error_400()
     {
         $userPaciente = User::factory()->create();
         $userPaciente->assignRole('paciente');

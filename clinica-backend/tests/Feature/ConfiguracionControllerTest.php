@@ -27,7 +27,7 @@ class ConfiguracionControllerTest extends TestCase
     }
 
     #[Test]
-    public function devuelve_configuraciones_formateadas_correctamente()
+    public function test_devuelve_configuraciones_formateadas_correctamente()
     {
         $this->seed(ConfiguracionSeeder::class);
 
@@ -58,7 +58,7 @@ class ConfiguracionControllerTest extends TestCase
     }
 
     #[Test]
-    public function devuelve_error_si_falla_la_consulta()
+    public function test_devuelve_error_si_falla_la_consulta()
     {
         Schema::drop('configuracion');
 
@@ -73,7 +73,7 @@ class ConfiguracionControllerTest extends TestCase
     }
 
     #[Test]
-    public function administrador_puede_actualizar_una_configuracion_por_clave()
+    public function test_administrador_puede_actualizar_una_configuracion_por_clave()
     {
         $response = $this->actingAs($this->user, 'sanctum')
             ->putJson('/api/cambiarConfiguraciones/color_tema', [
@@ -93,7 +93,7 @@ class ConfiguracionControllerTest extends TestCase
     }
 
     #[Test]
-    public function usuario_no_administrador_no_puede_actualizar_configuracion()
+    public function test_usuario_no_administrador_no_puede_actualizar_configuracion()
     {
         $userNoAdmin = User::factory()->create();
         $userNoAdmin->assignRole('paciente');

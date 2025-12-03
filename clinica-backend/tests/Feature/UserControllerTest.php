@@ -18,7 +18,7 @@ class UserControllerTest extends TestCase
     }
 
     #[Test]
-    public function administrador_puede_listar_usuarios()
+    public function test_administrador_puede_listar_usuarios()
     {
         $admin = User::factory()->create();
         $admin->assignRole('administrador');
@@ -36,7 +36,7 @@ class UserControllerTest extends TestCase
     }
 
     #[Test]
-    public function usuario_no_admin_no_puede_listar_usuarios()
+    public function test_usuario_no_admin_no_puede_listar_usuarios()
     {
         $user = User::factory()->create();
         $user->assignRole('usuario');

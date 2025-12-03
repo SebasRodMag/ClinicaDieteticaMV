@@ -22,7 +22,7 @@ class ListarMisCitasTest extends TestCase
     }
 
     #[Test]
-    public function paciente_con_citas_recibe_listado_correcto()
+    public function test_paciente_con_citas_recibe_listado_correcto()
     {
         $userPaciente = User::factory()->create();
         $userPaciente->assignRole('paciente');
@@ -69,7 +69,7 @@ class ListarMisCitasTest extends TestCase
     }
 
     #[Test]
-    public function paciente_sin_registro_en_tabla_pacientes_recibe_mensaje_adecuado()
+    public function test_paciente_sin_registro_en_tabla_pacientes_recibe_mensaje_adecuado()
     {
         $userPaciente = User::factory()->create();
         $userPaciente->assignRole('paciente');
@@ -86,7 +86,7 @@ class ListarMisCitasTest extends TestCase
     }
 
     #[Test]
-    public function especialista_con_citas_recibe_listado_correcto()
+    public function test_especialista_con_citas_recibe_listado_correcto()
     {
         $userEspecialista = User::factory()->create();
         $userEspecialista->assignRole('especialista');
@@ -133,7 +133,7 @@ class ListarMisCitasTest extends TestCase
     }
 
     #[Test]
-    public function usuario_sin_rol_paciente_ni_especialista_no_puede_listar_citas()
+    public function test_usuario_sin_rol_paciente_ni_especialista_no_puede_listar_citas()
     {
         $user = User::factory()->create();
         $user->assignRole('usuario'); // rol básico

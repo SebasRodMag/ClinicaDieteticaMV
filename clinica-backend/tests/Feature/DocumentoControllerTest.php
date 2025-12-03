@@ -20,7 +20,7 @@ class DocumentoControllerTest extends TestCase
     }
 
     #[Test]
-    public function invitado_no_puede_listar_documentos()
+    public function test_invitado_no_puede_listar_documentos()
     {
         $response = $this->getJson('/api/documentos');
 
@@ -28,7 +28,7 @@ class DocumentoControllerTest extends TestCase
     }
 
     #[Test]
-    public function paciente_autenticado_puede_listar_sus_documentos()
+    public function test_paciente_autenticado_puede_listar_sus_documentos()
     {
         $user = User::factory()->create();
         $user->assignRole('paciente');
@@ -43,7 +43,7 @@ class DocumentoControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function especialista_autenticado_puede_listar_documentos_generales()
+    public function test_especialista_autenticado_puede_listar_documentos_generales()
     {
         // Crear usuario especialista
         $user = User::factory()->create();
