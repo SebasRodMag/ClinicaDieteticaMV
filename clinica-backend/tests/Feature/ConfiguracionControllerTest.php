@@ -26,7 +26,7 @@ class ConfiguracionControllerTest extends TestCase
         $this->user->assignRole('administrador');
     }
 
-    /** @test */
+    #[Test]
     public function devuelve_configuraciones_formateadas_correctamente()
     {
         $this->seed(ConfiguracionSeeder::class);
@@ -57,7 +57,7 @@ class ConfiguracionControllerTest extends TestCase
         $this->assertContains('Nutrición', $config['Especialidades']);
     }
 
-    /** @test */
+    #[Test]
     public function devuelve_error_si_falla_la_consulta()
     {
         Schema::drop('configuracion');
@@ -72,7 +72,7 @@ class ConfiguracionControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function administrador_puede_actualizar_una_configuracion_por_clave()
     {
         $response = $this->actingAs($this->user, 'sanctum')
@@ -92,7 +92,7 @@ class ConfiguracionControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function usuario_no_administrador_no_puede_actualizar_configuracion()
     {
         $userNoAdmin = User::factory()->create();

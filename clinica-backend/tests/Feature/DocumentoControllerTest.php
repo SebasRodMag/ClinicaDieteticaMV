@@ -19,7 +19,7 @@ class DocumentoControllerTest extends TestCase
         $this->seed(RolesSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function invitado_no_puede_listar_documentos()
     {
         $response = $this->getJson('/api/documentos');
@@ -27,7 +27,7 @@ class DocumentoControllerTest extends TestCase
         $response->assertStatus(401);
     }
 
-    /** @test */
+    #[Test]
     public function paciente_autenticado_puede_listar_sus_documentos()
     {
         $user = User::factory()->create();

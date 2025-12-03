@@ -18,7 +18,7 @@ class AuthControllerTest extends TestCase
         $this->seed(RolesSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function usuario_puede_hacer_login_con_credenciales_correctas()
     {
         $user = User::factory()->create([
@@ -40,7 +40,7 @@ class AuthControllerTest extends TestCase
             
     }
 
-    /** @test */
+    #[Test]
     public function login_falla_con_credenciales_incorrectas()
     {
         $user = User::factory()->create([
@@ -56,7 +56,7 @@ class AuthControllerTest extends TestCase
         $this->assertTrue($response->status() >= 400);//Simplemente esperamos un error
     }
 
-    /** @test */
+    #[Test]
     public function me_devuelve_el_usuario_autenticado()
     {
         $user = User::factory()->create();
@@ -72,7 +72,7 @@ class AuthControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function logout_revoca_el_token_actual()
     {
         $user = User::factory()->create();

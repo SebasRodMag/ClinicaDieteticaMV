@@ -39,7 +39,7 @@ class NuevaCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function crea_cita_con_todos_los_parametros_proporcionados()
     {
         $admin = User::factory()->create();
@@ -70,7 +70,7 @@ class NuevaCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function crea_cita_cuando_no_se_envia_id_paciente_y_lo_deduce_del_usuario_logueado()
     {
         $user = User::factory()->create();
@@ -103,7 +103,7 @@ class NuevaCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function crea_cita_cuando_no_se_envia_id_especialista_y_lo_deduce_del_usuario_logueado()
     {
         $user = User::factory()->create();

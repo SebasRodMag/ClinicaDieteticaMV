@@ -21,7 +21,7 @@ class ListarMisCitasTest extends TestCase
         $this->seed(RolesSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function paciente_con_citas_recibe_listado_correcto()
     {
         $userPaciente = User::factory()->create();
@@ -68,7 +68,7 @@ class ListarMisCitasTest extends TestCase
         $this->assertEquals($cita->id_cita, $json['citas'][0]['id']);
     }
 
-    /** @test */
+    #[Test]
     public function paciente_sin_registro_en_tabla_pacientes_recibe_mensaje_adecuado()
     {
         $userPaciente = User::factory()->create();
@@ -85,7 +85,7 @@ class ListarMisCitasTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function especialista_con_citas_recibe_listado_correcto()
     {
         $userEspecialista = User::factory()->create();
@@ -132,7 +132,7 @@ class ListarMisCitasTest extends TestCase
         $this->assertEquals($cita->id_cita, $json['citas'][0]['id']);
     }
 
-    /** @test */
+    #[Test]
     public function usuario_sin_rol_paciente_ni_especialista_no_puede_listar_citas()
     {
         $user = User::factory()->create();

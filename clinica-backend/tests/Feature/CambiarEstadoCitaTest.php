@@ -21,7 +21,7 @@ class CambiarEstadoCitaTest extends TestCase
         $this->seed(RolesSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function especialista_puede_cambiar_estado_de_su_cita()
     {
         $userEspecialista = User::factory()->create();
@@ -64,7 +64,7 @@ class CambiarEstadoCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function administrador_puede_cambiar_estado_de_cualquier_cita()
     {
         $userAdmin = User::factory()->create();
@@ -110,7 +110,7 @@ class CambiarEstadoCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function paciente_no_puede_cambiar_estado_a_realizada()
     {
         $userPaciente = User::factory()->create();

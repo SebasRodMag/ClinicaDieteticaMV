@@ -19,7 +19,7 @@ class HistorialControllerTest extends TestCase
         $this->seed(RolesSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function paciente_puede_ver_sus_historiales()
     {
         $user = User::factory()->create();
@@ -35,7 +35,7 @@ class HistorialControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function especialista_puede_listar_historiales_de_pacientes()
     {
         $user = User::factory()->create();
@@ -51,7 +51,7 @@ class HistorialControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function usuario_sin_rol_apropiado_no_puede_ver_historiales()
     {
         $user = User::factory()->create();

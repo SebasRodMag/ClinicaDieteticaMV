@@ -17,7 +17,7 @@ class UserControllerTest extends TestCase
         $this->seed(RolesSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function administrador_puede_listar_usuarios()
     {
         $admin = User::factory()->create();
@@ -35,7 +35,7 @@ class UserControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function usuario_no_admin_no_puede_listar_usuarios()
     {
         $user = User::factory()->create();

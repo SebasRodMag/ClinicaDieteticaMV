@@ -56,7 +56,7 @@ class CancelarCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function paciente_puede_cancelar_su_cita()
     {
         [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
@@ -78,7 +78,7 @@ class CancelarCitaTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function especialista_puede_cancelar_su_cita()
     {
         [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
@@ -95,7 +95,7 @@ class CancelarCitaTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function usuario_no_autorizado_no_puede_cancelar_cita()
     {
         // Cita entre paciente y especialista
@@ -114,7 +114,7 @@ class CancelarCitaTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function no_se_puede_cancelar_cita_ya_cancelada_o_realizada()
     {
         [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
@@ -134,7 +134,7 @@ class CancelarCitaTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function cancelar_cita_con_id_invalido_devuelve_error()
     {
         [$userPaciente, $paciente] = $this->crearPacienteConUsuario();
