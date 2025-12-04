@@ -31,7 +31,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     especialistasFiltrados: Especialista[] = [];
     fecha: string = '';
     hora: string = '';
-    tipoCita: 'presencial' | 'teleática' = 'presencial';
+    tipoCita: 'presencial' | 'telemática' = 'presencial';
     comentarios: string = '';
     cargando = false;
     dateError: string | null = null;
@@ -118,7 +118,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
 
     private esFinDeSemana(date: Date): boolean {
         const day = date.getDay();
-        return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+        return day === 0 || day === 6; // domingo = 0, sábado = 6
     }
 
     private esFestivo(date: Date): boolean {
@@ -176,9 +176,11 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     }
 
     @HostListener('document:keydown.escape', ['$event'])
-    handleEscapeKey(event: KeyboardEvent) {
-        if (this.modalVisible) this.cerrar();
+handleEscapeKey(event: KeyboardEvent | Event) {
+    if (this.modalVisible) {
+        this.cerrar();
     }
+}
 
     filtrarEspecialistasPorEspecialidad(): void {
         if (!this.especialidadSeleccionada) {
