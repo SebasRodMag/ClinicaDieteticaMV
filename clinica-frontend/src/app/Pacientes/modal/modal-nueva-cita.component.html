@@ -1,9 +1,10 @@
-<div class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog">
+<div class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog" (click)="cerrar()">
     <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white modal-header-sistema">
                 <h5 class="modal-title">Nueva Cita</h5>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar" (click)="cerrar()"></button>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"
+                    (click)="cerrar()"></button>
             </div>
 
             <div class="modal-body">
@@ -22,7 +23,8 @@
                 <!-- Especialistas -->
                 <div class="mb-3">
                     <label for="especialista" class="form-label">Especialista</label>
-                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado" (ngModelChange)="onCambioEspecialista()">
+                    <select id="especialista" class="form-select" [(ngModel)]="especialistaSeleccionado"
+                        (ngModelChange)="onCambioEspecialista()">
                         <option [ngValue]="null">Seleccione un especialista</option>
                         <option *ngFor="let esp of especialistasFiltrados" [ngValue]="esp.id">
                             {{ esp.user.nombre }} {{ esp.user.apellidos }}
@@ -42,7 +44,8 @@
                 <!-- Fecha -->
                 <div class="mb-3">
                     <label for="fecha" class="form-label">Fecha</label>
-                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate" (change)="onCambioFecha()" />
+                    <input id="fecha" type="date" class="form-control" [(ngModel)]="fecha" [attr.min]="minDate"
+                        (change)="onCambioFecha()" />
                     <div *ngIf="dateError" class="text-danger mt-1">{{ dateError }}</div>
                 </div>
 
@@ -60,7 +63,9 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
-                <button type="button" class="btn btn-primary" [disabled]="cargando || !!dateError || !fecha || !hora || especialistaSeleccionado == null" (click)="confirmar()">
+                <button type="button" class="btn btn-primary"
+                    [disabled]="cargando || !!dateError || !fecha || !hora || especialistaSeleccionado == null"
+                    (click)="confirmar()">
                     {{ cargando ? 'Guardando...' : 'Crear cita' }}
                 </button>
             </div>
