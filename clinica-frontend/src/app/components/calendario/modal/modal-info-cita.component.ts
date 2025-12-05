@@ -74,7 +74,7 @@ export class ModalInfoCitaComponent implements OnInit, OnChanges, OnDestroy {
 
         const mensaje = `¿Cancelar la cita del ${cita.fecha} a las ${cita.hora}?`;
 
-        const snackRef = this.snackBar.open(mensaje, 'Cancelar', {
+        const snackRef = this.snackBar.open(mensaje, 'Cancelar cita', {
             duration: 5000,
             panelClass: ['snackbar-delete'],
             horizontalPosition: 'center',

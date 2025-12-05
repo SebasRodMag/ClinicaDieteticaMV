@@ -162,7 +162,7 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
 
         const snackRef = this.snackBar.open(
             `¿Cancelar la cita del ${cita.fecha} a las ${cita.hora}?`,
-            'Cancelar',
+            'Cancelar cita',
             {
                 duration: 5000,
                 panelClass: ['snackbar-delete'],
@@ -184,6 +184,27 @@ export class PacientesCitasComponent implements OnInit, AfterViewInit, OnDestroy
                 },
             });
         });
+    }
+
+    cancelarCitaDirectaDesdeModal(idCita: number): void {
+        let cita = this.citas.find(c => c.id === idCita);
+        let ejecutarCancelacion = cita !== undefined;
+
+        if (ejecutarCancelacion) {
+            this.loading = true;
+
+            this.UserService.cancelarCita(idCita).subscribe({
+                next: () => {
+                    this.modalInfoCitaVisible = false;
+                    this.obtenerCitas();
+                    this.mostrarMensaje('Cita cancelada correctamente.', 'success');
+                },
+                error: () => {
+                    this.loading = false;
+                    this.mostrarMensaje('Error al cancelar la cita.', 'error');
+                }
+            });
+        }
     }
 
     mostrarMensaje(mensaje: string, tipo: 'success' | 'error') {
