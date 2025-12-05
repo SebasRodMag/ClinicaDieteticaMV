@@ -67,7 +67,7 @@
     <div class="modal-backdrop fade show"></div>
 
     <app-modal-info-cita [citaSeleccionada]="citaSeleccionada" [esEspecialista]="false"
-        (cerrado)="modalInfoCitaVisible = false" (cancelar)="cancelarCitaDesdeCalendario($event)">
+        (cerrado)="modalInfoCitaVisible = false" (cancelar)="cancelarCitaDirectaDesdeModal($event)">
     </app-modal-info-cita>
 </ng-container>
 <div *ngIf="loading" class="spinner mt-3">
