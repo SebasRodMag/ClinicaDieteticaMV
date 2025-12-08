@@ -238,41 +238,67 @@ export class CitasListComponent implements OnInit, AfterViewInit {
     }
 
     guardarCita(citaActualizada: CitaListado): void {
-        if (
-            !citaActualizada.id_cita ||
-            !citaActualizada.id_paciente ||
-            !citaActualizada.id_especialista ||
-            !citaActualizada.fecha ||
-            !citaActualizada.hora ||
-            !citaActualizada.tipo_cita ||
-            !citaActualizada.estado ||
-            !citaActualizada.comentario
-        ) {
-            this.snackBar.open('Faltan datos obligatorios para actualizar la cita', 'Cerrar', { duration: 4000 });
-            return;
+        let hayError = false;
+        let mensajeError = '';
+
+        //determinar si la cita ya a pasado
+        let esCitaPasada = false;
+        if (citaActualizada.fecha && citaActualizada.hora) {
+            const fechaHoraCita = new Date(`${citaActualizada.fecha}T${citaActualizada.hora}`);
+            const ahora = new Date();
+            esCitaPasada = fechaHoraCita < ahora;
         }
 
-        const citaParaActualizar: CitaActualizar = {
-            id_cita: citaActualizada.id_cita,
-            id_paciente: citaActualizada.id_paciente,
-            id_especialista: citaActualizada.id_especialista,
-            fecha_hora_cita: `${citaActualizada.fecha} ${citaActualizada.hora}:00`,
-            tipo_cita: citaActualizada.tipo_cita,
-            estado: citaActualizada.estado,
-            comentario: citaActualizada.comentario ?? null,
-        };
-
-        this.userService.actualizarCita(citaParaActualizar).subscribe({
-            next: () => {
-                this.snackBar.open('Cita actualizada correctamente', 'Cerrar', { duration: 3000 });
-                this.modalVisible = false;
-                this.obtenerCitas();
-            },
-            error: (error) => {
-                const mensaje = error?.error?.message || 'Error al actualizar cita';
-                this.snackBar.open(mensaje, 'Cerrar', { duration: 4000 });
+        if (esCitaPasada === true) {
+            // si a pasado comprobamos que exista id_cita.
+            if (!citaActualizada.id_cita) {
+                hayError = true;
+                mensajeError = 'No se puede identificar la cita a actualizar.';
             }
-        });
+            if (hayError === false && citaActualizada.comentario === undefined) {
+                hayError = true;
+                mensajeError = 'El comentario no es válido.';
+            }
+        } else {
+            if (
+                !citaActualizada.id_cita ||
+                !citaActualizada.id_paciente ||
+                !citaActualizada.id_especialista ||
+                !citaActualizada.fecha ||
+                !citaActualizada.hora ||
+                !citaActualizada.tipo_cita ||
+                !citaActualizada.estado
+            ) {
+                hayError = true;
+                mensajeError = 'Faltan datos obligatorios para actualizar la cita.';
+            }
+        }
+
+        if (hayError === true) {
+            this.snackBar.open(mensajeError, 'Cerrar', { duration: 4000 });
+        } else {
+            const citaParaActualizar: CitaActualizar = {
+                id_cita: citaActualizada.id_cita,
+                id_paciente: citaActualizada.id_paciente,
+                id_especialista: citaActualizada.id_especialista,
+                fecha_hora_cita: `${citaActualizada.fecha} ${citaActualizada.hora}:00`,
+                tipo_cita: citaActualizada.tipo_cita,
+                estado: citaActualizada.estado,
+                comentario: citaActualizada.comentario ?? null,
+            };
+
+            this.userService.actualizarCita(citaParaActualizar).subscribe({
+                next: () => {
+                    this.snackBar.open('Cita actualizada correctamente', 'Cerrar', { duration: 3000 });
+                    this.modalVisible = false;
+                    this.obtenerCitas();
+                },
+                error: (error) => {
+                    const mensaje = error?.error?.message || 'Error al actualizar cita';
+                    this.snackBar.open(mensaje, 'Cerrar', { duration: 4000 });
+                }
+            });
+        }
     }
 
     nuevaCita(): void {

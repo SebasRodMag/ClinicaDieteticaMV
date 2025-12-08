@@ -311,7 +311,7 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     }
 
     @HostListener('document:keydown.escape', ['$event'])
-    handleEscapeKey(event: KeyboardEvent) {
+    handleEscapeKey(event: KeyboardEvent | Event) {
         if (this.modalVisible) this.cerrar();
     }
 }

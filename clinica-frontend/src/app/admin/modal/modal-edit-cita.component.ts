@@ -94,15 +94,41 @@ export class ModalEditCitaComponent implements OnChanges {
     }
 
     onSubmit(): void {
-        const { id_paciente, id_especialista, fecha, hora } = this.citaForm;
+    let mensajeError = '';
+    let hayError = false;
 
-        if (!id_paciente || !id_especialista || !fecha || !hora) {
-            this.snackBar.open('Todos los campos son obligatorios', 'Cerrar', { duration: 3000 });
-            return;
+    const { id_paciente, id_especialista, fecha, hora } = this.citaForm;
+
+    if (this.citaPasada === true) {
+        //cuando la cita ha pasado solo se exige que exista cita y que el comentario no sea undefined
+        if (this.citaForm.id_cita === undefined || this.citaForm.id_cita === null) {
+            hayError = true;
+            mensajeError = 'No se puede identificar la cita a actualizar.';
         }
+        //el comentario puede ser vacío, pero no undefined
+        if (hayError === false && this.citaForm.comentario === undefined) {
+            hayError = true;
+            mensajeError = 'Debe indicar un comentario para actualizar la cita.';
+        }
+    } else {
+        //validación completa de los importantes
+        if (
+            !id_paciente ||
+            !id_especialista ||
+            !fecha ||
+            !hora
+        ) {
+            hayError = true;
+            mensajeError = 'Todos los campos son obligatorios';
+        }
+    }
 
+    if (hayError === true) {
+        this.snackBar.open(mensajeError, 'Cerrar', { duration: 3000 });
+    } else {
         this.guardar.emit({ ...this.citaForm });
     }
+}
 
     alCambiarEspecialidad(): void {
         this.citaForm.id_especialista = 0;
