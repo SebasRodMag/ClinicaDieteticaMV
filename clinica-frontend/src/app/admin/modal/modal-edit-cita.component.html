@@ -33,7 +33,7 @@
                                     <label class="form-label">Paciente</label>
                                     <ng-select [items]="pacientes" bindLabel="user.nombre" bindValue="id"
                                         [(ngModel)]="citaForm.id_paciente" name="id_paciente" [searchable]="true"
-                                        [clearable]="false">
+                                        [clearable]="false" [disabled]="citaPasada">
                                         <ng-template ng-label-tmp let-item="item">
                                             {{ item.user.nombre }} {{ item.user.apellidos }}
                                         </ng-template>
@@ -62,12 +62,12 @@
                                 <div class="mb-3">
                                     <label class="form-label">Fecha</label>
                                     <input type="date" class="form-control" [(ngModel)]="citaForm.fecha" name="fecha"
-                                        (change)="alCambiarFecha()" required />
+                                        (change)="alCambiarFecha()" required [disabled]="citaPasada"/>
                                 </div>
                                 <!-- Hora -->
                                 <div class="mb-3">
                                     <label class="form-label">Hora</label>
-                                    <select class="form-select" [(ngModel)]="citaForm.hora" name="hora" required>
+                                    <select class="form-select" [(ngModel)]="citaForm.hora" name="hora" required [disabled]="citaPasada">
                                         <option *ngFor="let hora of horasDisponibles" [value]="hora">{{ hora }}</option>
                                         <option *ngIf="horasDisponibles.length === 0" disabled>No hay horas disponibles
                                         </option>
@@ -108,7 +108,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">Comentario</label>
                                     <textarea class="form-control" rows="3" [(ngModel)]="citaForm.comentario"
-                                        name="comentario" [disabled]="citaPasada"
+                                        name="comentario"
                                         placeholder="Observaciones, indicaciones, etc."></textarea>
                                 </div>
                             </div>

@@ -176,11 +176,11 @@ export class ModalNuevaCitaComponent implements OnInit, OnChanges {
     }
 
     @HostListener('document:keydown.escape', ['$event'])
-handleEscapeKey(event: KeyboardEvent | Event) {
-    if (this.modalVisible) {
-        this.cerrar();
+    handleEscapeKey(event: KeyboardEvent | Event) {
+        if (this.modalVisible) {
+            this.cerrar();
+        }
     }
-}
 
     filtrarEspecialistasPorEspecialidad(): void {
         if (!this.especialidadSeleccionada) {
