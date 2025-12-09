@@ -32,8 +32,8 @@ services:
     image: ghcr.io/sebasrodmag/clinicamv-backend:php-main
     env_file: [ ./secrets/clinica.env ]
     environment:
-      MIGRATE_ON_START: "false" # Cambiar a "true" para que se ejecuten los seeders al iniciar el deploy
-      SEED_ON_START: "false" # Igual que arriba
+      MIGRATE_ON_START: "true" # Cambiar a "true" para que se ejecuten los seeders al iniciar el deploy
+      SEED_ON_START: "true" # Igual que arriba
     restart: unless-stopped
     depends_on:
       db:
@@ -45,7 +45,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-      start_period: 60s #Cuando ejecutemos migraciones, subir el tiempo a 360s para darle tiempo a que se ejecuten. Sino, en 60 esta bien.
+      start_period: 360s #Cuando ejecutemos migraciones, subir el tiempo a 360s para darle tiempo a que se ejecuten. Sino, en 60 esta bien.
     networks: [red-clinicamv]
 
   api:
