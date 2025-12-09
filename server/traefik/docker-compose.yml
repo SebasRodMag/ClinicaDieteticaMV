@@ -14,6 +14,9 @@ services:
       - --certificatesresolvers.lets.acme.email=noreply@clinicamv.lol
       - --certificatesresolvers.lets.acme.storage=/acme/acme.json
       - --api.dashboard=false
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DOCKER_API_VERSION=1.44
     ports:
       - "80:80"
       - "443:443"
