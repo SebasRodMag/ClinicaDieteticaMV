@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
      * Este método crea un número específico de usuarios para cada rol:
      * - 100 usuarios normales
      * - 2 administradores
-     * - 600 pacientes
+     * - 1000 pacientes
      * - 100 especialistas
      *
      * @return void
