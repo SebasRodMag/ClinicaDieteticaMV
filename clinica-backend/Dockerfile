@@ -58,4 +58,10 @@ COPY .docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --retries=5 \
-  CMD wget -qO- http://127.0.0.1/_health || exit 1
+CMD wget -qO- http://127.0.0.1/_health || exit 1
+
+#Modificación de la configuración inicial para subir archivos más grandes
+RUN echo "file_uploads = On\n\
+upload_max_filesize = 25M\n\
+post_max_size = 25M\n" \
+> /usr/local/etc/php/conf.d/uploads.ini
