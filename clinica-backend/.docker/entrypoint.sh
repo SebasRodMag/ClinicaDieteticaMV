@@ -3,6 +3,14 @@ set -e
 
 cd /var/www
 
+# --- Modificación para editar la configuración de PHP y permitir archivos más grandes ---
+cat << 'EOF' > /usr/local/etc/php/conf.d/uploads.ini
+file_uploads = On
+upload_max_filesize = 25M
+post_max_size = 25M
+EOF
+# --- Fin configuración PHP --
+
 # Esperar a MySQL (usa tus variables del entorno)
 until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Exception $e) { exit(1);}"; do
   echo "... Esperando a la base de datos (${DB_HOST}:${DB_PORT})..."
