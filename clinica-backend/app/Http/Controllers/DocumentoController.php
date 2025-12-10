@@ -516,7 +516,7 @@ class DocumentoController extends Controller
         $validar = Validator::make($solicitud->all(), [
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
-            'archivo' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120', //5MB máx
+            'archivo' => 'required|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480', //20MB máx
             'historial_id' => 'nullable|exists:historials,id',
         ]);
         \Log::info('Usuario autenticado', [
