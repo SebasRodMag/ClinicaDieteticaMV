@@ -61,8 +61,9 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=5 \
 CMD wget -qO- http://127.0.0.1/_health || exit 1
 
 #Modificación de la configuración inicial para subir archivos más grandes
-RUN { \
+RUN mkdir -p /etc/php82/conf.d && \
+    { \
     echo "file_uploads = On"; \
     echo "upload_max_filesize = 25M"; \
     echo "post_max_size = 25M"; \
-} > /usr/local/etc/php/conf.d/uploads.ini
+    } > /etc/php82/conf.d/uploads.ini
